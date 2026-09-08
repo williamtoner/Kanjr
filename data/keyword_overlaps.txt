@@ -1438,6 +1438,7 @@
 遭 (interview) has alternate 'join' = primary of 併
 勉 (exertion) has alternate 'encourage' = primary of 励
 珠 (pearl) has alternate 'jewel' = primary of 玉
+猿 (monkey (2)) has alternate 'monkey' = primary of 申
 巣 (nest) has alternate 'den' = primary of 洞
 廊 (corridor) has alternate 'tower' = primary of 閣
 殖 (augment) has alternate 'increase' = primary of 増
@@ -1465,8 +1466,8 @@
 寧 (rather) has alternate 'peaceful' = primary of 泰
 寧 (rather) has alternate 'quiet' = primary of 静
 畳 (tatami mat) has alternate 'fold' = primary of 折
-乙 (the latter) has alternate 'duplicate' = primary of 複
-乙 (the latter) has alternate 'strange' = primary of 奇
+乙 (fishhook) has alternate 'strange' = primary of 奇
+乙 (fishhook) has alternate 'duplicate' = primary of 複
 浸 (immersed) has alternate 'wet' = primary of 潤
 陵 (mausoleum) has alternate 'hill' = primary of 丘
 逸 (deviate) has alternate 'leisure' = primary of 閑
