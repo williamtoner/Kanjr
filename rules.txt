@@ -1,0 +1,35 @@
+KANJR PROJECT RULES
+===================
+Established: 2026-09-08
+These rules govern how we work on the project. They are not about the
+kanji app itself. Add new rules below with the date they were adopted.
+
+RULE 1 - Log every prompt
+  Every prompt the user writes is saved verbatim as a text file in the
+  prompts/ directory. Nothing is edited, shortened, or corrected.
+
+RULE 2 - Log every response
+  Every response Claude gives is saved as a text file in the prompts/
+  directory. The file contains the final message shown to the user,
+  not the intermediate tool calls.
+
+RULE 3 - Metadata and ordering
+  Each log file begins with a metadata header so the order and context
+  of the conversation can always be reconstructed. The header records:
+    seq        - zero-padded turn number (0001, 0002, ...)
+    role       - "user" or "assistant"
+    kind       - "prompt" or "response"
+    timestamp  - UTC, ISO 8601
+    session    - the Claude Code session id
+    pair       - filename of the matching prompt/response
+  A prompt and its response share the same sequence number.
+
+RULE 4 - File naming
+  Files are named  NNNN_prompt.txt  and  NNNN_response.txt , where NNNN
+  is the sequence number. Sorting the directory by name gives the
+  conversation in order.
+
+RULE 5 - Rules live in this file
+  rules.txt is the single source of truth for how we work. When a new
+  working rule is agreed, it is appended here in polished form with
+  the date it was adopted.

@@ -1,0 +1,34 @@
+kanji,parts
+# Hand corrections to the automatic decomposition. Bare kanji = kanji part; r:SYMBOL = KRADFILE radical symbol.
+東,木 日
+業,羊 本
+表,士 衣
+全,r:个 王
+勝,月 r:并 夫 力
+決,r:汁 r:ユ 人
+指,r:扎 旨
+製,制 衣
+警,敬 言
+導,道 寸
+廊,r:广 郎
+組,糸 且
+祖,r:礼 且
+粗,米 且
+阻,r:阡 且
+租,r:禾 且
+助,且 力
+屋,r:尸 至
+民,口 氏
+町,田 丁
+使,r:化 吏
+国,r:囗 玉
+朝,十 早 月
+神,r:礼 申
+気,r:气 r:ノ r:丶
+過,r:込 r:冂 口
+新,立 木 斤
+場,土 旦 r:勿
+陽,r:阡 旦 r:勿
+湯,r:汁 旦 r:勿
+揚,r:扎 旦 r:勿
+腸,月 旦 r:勿
