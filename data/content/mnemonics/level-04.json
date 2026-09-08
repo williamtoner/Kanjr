@@ -1,0 +1,86 @@
+{
+  "k:用": {
+    "mnemonic": "A fence with a stick through the middle, like a to-do list on a clipboard. Every line on it is a task. Task (and use: you use things to do tasks).",
+    "hint": "A clipboard of tasks."
+  },
+  "k:者": {
+    "mnemonic": "An elder (耂) sitting in the day's sun (日). That elder is someone: the person we are talking about. Someone.",
+    "hint": "Elder in the sun."
+  },
+  "k:高": {
+    "mnemonic": "A tall tower: a roof on top, a window, and a gate at the bottom. Tall (and, because tall towers cost a lot, expensive).",
+    "hint": "A tall tower."
+  },
+  "k:門": {
+    "mnemonic": "Two swinging doors side by side, seen from the front: a saloon gate. Gate.",
+    "hint": "Swinging saloon doors."
+  },
+  "k:間": {
+    "mnemonic": "The day's sun (日) shining through the gap in a gate (門). That gap is an interval, a space in between. Interval.",
+    "hint": "Sun through the gap in a gate."
+  },
+  "k:聞": {
+    "mnemonic": "An ear (耳) pressed to the gate (門), listening to what is being said on the other side. Hear.",
+    "hint": "Ear at the gate."
+  },
+  "k:発": {
+    "mnemonic": "A tent (癶) up top and legs (儿) running out from under it. Everyone is leaving the tent at once: departure (and emit, start).",
+    "hint": "Legs running out of a tent."
+  },
+  "k:代": {
+    "mnemonic": "A leader (亻) driving a peg (弋) into the ground to mark their place, then leaving a substitute to stand there. Substitute (also generation, fee).",
+    "hint": "Leader leaves a peg as a substitute."
+  },
+  "k:文": {
+    "mnemonic": "A person with a lid (亠) for a head and crossed legs, a scholar sitting cross-legged writing. What they write is a sentence (writing, literature).",
+    "hint": "A cross-legged scholar."
+  },
+  "k:外": {
+    "mnemonic": "In the evening (夕) the divining rod (卜) is left outside; you never bring it in the house. Outside.",
+    "hint": "Rod left out in the evening."
+  },
+  "k:北": {
+    "mnemonic": "A spoon (匕) and a plank (爿) back to back, two people sitting turned away from each other because the cold wind is coming from the north. North.",
+    "hint": "Two figures back to back in the cold."
+  },
+  "k:通": {
+    "mnemonic": "On the path (辶) you carry a task (用) and wear a muzzle (マ) so nothing distracts you, and you pass through. Pass through (traffic, commute).",
+    "hint": "Muzzled, with a task, on the path."
+  },
+  "k:内": {
+    "mnemonic": "A person (人) under a hood (冂). They are inside. Inside.",
+    "hint": "Person inside a hood."
+  },
+  "k:回": {
+    "mnemonic": "A small square inside a big square: a whirlpool seen from above, going round and round. Each time round is one of the times. Times (turn, revolve).",
+    "hint": "A spiral going round."
+  },
+  "k:力": {
+    "mnemonic": "A flexed arm with a bulging bicep. Power (strength).",
+    "hint": "A flexed arm."
+  },
+  "k:首": {
+    "mnemonic": "A head with hair on top and the eye (目-like) below; the whole thing sits on the neck. Neck.",
+    "hint": "Head with hair, sitting on a neck."
+  },
+  "k:車": {
+    "mnemonic": "A cart seen from above: the axle running through the middle and a wheel at each end. Car (vehicle).",
+    "hint": "Cart seen from above."
+  },
+  "k:道": {
+    "mnemonic": "A neck (首) on a path (辶). Someone is craning their neck to see where the road goes. Road (way).",
+    "hint": "Craning your neck down the path."
+  },
+  "k:明": {
+    "mnemonic": "The sun (日) and the moon (月) together, both shining. Bright.",
+    "hint": "Sun and moon."
+  },
+  "k:旦": {
+    "mnemonic": "The sun (日) just above one (一) line, the horizon. Dawn.",
+    "hint": "Sun on the horizon."
+  },
+  "k:耳": {
+    "mnemonic": "An ear seen from the side: the outer rim, the folds inside, and the lobe hanging down. Ear.",
+    "hint": "An ear from the side."
+  }
+}

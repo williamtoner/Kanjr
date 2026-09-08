@@ -355,6 +355,7 @@
 葉 (leaf) has alternate 'plane' = primary of 削
 葉 (leaf) has alternate 'needle' = primary of 針
 葉 (leaf) has alternate 'blade' = primary of 刃
+葉 (leaf) has alternate 'spear' = primary of 矛
 常 (usual) has alternate 'ordinary' = primary of 庸
 乗 (ride) has alternate 'power' = primary of 力
 乗 (ride) has alternate 'record' = primary of 録
@@ -377,7 +378,6 @@
 館 (building) has alternate 'palace' = primary of 宮
 監 (oversee) has alternate 'rule' = primary of 則
 示 (show) has alternate 'display' = primary of 呈
-武 (warrior) has alternate 'arms' = primary of 矛
 居 (reside) has alternate 'exist' = primary of 在
 収 (income) has alternate 'reap' = primary of 刈
 収 (income) has alternate 'pay' = primary of 払
@@ -677,7 +677,7 @@
 興 (entertain) has alternate 'pleasure' = primary of 愉
 舞 (dance) has alternate 'circle' = primary of 円
 舞 (dance) has alternate 'wheel' = primary of 輪
-里 (ri) has alternate 'village' = primary of 村
+里 (hometown) has alternate 'village' = primary of 村
 減 (dwindle) has alternate 'decrease' = primary of 耗
 減 (dwindle) has alternate 'decline' = primary of 衰
 香 (incense) has alternate 'smell' = primary of 嗅
@@ -900,7 +900,7 @@
 折 (fold) has alternate 'bend' = primary of 曲
 折 (fold) has alternate 'yield' = primary of 屈
 折 (fold) has alternate 'submit' = primary of 供
-又 (or again) has alternate 'furthermore' = primary of 猶
+又 (also) has alternate 'furthermore' = primary of 猶
 締 (tighten) has alternate 'tie' = primary of 結
 締 (tighten) has alternate 'lock' = primary of 錠
 締 (tighten) has alternate 'fasten' = primary of 括
@@ -929,7 +929,8 @@
 似 (becoming) has alternate 'suitable' = primary of 適
 危 (dangerous) has alternate 'fear' = primary of 恐
 躍 (leap) has alternate 'dance' = primary of 舞
-郷 (home town) has alternate 'village' = primary of 村
+郷 (home village) has alternate 'hometown' = primary of 里
+郷 (home village) has alternate 'village' = primary of 村
 殿 (Mr.) has alternate 'palace' = primary of 宮
 殿 (Mr.) has alternate 'temple' = primary of 寺
 則 (rule) has alternate 'follow' = primary of 随
@@ -982,7 +983,6 @@
 盗 (steal) has alternate 'rob' = primary of 奪
 緒 (thong) has alternate 'end' = primary of 終
 緒 (thong) has alternate 'cord' = primary of 索
-銃 (gun) has alternate 'arms' = primary of 矛
 徴 (indications) has alternate 'question' = primary of 問
 税 (tax) has alternate 'duty' = primary of 務
 希 (hope) has alternate 'beg' = primary of 乞
@@ -1571,6 +1571,7 @@
 潔 (undefiled) has alternate 'pure' = primary of 清
 潔 (undefiled) has alternate 'clean' = primary of 浄
 嘆 (sigh) has alternate 'lament' = primary of 悼
+芽 (bud) has alternate 'spear' = primary of 矛
 芽 (bud) has alternate 'germ' = primary of 菌
 凝 (congeal) has alternate 'stiff' = primary of 硬
 囚 (captured) has alternate 'arrest' = primary of 拘
@@ -1731,6 +1732,7 @@
 淑 (graceful) has alternate 'gentle' = primary of 妥
 淑 (graceful) has alternate 'pure' = primary of 清
 厄 (unlucky) has alternate 'disaster' = primary of 災
+且 (moreover) has alternate 'also' = primary of 又
 且 (moreover) has alternate 'furthermore' = primary of 猶
 妬 (jealous) has alternate 'envy' = primary of 嫉
 妥 (gentle) has alternate 'appropriate' = primary of 当
