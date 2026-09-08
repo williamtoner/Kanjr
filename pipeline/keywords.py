@@ -42,10 +42,17 @@ def load_overrides(path: Path = OVERRIDES) -> dict[str, Keyword]:
     return out
 
 
+_NOISE_ALT = re.compile(r"radical \(no\.|\(kokuji\)|^counter for ", re.IGNORECASE)
+
+
 def clean_gloss(g: str) -> str:
     g = g.strip()
     g = re.sub(r"\s+", " ", g)
     return g
+
+
+def is_noise(g: str) -> bool:
+    return bool(_NOISE_ALT.search(g))
 
 
 def assign_keywords(
@@ -72,7 +79,7 @@ def assign_keywords(
             taken[low] = k
 
     for k in order:
-        glosses = [clean_gloss(g) for g in meanings.get(k, [])]
+        glosses = [clean_gloss(g) for g in meanings.get(k, []) if not is_noise(g)]
         if k in overrides:
             kw = overrides[k]
             # Keep KANJIDIC glosses as extra alternates (deduplicated).

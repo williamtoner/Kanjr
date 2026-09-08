@@ -1,0 +1,6 @@
+{
+  "name": "kanjr-app",
+  "private": true,
+  "type": "module",
+  "description": "Marks app/*.js as ES modules so Node (tests) can import them; the browser ignores this file."
+}

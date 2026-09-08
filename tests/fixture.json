@@ -1,0 +1,137 @@
+{
+  "meta": {
+    "built": "2026-09-08T12:00:00Z",
+    "version": 1,
+    "sample": true,
+    "counts": { "kanji": 11, "radicals": 3, "levels": 2 }
+  },
+  "items": {
+    "r:丨": {
+      "id": "r:丨", "type": "radical", "char": "丨",
+      "name": "stick", "alt": ["line"],
+      "level": 1, "pos": 0, "strokes": 1,
+      "note": "a single vertical line",
+      "used_in": ["k:中"],
+      "mnemonic": ""
+    },
+    "r:汁": {
+      "id": "r:汁", "type": "radical", "char": "氵",
+      "name": "water drops", "alt": ["tsunami"],
+      "level": 1, "pos": 1, "strokes": 3,
+      "note": "left-side form of water",
+      "used_in": ["k:池"],
+      "mnemonic": "Three little drops splashing down the left side: water drops."
+    },
+    "k:一": {
+      "id": "k:一", "type": "kanji", "char": "一",
+      "name": "one", "alt": ["one radical"],
+      "level": 1, "pos": 2,
+      "strokes": 1, "grade": 1, "jlpt": 4, "freq": 2,
+      "parts": [], "used_in": ["k:二"],
+      "mnemonic": "A single line lying on the ground. Count it: one.",
+      "examples": [ { "word": "一人", "gloss": "one person; alone" }, { "word": "一月", "gloss": "January" } ]
+    },
+    "k:二": {
+      "id": "k:二", "type": "kanji", "char": "二",
+      "name": "two", "alt": [],
+      "level": 1, "pos": 3,
+      "strokes": 2, "grade": 1, "jlpt": 4, "freq": 9,
+      "parts": ["k:一"], "used_in": [],
+      "mnemonic": "One line, then another one on top: two.",
+      "examples": [ { "word": "二人", "gloss": "two people; a pair" } ]
+    },
+    "k:口": {
+      "id": "k:口", "type": "kanji", "char": "口",
+      "name": "mouth", "alt": ["opening"],
+      "level": 1, "pos": 4,
+      "strokes": 3, "grade": 1, "jlpt": 4, "freq": 30,
+      "parts": [], "used_in": ["k:中"],
+      "mnemonic": "A wide open mouth, seen square-on.",
+      "examples": [ { "word": "入口", "gloss": "entrance" }, { "word": "人口", "gloss": "population" } ]
+    },
+    "k:日": {
+      "id": "k:日", "type": "kanji", "char": "日",
+      "name": "day", "alt": ["sun", "Japan"],
+      "level": 1, "pos": 5,
+      "strokes": 4, "grade": 1, "jlpt": 4, "freq": 1,
+      "parts": [], "used_in": ["k:明"],
+      "mnemonic": "A mouth with a line through it is the sun: one sun is one day.",
+      "examples": [ { "word": "毎日", "gloss": "every day; daily" }, { "word": "日本", "gloss": "Japan" } ]
+    },
+    "k:月": {
+      "id": "k:月", "type": "kanji", "char": "月",
+      "name": "moon", "alt": ["month"],
+      "level": 1, "pos": 6,
+      "strokes": 4, "grade": 1, "jlpt": 4, "freq": 15,
+      "parts": [], "used_in": ["k:明"],
+      "mnemonic": "A crescent moon standing on its tip, with two bars for the craters.",
+      "examples": [ { "word": "今月", "gloss": "this month" }, { "word": "月曜日", "gloss": "Monday" } ]
+    },
+    "k:人": {
+      "id": "k:人", "type": "kanji", "char": "人",
+      "name": "person", "alt": ["people", "human"],
+      "level": 1, "pos": 7,
+      "strokes": 2, "grade": 1, "jlpt": 4, "freq": 3,
+      "parts": [], "used_in": ["k:休"],
+      "mnemonic": "Two legs walking: a person seen from the side.",
+      "examples": [ { "word": "人生", "gloss": "life; human lifetime" }, { "word": "大人", "gloss": "adult" } ]
+    },
+    "k:木": {
+      "id": "k:木", "type": "kanji", "char": "木",
+      "name": "tree", "alt": ["wood"],
+      "level": 1, "pos": 8,
+      "strokes": 4, "grade": 1, "jlpt": 4, "freq": 60,
+      "parts": [], "used_in": ["k:休"],
+      "mnemonic": "A trunk with branches spreading out and roots going down: a tree.",
+      "examples": [ { "word": "木曜日", "gloss": "Thursday" }, { "word": "木材", "gloss": "lumber; timber" } ]
+    },
+    "r:也": {
+      "id": "r:也", "type": "radical", "char": "也",
+      "name": "scorpion", "alt": [],
+      "level": 2, "pos": 0, "strokes": 3,
+      "note": "a curled tail with a raised sting",
+      "used_in": ["k:池"],
+      "mnemonic": "A scorpion with its tail curled up over its back."
+    },
+    "k:中": {
+      "id": "k:中", "type": "kanji", "char": "中",
+      "name": "middle", "alt": ["center", "centre", "inside"],
+      "level": 2, "pos": 1,
+      "strokes": 4, "grade": 1, "jlpt": 4, "freq": 10,
+      "parts": ["k:口", "r:丨"], "used_in": [],
+      "mnemonic": "A stick pushed straight through the middle of a mouth.",
+      "examples": [ { "word": "中国", "gloss": "China" }, { "word": "中心", "gloss": "centre; core" } ]
+    },
+    "k:明": {
+      "id": "k:明", "type": "kanji", "char": "明",
+      "name": "bright", "alt": ["light", "clear"],
+      "level": 2, "pos": 2,
+      "strokes": 8, "grade": 2, "jlpt": 3, "freq": 90,
+      "parts": ["k:日", "k:月"], "used_in": [],
+      "mnemonic": "The sun and the moon shining together: it is very bright.",
+      "examples": [ { "word": "明日", "gloss": "tomorrow" }, { "word": "説明", "gloss": "explanation" } ]
+    },
+    "k:休": {
+      "id": "k:休", "type": "kanji", "char": "休",
+      "name": "rest", "alt": ["break", "holiday"],
+      "level": 2, "pos": 3,
+      "strokes": 6, "grade": 1, "jlpt": 4, "freq": 400,
+      "parts": ["k:人", "k:木"], "used_in": [],
+      "mnemonic": "A person leaning against a tree, taking a rest.",
+      "examples": [ { "word": "休日", "gloss": "holiday; day off" }, { "word": "休憩", "gloss": "rest; break" } ]
+    },
+    "k:池": {
+      "id": "k:池", "type": "kanji", "char": "池",
+      "name": "pond", "alt": ["pool"],
+      "level": 2, "pos": 4,
+      "strokes": 6, "grade": 2, "jlpt": 2, "freq": 900,
+      "parts": ["r:汁", "r:也"], "used_in": [],
+      "mnemonic": "Water drops next to a scorpion: it lives beside a pond.",
+      "examples": [ { "word": "電池", "gloss": "battery" }, { "word": "池", "gloss": "pond" } ]
+    }
+  },
+  "levels": [
+    { "level": 1, "items": ["r:丨", "r:汁", "k:一", "k:二", "k:口", "k:日", "k:月", "k:人", "k:木"] },
+    { "level": 2, "items": ["r:也", "k:中", "k:明", "k:休", "k:池"] }
+  ]
+}

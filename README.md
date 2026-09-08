@@ -23,6 +23,12 @@ python3 -m unittest discover -s tests -p 'test_*.py'   # pipeline
 node tests/run.mjs                                     # app logic
 ```
 
+Single-file build (open on a phone without a server; progress still lives in the browser):
+
+```bash
+python3 -m pipeline.bundle              # writes dist/kanjr.html with the data inlined
+```
+
 Pace simulation (predicts daily review load for each pace setting):
 
 ```bash
@@ -39,7 +45,7 @@ data/
   content/   hand-written mnemonics, one JSON file per level
   kanji.json built output consumed by the app
   order.csv  the learning order, for review
-app/         static web app (no build step)
+app/         static web app (no build step); pipeline/bundle.py can inline it into one file
 tests/       pipeline tests (unittest) and app tests (node)
 docs/        specifications
 prompts/     log of every prompt and response (see rules.txt)

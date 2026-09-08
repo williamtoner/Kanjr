@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Kanjr — spaced-repetition flash cards for the meanings of Japanese kanji.">
+  <meta name="theme-color" content="#ec4899">
+  <meta name="color-scheme" content="light dark">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Kanjr">
+  <title>Kanjr</title>
+
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+
+  <!-- Fonts are optional; system fallbacks are declared in style.css. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Apply the saved theme before first paint to avoid a flash. -->
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('kanjr.progress.v1');
+        var theme = raw && JSON.parse(raw).settings && JSON.parse(raw).settings.theme;
+        if (theme === 'light' || theme === 'dark') document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) { /* storage unavailable: fall back to the system theme */ }
+    })();
+  </script>
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar" id="topbar">
+    <a class="logo" href="#/" aria-label="Kanjr home">
+      <span class="logo-mark" aria-hidden="true">字</span>
+      <span class="logo-text">Kanjr</span>
+    </a>
+    <nav class="nav" id="nav" aria-label="Main">
+      <a href="#/" data-route="home">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+        <span>Home</span>
+      </a>
+      <a href="#/levels" data-route="levels">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
+        <span>Levels</span>
+      </a>
+      <a href="#/stats" data-route="stats">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16v-2H4zM6 16h3V9H6zm5 0h3V4h-3zm5 0h3v-5h-3z"/></svg>
+        <span>Stats</span>
+      </a>
+      <a href="#/settings" data-route="settings">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19.4 13a7.9 7.9 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a8 8 0 0 0-1.7-1L15 3h-4l-.4 2.7a8 8 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.9 7.9 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a8 8 0 0 0 1.7 1L11 21h4l.4-2.7a8 8 0 0 0 1.7-1l2.5 1 2-3.5zM13 15a3 3 0 1 1 0-6 3 3 0 0 1 0 6z"/></svg>
+        <span>Settings</span>
+      </a>
+    </nav>
+    <a class="level-badge" id="level-badge" href="#/levels" title="Current level">Lv –</a>
+  </header>
+
+  <div class="banner" id="banner" role="status" hidden></div>
+
+  <main class="main" id="main" tabindex="-1">
+    <div class="loading" id="loading">
+      <div class="loading-glyph" aria-hidden="true">字</div>
+      <p>Loading Kanjr…</p>
+    </div>
+  </main>
+
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <noscript>
+    <div class="banner banner-error">Kanjr needs JavaScript to run.</div>
+  </noscript>
+</body>
+</html>

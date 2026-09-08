@@ -161,7 +161,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 6,9,k:西,kanji,西,west,149,2,6,,override
 6,10,r:歹,radical,歹,bones,,,4,,radical
 6,11,k:全,kanji,全,whole,80,3,6,𠆢 王,override
-6,12,k:死,kanji,死,death,110,3,6,夕 匕 歹,override
+6,12,k:死,kanji,死,death,110,3,6,夕 歹 匕,override
 6,13,k:又,kanji,又,also,890,8,2,,override
 6,14,k:止,kanji,止,stop,210,2,4,,override
 6,15,r:广,radical,广,canopy,,,3,,radical
@@ -181,7 +181,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 6,29,k:多,kanji,多,many,159,2,6,夕,override
 7,0,k:理,kanji,理,reason,100,2,11,王 里,override
 7,1,r:戈,radical,戈,halberd,,,4,,radical
-7,2,k:成,kanji,成,become,73,4,6,戈 ノ,override
+7,2,k:成,kanji,成,become,73,4,6,ノ 戈,override
 7,3,k:村,kanji,村,village,155,1,7,木 寸,override
 7,4,k:千,kanji,千,thousand,369,1,3,十 ノ,auto
 7,5,k:重,kanji,重,heavy,230,3,9,千 里,override
@@ -296,10 +296,10 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 10,24,r:杰,radical,灬,flames,,,4,,radical
 10,25,k:使,kanji,使,use,201,3,8,亻 吏,override
 10,26,k:点,kanji,点,point,183,2,9,占 灬,override
-10,27,k:円,kanji,円,circle,294,1,4,亠 一 ｜ 冂,override
+10,27,k:円,kanji,円,circle,294,1,4,亠 一 冂 ｜,override
 10,28,k:加,kanji,加,add,178,4,5,力 口,override
 10,29,k:位,kanji,位,rank,163,4,7,亻 立,override
-11,0,k:共,kanji,共,together,171,4,6,三 ｜ ハ,override
+11,0,k:共,kanji,共,together,171,4,6,三 ハ ｜,override
 11,1,k:至,kanji,至,climax,873,6,6,,auto
 11,2,k:音,kanji,音,sound,300,1,9,,override
 11,3,r:尸,radical,尸,flag,,,3,,radical
@@ -319,7 +319,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 11,17,k:駅,kanji,駅,station,187,3,14,尸 馬,override
 11,18,k:古,kanji,古,old,322,2,5,口 十,auto
 11,19,k:活,kanji,活,lively,200,2,9,氵 古 舌,override
-11,20,k:私,kanji,私,I,166,6,7,禾 厶,override
+11,20,k:私,kanji,私,I,166,6,7,厶 禾,override
 11,21,k:太,kanji,太,fat,271,2,4,大 丶,override
 11,22,k:有,kanji,有,have,237,3,6,月 一 ノ,override
 11,23,k:付,kanji,付,attach,197,4,5,亻 寸,override
@@ -457,7 +457,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 16,5,k:岡,kanji,岡,knoll,275,4,8,,override
 16,6,k:歌,kanji,歌,song,348,2,14,可 欠,override
 16,7,k:総,kanji,総,overall,258,5,14,公 糸 心,override
-16,8,k:疑,kanji,疑,doubt,239,6,14,矢 匕 マ 疋,override
+16,8,k:疑,kanji,疑,doubt,239,6,14,矢 疋 匕 マ,override
 16,9,k:説,kanji,説,opinion,309,4,14,言 兄,auto
 16,10,k:協,kanji,協,co-,331,4,8,力 十,auto
 16,11,r:艾,radical,艹,flowers,,,3,,radical
@@ -481,7 +481,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 16,29,k:歩,kanji,歩,walk,520,2,8,少 止,auto
 17,0,k:松,kanji,松,pine tree,318,4,8,公 木,auto
 17,1,k:歳,kanji,歳,years old,218,8,13,歩 戈,override
-17,2,k:英,kanji,英,England,378,4,8,冖 艹 大,auto
+17,2,k:英,kanji,英,England,378,4,8,艹 冖 大,auto
 17,3,k:権,kanji,権,authority,254,6,15,集 矢,override
 17,4,k:充,kanji,充,allot,1160,8,6,厶 儿,auto
 17,5,k:統,kanji,統,unify,270,5,12,充 糸,override
@@ -621,11 +621,11 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 21,19,k:返,kanji,返,return,521,3,7,辶 反,auto
 21,20,k:域,kanji,域,region,430,6,11,口 土 戈,auto
 21,21,k:飛,kanji,飛,fly,489,4,9,,auto
-21,22,k:備,kanji,備,equip,446,5,12,亻 厂 艹 用,auto
+21,22,k:備,kanji,備,equip,446,5,12,亻 艹 厂 用,auto
 21,23,k:宗,kanji,宗,religion,753,6,8,宀 示,auto
 21,24,k:察,kanji,察,guess,451,4,14,癶 宗,auto
 21,25,k:更,kanji,更,grow late,418,8,7,田 旦,auto
-21,26,k:須,kanji,須,ought,1147,8,12,頁 彡,auto
+21,26,k:須,kanji,須,ought,1147,8,12,彡 頁,auto
 21,27,k:医,kanji,医,doctor,559,3,7,匚 矢,auto
 21,28,k:顔,kanji,顔,expression,491,2,18,厂 立 須,auto
 21,29,k:防,kanji,防,prevent,492,5,7,阝 方,override
@@ -657,7 +657,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 22,25,k:臣,kanji,臣,retainer,723,4,7,,auto
 22,26,k:監,kanji,監,oversee,358,8,15,臣 皿,auto
 22,27,k:提,kanji,提,propose,455,5,12,扌 是,auto
-22,28,k:争,kanji,争,contend,555,4,6,了 勹 ヨ,auto
+22,28,k:争,kanji,争,contend,555,4,6,了 ヨ 勹,auto
 22,29,k:河,kanji,河,river (2),519,5,8,氵 可,auto
 23,0,k:職,kanji,職,post,439,5,18,音 耳 戈,auto
 23,1,k:丸,kanji,丸,round,726,2,3,九 丶,auto
@@ -697,7 +697,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 24,5,k:質,kanji,質,substance,526,5,15,貝 斤,auto
 24,6,k:帯,kanji,帯,sash,557,4,10,冖 巾,auto
 24,7,k:被,kanji,被,incur,467,8,10,衤 皮,auto
-24,8,k:修,kanji,修,discipline,539,5,10,亻 攵 彡,auto
+24,8,k:修,kanji,修,discipline,539,5,10,亻 彡 攵,auto
 24,9,k:草,kanji,草,grass,631,1,9,艹 早,auto
 24,10,k:裁,kanji,裁,tailor,477,6,12,去 衣 戈,auto
 24,11,k:破,kanji,破,rend,546,5,10,石 皮,auto
@@ -807,7 +807,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 27,25,k:浜,kanji,浜,seacoast,549,8,10,氵 兵,auto
 27,26,k:談,kanji,談,discuss,657,3,15,言 火,auto
 27,27,r:虍,radical,虍,tiger stripes,,,6,,radical
-27,28,k:劇,kanji,劇,drama,599,6,15,豕 虍 刂,auto
+27,28,k:劇,kanji,劇,drama,599,6,15,虍 豕 刂,auto
 27,29,k:羽,kanji,羽,feathers,752,2,6,,auto
 28,0,k:越,kanji,越,surpass,575,8,12,走 戈,auto
 28,1,k:財,kanji,財,property,662,5,10,具 貝,auto
@@ -849,7 +849,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 29,7,k:材,kanji,材,lumber,747,4,7,木 才,auto
 29,8,k:暮,kanji,暮,dusk,1039,6,14,艹 日 大,override
 29,9,k:模,kanji,模,imitation,623,6,14,木 暮,auto
-29,10,k:響,kanji,響,echo,525,8,20,音 艮 幺 阝,auto
+29,10,k:響,kanji,響,echo,525,8,20,音 幺 艮 阝,auto
 29,11,k:伯,kanji,伯,chief,1154,8,7,亻 白,auto
 29,12,k:宿,kanji,宿,inn,738,3,11,宀 伯,auto
 29,13,k:徒,kanji,徒,on foot,727,4,10,彳 走,auto
@@ -883,7 +883,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 30,11,k:染,kanji,染,dye,701,6,9,氵 木 九,auto
 30,12,k:訴,kanji,訴,accusation,627,8,12,言 斤,auto
 30,13,k:販,kanji,販,marketing,665,8,11,反 貝,auto
-30,14,k:為,kanji,為,do,653,8,9,勹 ユ 灬,auto
+30,14,k:為,kanji,為,do,653,8,9,ユ 勹 灬,auto
 30,15,k:臼,kanji,臼,mortar,1753,8,6,,auto
 30,16,k:興,kanji,興,entertain,669,5,16,同 臼,auto
 30,17,k:訳,kanji,訳,translate,689,6,11,尸 言,auto
@@ -913,7 +913,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 31,11,k:圧,kanji,圧,pressure,820,5,5,厂 土,auto
 31,12,r:舛,radical,舛,dancing legs,,,6,,radical
 31,13,k:舞,kanji,舞,dance,671,8,15,無 万 舛,override
-31,14,k:祭,kanji,祭,ritual,815,3,11,癶 𠆢 示,auto
+31,14,k:祭,kanji,祭,ritual,815,3,11,𠆢 癶 示,auto
 31,15,k:責,kanji,責,blame,956,5,11,土 六 貝,override
 31,16,k:積,kanji,積,volume,760,4,16,責 禾,auto
 31,17,k:婚,kanji,婚,marriage,711,8,11,日 女 氏,auto
@@ -924,7 +924,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 31,22,k:値,kanji,値,price,773,6,10,亻 直,auto
 31,23,k:課,kanji,課,chapter,774,4,15,田 言 木,auto
 31,24,k:娘,kanji,娘,daughter,725,8,10,女 艮,auto
-31,25,k:承,kanji,承,acquiesce,795,6,8,手 二 ノ 亅,auto
+31,25,k:承,kanji,承,acquiesce,795,6,8,手 二 亅 ノ,auto
 31,26,k:乱,kanji,乱,riot,806,6,7,舌 乙,auto
 31,27,k:超,kanji,超,transcend,716,8,12,口 走 刀,auto
 31,28,k:雄,kanji,雄,masculine,686,8,12,厶 隹,auto
@@ -958,7 +958,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 32,26,k:庭,kanji,庭,courtyard,871,3,10,廴 广 王,auto
 32,27,k:群,kanji,群,flock,828,4,13,君 羊,auto
 32,28,r:乃,radical,乃,scythe,,,2,,radical
-32,29,k:秀,kanji,秀,excel,758,8,7,乃 禾,override
+32,29,k:秀,kanji,秀,excel,758,8,7,禾 乃,override
 33,0,k:順,kanji,順,obey,840,4,12,川 頁,auto
 33,1,k:暗,kanji,暗,darkness,885,3,13,音,auto
 33,2,k:仲,kanji,仲,go-between,893,4,6,亻 中,auto
@@ -1004,7 +1004,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 34,12,k:亀,kanji,亀,tortoise,1243,8,11,,auto
 34,13,k:縄,kanji,縄,straw rope,837,4,15,細 亀,auto
 34,14,k:額,kanji,額,tablet,823,5,18,宀 員 頁 夂,auto
-34,15,k:夢,kanji,夢,dream,864,5,13,罒 冖 艹 夕,auto
+34,15,k:夢,kanji,夢,dream,864,5,13,罒 艹 冖 夕,auto
 34,16,k:審,kanji,審,hearing,748,8,15,宀 番,auto
 34,17,k:閉,kanji,閉,closed,860,6,11,門 才,auto
 34,18,k:焼,kanji,焼,bake,894,4,12,十 火 儿,auto
@@ -1122,7 +1122,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 38,10,k:携,kanji,携,portable,898,8,13,扌 乃 隹,auto
 38,11,k:漢,kanji,漢,Sino-,1069,3,13,氵 艹 口 天,auto
 38,12,k:偽,kanji,偽,falsehood,918,8,11,亻 為,auto
-38,13,k:寝,kanji,寝,lie down,932,8,13,冖 宀 爿 ヨ 又,auto
+38,13,k:寝,kanji,寝,lie down,932,8,13,宀 冖 ヨ 爿 又,auto
 38,14,k:幼,kanji,幼,infancy,1047,6,5,力 幺,auto
 38,15,k:瀬,kanji,瀬,rapids,856,8,19,氵 頼,auto
 38,16,k:扱,kanji,扱,thresh,961,8,6,扌 及,auto
@@ -1143,7 +1143,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 39,1,k:浅,kanji,浅,shallow,1071,4,9,氵 戈,auto
 39,2,k:執,kanji,執,tenacious,939,8,11,土 幸 丸,auto
 39,3,k:塚,kanji,塚,hillock (2),934,8,12,冖 土 豕,auto
-39,4,k:胸,kanji,胸,bosom,1031,6,10,月 凵 勹,auto
+39,4,k:胸,kanji,胸,bosom,1031,6,10,月 勹 凵,auto
 39,5,k:盗,kanji,盗,steal,975,8,11,次 皿,auto
 39,6,k:遣,kanji,遣,dispatch,929,8,13,辶 亜,auto
 39,7,k:包,kanji,包,wrap,1148,4,5,勹 已,override
@@ -1215,7 +1215,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 41,13,k:鈴,kanji,鈴,small bell,1010,8,13,金 令,auto
 41,14,k:募,kanji,募,recruit,1051,8,12,力 暮,auto
 41,15,k:戒,kanji,戒,commandment,1063,8,7,戈 廾,auto
-41,16,k:均,kanji,均,level,1164,5,7,土 冫 勹,auto
+41,16,k:均,kanji,均,level,1164,5,7,土 勹 冫,auto
 41,17,k:借,kanji,借,borrow,1191,4,10,亻 日 廾,auto
 41,18,k:孫,kanji,孫,grandchild,1161,4,10,子 系,auto
 41,19,k:箱,kanji,箱,box,1141,3,15,相 竹,auto
@@ -1228,7 +1228,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 41,26,k:桜,kanji,桜,cherry,1124,5,10,⺌ 女 木,auto
 41,27,k:灯,kanji,灯,lamp,1207,4,6,火 了,auto
 41,28,k:縁,kanji,縁,affinity,1015,8,15,糸 豕 ヨ,auto
-41,29,k:兼,kanji,兼,concurrently,1059,8,10,丷 一 ヨ ｜ ハ,auto
+41,29,k:兼,kanji,兼,concurrently,1059,8,10,丷 一 ヨ ハ ｜,auto
 42,0,k:杉,kanji,杉,cedar,1085,8,7,木 彡,auto
 42,1,k:陣,kanji,陣,camp,1061,8,10,阝 車,override
 42,2,k:儀,kanji,儀,case,1023,8,15,亻 義,auto
@@ -1321,7 +1321,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 44,29,k:還,kanji,還,send back,1114,8,16,辶 罒 口 衣,auto
 45,0,k:渉,kanji,渉,ford,1155,8,11,氵 歩,auto
 45,1,k:頂,kanji,頂,place on the head,1236,6,11,具 頁,auto
-45,2,k:丈,kanji,丈,length,1223,8,3,一 丶 ノ,auto
+45,2,k:丈,kanji,丈,length,1223,8,3,一 ノ 丶,auto
 45,3,k:丹,kanji,丹,rust-colored,1216,8,4,才 丶,auto
 45,4,k:搭,kanji,搭,board (2),1152,8,12,扌 艹 合,auto
 45,5,k:茨,kanji,茨,briar,1247,4,9,艹 次,auto
@@ -1339,7 +1339,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 45,17,k:縮,kanji,縮,shrink,1182,6,17,宿 糸,auto
 45,18,k:冠,kanji,冠,crown,1198,8,9,冖 元 寸,override
 45,19,k:濃,kanji,濃,concentrated,1174,8,16,氵 農,auto
-45,20,k:鶴,kanji,鶴,crane,1104,8,21,冖 宀 鳥 隹,auto
+45,20,k:鶴,kanji,鶴,crane,1104,8,21,宀 冖 鳥 隹,auto
 45,21,k:封,kanji,封,closing,1232,8,9,土 寸,auto
 45,22,k:削,kanji,削,plane,1203,8,9,⺌ 月 刂,auto
 45,23,k:鼻,kanji,鼻,nose,1303,3,14,,auto
@@ -1417,7 +1417,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 48,5,k:尽,kanji,尽,exhaust,1327,8,6,尸 丶,auto
 48,6,k:掘,kanji,掘,dig,1318,8,11,扌 尸 出,auto
 48,7,k:排,kanji,排,repudiate,1290,8,11,扌 非,auto
-48,8,k:寛,kanji,寛,tolerant,1275,8,13,宀 艹 見,auto
+48,8,k:寛,kanji,寛,tolerant,1275,8,13,艹 宀 見,auto
 48,9,k:葬,kanji,葬,interment,1285,8,12,艹 夕 匕 廾,auto
 48,10,k:爵,kanji,爵,baron,1246,8,17,罒 爪 艮 寸,auto
 48,11,k:緯,kanji,緯,horizontal,1254,8,16,糸 韋,auto
@@ -1473,7 +1473,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 50,1,k:飼,kanji,飼,domesticate,1404,5,13,𠆢 口 食 艮,auto
 50,2,k:胞,kanji,胞,placenta,1369,8,9,月 包,auto
 50,3,k:賃,kanji,賃,fare,1417,6,13,亻 王 貝,auto
-50,4,k:凡,kanji,凡,mediocre,1420,8,3,几 丶,override
+50,4,k:凡,kanji,凡,mediocre,1420,8,3,丶 几,override
 50,5,k:暑,kanji,暑,sultry,1518,3,12,耂 日,auto
 50,6,k:翼,kanji,翼,wing,1308,8,17,田 共 井 羽,auto
 50,7,k:顧,kanji,顧,look back,1276,8,21,雇 頁,auto
@@ -1558,7 +1558,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 52,26,k:冒,kanji,冒,risk,1452,8,9,日 目,auto
 52,27,k:脅,kanji,脅,threaten,1444,8,10,月 力,auto
 52,28,k:措,kanji,措,set aside,1437,8,11,扌 昔,auto
-52,29,k:箇,kanji,箇,counter for articles,1418,8,14,竹 固,auto
+52,29,k:箇,kanji,箇,箇,1418,8,14,竹 固,auto
 53,0,k:暖,kanji,暖,warmth,1508,6,13,日 友 爪,auto
 53,1,k:括,kanji,括,fasten,1461,8,9,扌 古 舌,auto
 53,2,k:籠,kanji,籠,basket,1337,8,22,月 立 竹,auto
@@ -1593,12 +1593,12 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 54,1,k:暦,kanji,暦,calendar,1445,8,14,厂 日 麻,auto
 54,2,k:塾,kanji,塾,cram school,1446,8,14,子 口 土 丸,auto
 54,3,k:惜,kanji,惜,pity,1470,8,11,忄 昔,auto
-54,4,k:隅,kanji,隅,corner,1492,8,12,阝 日 田 禸 厶 冂,auto
+54,4,k:隅,kanji,隅,corner,1492,8,12,阝 日 田 禸 冂 厶,auto
 54,5,k:疲,kanji,疲,exhausted,1510,8,10,疒 皮,auto
 54,6,r:巴,radical,巴,swirl,,,4,,radical
 54,7,k:肥,kanji,肥,fertilizer,1567,5,8,月 巴,auto
 54,8,k:浄,kanji,浄,clean,1490,8,9,氵 勹 ヨ,auto
-54,9,k:偶,kanji,偶,accidentally,1505,8,11,亻 田 禸 厶 冂,auto
+54,9,k:偶,kanji,偶,accidentally,1505,8,11,亻 田 禸 冂 厶,auto
 54,10,k:掌,kanji,掌,palm of hand,1467,8,12,⺌ 冖 手,auto
 54,11,k:釣,kanji,釣,angling,1477,8,11,金 勹,auto
 54,12,k:闇,kanji,闇,get dark,1412,8,17,門 音,auto
@@ -1620,7 +1620,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 54,28,k:陳,kanji,陳,exhibit,1498,8,11,阝 東,auto
 54,29,k:硬,kanji,硬,stiff,1521,8,12,石 更,auto
 55,0,k:虐,kanji,虐,tyrannize,1517,8,9,匚 虍,auto
-55,1,k:遇,kanji,遇,encounter,1493,8,12,辶 田 冂 禸 厶,auto
+55,1,k:遇,kanji,遇,encounter,1493,8,12,辶 田 禸 冂 厶,auto
 55,2,k:棋,kanji,棋,chess piece,1494,8,12,木 甘,auto
 55,3,k:犠,kanji,犠,sacrifice,1454,8,17,義 牛,auto
 55,4,k:礎,kanji,礎,cornerstone,1448,8,18,木 石 疋,auto
@@ -1643,12 +1643,12 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 55,21,k:励,kanji,励,encourage,1564,8,7,厂 力 斤,auto
 55,22,k:耕,kanji,耕,till,1641,5,10,井 土 耒,auto
 55,23,k:畿,kanji,畿,suburbs of capital,1483,8,15,田 幾,auto
-55,24,k:菌,kanji,菌,germ,1535,8,11,艹 囗 禾,auto
+55,24,k:菌,kanji,菌,germ,1535,8,11,囗 艹 禾,auto
 55,25,k:堅,kanji,堅,strict,1528,8,12,土 臣 又,auto
 55,26,k:熟,kanji,熟,mellow,1554,6,15,子 口 丸 灬,auto
 55,27,k:訂,kanji,訂,revise,1553,8,9,言 了,auto
 55,28,k:塞,kanji,塞,close,1502,8,13,宀 土,auto
-55,29,k:戯,kanji,戯,frolic,1509,8,15,戈 虍,auto
+55,29,k:戯,kanji,戯,frolic,1509,8,15,虍 戈,auto
 56,0,r:瓜,radical,瓜,melon,,,6,,radical
 56,1,k:孤,kanji,孤,orphan,1558,8,9,子 瓜,auto
 56,2,k:笛,kanji,笛,flute,1653,3,11,由 竹,auto
@@ -1702,7 +1702,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 57,20,k:貯,kanji,貯,savings,1680,5,12,宀 具 貝,auto
 57,21,k:奨,kanji,奨,exhort,1573,8,13,大 将,auto
 57,22,k:嵐,kanji,嵐,storm,1582,8,12,山 風,auto
-57,23,k:朱,kanji,朱,vermilion,1631,8,6,二 株 ｜ ノ ハ,auto
+57,23,k:朱,kanji,朱,vermilion,1631,8,6,二 株 ノ ハ ｜,auto
 57,24,k:葛,kanji,葛,arrowroot,1571,8,11,艹 旬 匕,auto
 57,25,k:陵,kanji,陵,mausoleum,1591,8,11,阝 土 夂 儿,auto
 57,26,k:逸,kanji,逸,deviate,1592,8,11,辶 免,auto
@@ -1751,7 +1751,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 59,9,k:棚,kanji,棚,shelf,1630,8,12,月 木,auto
 59,10,k:妊,kanji,妊,pregnancy,1671,8,7,女 士 王,auto
 59,11,k:堤,kanji,堤,dike,1632,8,12,土 是,auto
-59,12,k:愚,kanji,愚,folly,1624,8,13,思 禸 厶 冂,auto
+59,12,k:愚,kanji,愚,folly,1624,8,13,思 禸 冂 厶,auto
 59,13,k:欺,kanji,欺,deceit,1633,8,12,甘 欠,auto
 59,14,k:壮,kanji,壮,robust,1682,8,6,士 爿,auto
 59,15,k:貿,kanji,貿,trade,1736,5,12,貧 厶,auto
@@ -1767,7 +1767,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 59,25,k:瓦,kanji,瓦,tile,1684,8,5,,auto
 59,26,k:肝,kanji,肝,liver,1693,8,7,月 干,auto
 59,27,k:謎,kanji,謎,riddle,1601,8,16,辶 言 米,auto
-59,28,k:唆,kanji,唆,tempt,1672,8,10,台 夂 儿,auto
+59,28,k:唆,kanji,唆,tempt,1672,8,10,台 儿 夂,auto
 59,29,k:釜,kanji,釜,kettle,1652,8,10,平 金 父 丈,auto
 60,0,k:瓶,kanji,瓶,bottle,1665,8,11,三 瓦,auto
 60,1,k:阻,kanji,阻,thwart,1691,8,8,阝 且,auto
@@ -1834,7 +1834,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 62,2,k:僅,kanji,僅,a wee bit,1698,8,12,艹 三 口 佳,auto
 62,3,k:軟,kanji,軟,soft,1759,8,11,車 欠,auto
 62,4,k:紳,kanji,紳,sire,1730,8,11,曲 細,auto
-62,5,k:稽,kanji,稽,think (2),1681,8,15,旨 禾 尤,auto
+62,5,k:稽,kanji,稽,think (2),1681,8,15,旨 尤 禾,auto
 62,6,k:蓋,kanji,蓋,cover,1697,8,13,艹 去 皿,override
 62,7,k:宰,kanji,宰,superintend,1742,8,10,宀 辛,auto
 62,8,k:痕,kanji,痕,mark,1715,8,11,疒 艮,auto
@@ -1846,7 +1846,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 62,14,k:遮,kanji,遮,intercept,1714,8,14,辶 广 灬,auto
 62,15,k:謡,kanji,謡,chant,1700,8,16,言 干 爪 凵,override
 62,16,k:刈,kanji,刈,reap,1797,8,4,,auto
-62,17,k:匂,kanji,匂,fragrant,1777,8,4,匕 勹,auto
+62,17,k:匂,kanji,匂,fragrant,1777,8,4,勹 匕,auto
 62,18,k:胴,kanji,胴,trunk,1751,8,10,月 同,auto
 62,19,k:偏,kanji,偏,partial,1744,8,11,亻 戸 冊,auto
 62,20,k:班,kanji,班,squad,1803,6,10,王 刂,auto
@@ -1879,7 +1879,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 63,17,k:剖,kanji,剖,divide,1786,8,10,立 口 刂,auto
 63,18,k:媒,kanji,媒,mediator,1770,8,12,女 木 甘,auto
 63,19,k:昧,kanji,昧,obscure,1774,8,9,日 未,override
-63,20,k:穏,kanji,穏,calm,1739,8,16,爪 禾 ヨ 心,auto
+63,20,k:穏,kanji,穏,calm,1739,8,16,爪 ヨ 禾 心,auto
 63,21,k:准,kanji,准,quasi-,1788,8,10,冫 隹,auto
 63,22,k:睡,kanji,睡,drowsy,1764,8,13,目 万,auto
 63,23,k:酬,kanji,酬,repay,1767,8,13,州 酉,auto
@@ -1994,7 +1994,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 67,12,k:裾,kanji,裾,cuff,1875,8,13,衤 居,auto
 67,13,k:庶,kanji,庶,commoner,1913,8,11,广 灬,auto
 67,14,k:髄,kanji,髄,marrow,1849,8,19,辶 有 骨,auto
-67,15,k:懇,kanji,懇,sociable,1866,8,17,犭 爪 艮 豸 心,auto
+67,15,k:懇,kanji,懇,sociable,1866,8,17,犭 爪 豸 艮 心,auto
 67,16,k:璃,kanji,璃,glassy,1883,8,15,王 凵 禸,auto
 67,17,k:勃,kanji,勃,suddenness,1912,8,9,冖 子 協,auto
 67,18,k:塀,kanji,塀,fence (2),1909,8,12,尸 在 廾,auto
@@ -2020,7 +2020,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 68,8,k:咽,kanji,咽,gullet,1934,8,9,大 回,override
 68,9,k:賄,kanji,賄,bribe,1922,8,13,有 貝,override
 68,10,k:繊,kanji,繊,slender,1891,8,17,赤 糸 戈,auto
-68,11,k:匿,kanji,匿,shelter,1948,8,10,匚 艹 史,auto
+68,11,k:匿,kanji,匿,shelter,1948,8,10,艹 匚 史,auto
 68,12,k:棺,kanji,棺,coffin,1932,8,12,木 官,auto
 68,13,k:侮,kanji,侮,scorn,1965,8,8,亻 毎,auto
 68,14,k:串,kanji,串,skewer,1954,8,7,口 ｜,override
@@ -2087,7 +2087,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 70,15,k:蚕,kanji,蚕,silkworm,2057,6,10,天 虫,auto
 70,16,k:顎,kanji,顎,jaw,1923,8,18,員 勹 頁,auto
 70,17,k:酌,kanji,酌,bar-tending,2010,8,10,酉 勹,auto
-70,18,k:庸,kanji,庸,ordinary,2005,8,11,广 用 ヨ 聿,override
+70,18,k:庸,kanji,庸,ordinary,2005,8,11,广 用 聿 ヨ,override
 70,19,k:淫,kanji,淫,lewdness,1985,8,11,氵 士 王 爪,auto
 70,20,k:倣,kanji,倣,emulate,2014,8,10,亻 放,auto
 70,21,k:溺,kanji,溺,drown,1970,8,13,氵 弱,override
@@ -2136,7 +2136,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 72,4,k:礁,kanji,礁,reef,2002,8,17,石 焦,auto
 72,5,k:娯,kanji,娯,recreation,2059,8,10,如 ハ,auto
 72,6,k:踪,kanji,踪,remains,1999,8,15,足 宗,auto
-72,7,k:凸,kanji,凸,convex,2101,8,5,凵 冂,auto
+72,7,k:凸,kanji,凸,convex,2101,8,5,冂 凵,auto
 72,8,k:栓,kanji,栓,plug,2061,8,10,𠆢 木 王,auto
 72,9,k:鋳,kanji,鋳,casting,2021,8,15,金 寺,auto
 72,10,k:租,kanji,租,tariff,2062,8,10,禾 且,auto
@@ -2163,7 +2163,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 73,1,k:糾,kanji,糾,twist,2090,8,9,十 糸,auto
 73,2,k:唾,kanji,唾,saliva,2055,8,11,口 万,auto
 73,3,k:穫,kanji,穫,harvest,2019,8,18,艹 隻 禾,auto
-73,4,k:酢,kanji,酢,vinegar,2068,8,12,酉 ｜ ノ,auto
+73,4,k:酢,kanji,酢,vinegar,2068,8,12,｜ ノ 酉,auto
 73,5,k:憩,kanji,憩,recess,2039,8,16,息 舌,auto
 73,6,k:諮,kanji,諮,consult with,2042,8,16,言 口 次,auto
 73,7,k:遡,kanji,遡,go upstream,2049,8,13,辶 月 屮,auto
@@ -2215,7 +2215,7 @@ level,pos,id,type,char,name,freq,grade,strokes,parts,source
 74,23,k:剝,kanji,剝,come off,2133,8,10,水 ヨ 刂,auto
 74,24,k:矯,kanji,矯,rectify,2097,8,17,大 知 冂,auto
 74,25,k:諧,kanji,諧,harmony (2),2088,8,16,言 皆,auto
-74,26,k:墾,kanji,墾,ground-breaking,2110,8,16,犭 土 爪 艮 豸,auto
+74,26,k:墾,kanji,墾,ground-breaking,2110,8,16,犭 土 爪 豸 艮,auto
 74,27,k:彙,kanji,彙,same kind,2116,8,13,冖 田 木 彑,auto
 74,28,k:辣,kanji,辣,pungent,2118,8,14,木 叫 辛,auto
 74,29,k:箋,kanji,箋,slip,2121,8,14,竹 戈,override

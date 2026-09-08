@@ -267,3 +267,12 @@ polish. Real use surfaces the right bugs.
   for levels 1–3, 17 pipeline tests passing. Simulation at the standard pace
   (6 new items/day, 90 % accuracy): 1,000 kanji by day 181, all jōyō by day
   373, about 59 reviews a day. Phase 2 (web app) in progress.
+- **2026-09-08 (later)** Phase 2 and Phase 4 delivered in one pass: the web app
+  (seven screens, WaniKani SRS, typed answers with typo tolerance, lessons in
+  batches with quiz, reload-safe review sessions, export/import, IndexedDB
+  backups, PWA manifest and service worker, light/dark, mobile tab bar) with
+  77 passing unit tests and a headless-Chromium walkthrough free of console
+  errors. Phase 3 target met: every item in levels 1–10 (340 items) has a
+  mnemonic. Added `pipeline/bundle.py` for a single-file build. Next: mnemonics
+  for levels 11+, review of the automatic decompositions and keywords beyond
+  level 10, and real daily use to surface the rest.

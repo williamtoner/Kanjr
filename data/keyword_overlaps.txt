@@ -613,7 +613,6 @@
 価 (value) has alternate 'price' = primary of 値
 辺 (environs) has alternate 'boundary' = primary of 境
 振 (shake) has alternate 'swing' = primary of 揺
-個 (individual) has alternate 'counter for articles' = primary of 箇
 従 (accompany) has alternate 'obey' = primary of 順
 従 (accompany) has alternate 'follow' = primary of 随
 模 (imitation) has alternate 'copy' = primary of 写
