@@ -1082,6 +1082,75 @@ function renderLevel(n) {
 
 // --- Stats -----------------------------------------------------------------
 
+/* ---------- Grid: every item as one small box, coloured by SRS stage ---------- */
+
+const GRID_PREFS_KEY = 'kanjr.gridPrefs';
+
+function gridPrefs() {
+  try { return Object.assign({ kanjiOnly: true, byLevel: false }, JSON.parse(localStorage.getItem(GRID_PREFS_KEY) || '{}')); }
+  catch (_) { return { kanjiOnly: true, byLevel: false }; }
+}
+
+function saveGridPrefs(prefs) {
+  try { localStorage.setItem(GRID_PREFS_KEY, JSON.stringify(prefs)); } catch (_) { /* fine */ }
+}
+
+function renderGrid() {
+  const data = app.data;
+  const p = app.progress;
+  const prefs = gridPrefs();
+  const t = now().getTime();
+
+  const counts = { locked: 0, apprentice: 0, guru: 0, master: 0, enlightened: 0, burned: 0 };
+  let total = 0;
+  const cells = [];
+  for (const lv of data.levels) {
+    const ids = lv.items.filter((id) => !prefs.kanjiOnly || data.items[id].type === 'kanji');
+    if (!ids.length) continue;
+    if (prefs.byLevel) cells.push(`<a class="kgrid-level" href="#/levels/${lv.level}" title="Level ${lv.level}">${lv.level}</a>`);
+    for (const id of ids) {
+      const it = data.items[id];
+      const stage = engine.stageOf(p, id);
+      const group = srs.groupOf(stage);
+      counts[group] += 1;
+      total += 1;
+      const entry = p.items[id];
+      const due = entry && entry.due && stage > 0 && stage < 9 && srs.toMillis(entry.due) <= t;
+      cells.push(`<a class="kcell stage-${group}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}" href="${itemHref(id)}"
+        title="${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${due ? ' · due now' : ''} · Lv ${lv.level}">${esc(it.char)}</a>`);
+    }
+  }
+  const learned = total - counts.locked;
+  const legend = ['locked', 'apprentice', 'guru', 'master', 'enlightened', 'burned'].map((g) =>
+    `<span class="kgrid-key"><i class="dot stage-${g}"></i>${g[0].toUpperCase() + g.slice(1)} <b>${counts[g]}</b></span>`).join('');
+
+  main.innerHTML = `
+    <section class="screen stack">
+      <div class="screen-head">
+        <h1>Grid</h1>
+        <span class="muted small">${learned} of ${total} ${prefs.kanjiOnly ? 'kanji' : 'items'} started · ${pct(total ? learned / total : 0)}</span>
+      </div>
+      <div class="card kgrid-controls">
+        <div class="legend">${legend}</div>
+        <div class="kgrid-toggles">
+          <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="kanjiOnly" ${prefs.kanjiOnly ? 'checked' : ''}><span class="track"></span></span>Kanji only</label>
+          <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="byLevel" ${prefs.byLevel ? 'checked' : ''}><span class="track"></span></span>Level numbers</label>
+        </div>
+      </div>
+      <div class="kgrid-bar" aria-hidden="true">
+        ${['burned', 'enlightened', 'master', 'guru', 'apprentice'].map((g) => `<i class="stage-${g}" style="width:${total ? (counts[g] / total) * 100 : 0}%"></i>`).join('')}
+      </div>
+      <div class="kgrid${prefs.byLevel ? ' is-by-level' : ''}">${cells.join('')}</div>
+    </section>`;
+
+  $$('input[data-pref]', main).forEach((box) => box.addEventListener('change', () => {
+    const next = gridPrefs();
+    next[box.dataset.pref] = box.checked;
+    saveGridPrefs(next);
+    renderGrid();
+  }));
+}
+
 function renderStats() {
   const p = app.progress;
   const data = app.data;
@@ -1381,7 +1450,7 @@ function route() {
   app.keyHandler = null;
   const parts = parseRoute();
   const head = parts[0] || 'home';
-  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'levels', stats: 'stats', settings: 'settings' }[head] || '';
+  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'levels', grid: 'grid', stats: 'stats', settings: 'settings' }[head] || '';
   $$('#nav a').forEach((a) => {
     if (a.dataset.route === routeName) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
@@ -1401,6 +1470,7 @@ function route() {
           if (Number.isInteger(n)) renderLevel(n); else renderNotFound();
         } else renderLevels();
         break;
+      case 'grid': renderGrid(); break;
       case 'stats': renderStats(); break;
       case 'settings': renderSettings(); break;
       default: renderNotFound();
@@ -1410,7 +1480,7 @@ function route() {
     main.innerHTML = `<section class="screen">${emptyState('誤', 'Something went wrong', `<span class="small muted">${esc(err && err.message)}</span>`, '<a class="btn btn-primary" href="#/">Home</a>')}</section>`;
   }
   window.scrollTo({ top: 0 });
-  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
+  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Grid · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
 }
 
 function showBanner(html, { kind = '', dismiss = null } = {}) {

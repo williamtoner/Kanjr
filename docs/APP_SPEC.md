@@ -184,6 +184,11 @@ for cross-item collisions. Any user synonym is accepted.
   (editable), parts and used-in links, examples.
 - `#/levels` and `#/levels/<n>` **Levels**: grid of levels; a level shows its
   items as tiles coloured by stage.
+- `#/grid` **Grid**: every item as one small box in learning order, coloured
+  by SRS stage (locked, apprentice, guru, master, enlightened, burned), with a
+  legend that shows the counts, a stacked progress bar, a "kanji only" toggle
+  and optional level dividers. Radicals are round, kanji square; a white dot
+  marks an item due now. Click a box for its item page.
 - `#/stats` **Stats**: totals by stage, accuracy over time, reviews per day
   (last 30 days bars), 7-day forecast, level timeline.
 - `#/settings` **Settings**: pace (dailyLessons), apprentice cap, unlock

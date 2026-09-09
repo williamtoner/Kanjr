@@ -12,7 +12,7 @@
  * invalidate old caches.
  */
 
-const CACHE_VERSION = 'kanjr-v1';
+const CACHE_VERSION = 'kanjr-v2';
 const SHELL = [
   './',
   './index.html',

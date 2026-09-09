@@ -686,7 +686,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
     height: calc(var(--tabbar-h) + env(safe-area-inset-bottom));
     padding: 6px 8px env(safe-area-inset-bottom);
     background: var(--surface); border-top: 1px solid var(--border);
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 0;
   }
   .nav a {
     flex-direction: column; justify-content: center; gap: 2px;
@@ -707,4 +707,42 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 @media print {
   .topbar, .nav, .toasts { display: none; }
   body { padding: 0; }
+}
+
+/* --- Grid screen ------------------------------------------------------- */
+.kgrid-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; }
+.kgrid-key b { font-weight: 600; font-variant-numeric: tabular-nums; margin-left: 2px; }
+.kgrid-toggles { display: flex; gap: 18px; flex-wrap: wrap; }
+.kgrid-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 0.875rem; color: var(--text-2); cursor: pointer; }
+.kgrid-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--surface-3); }
+.kgrid-bar i { display: block; height: 100%; transition: width 400ms var(--ease); }
+.kgrid-bar .stage-apprentice { background: var(--apprentice); }
+.kgrid-bar .stage-guru { background: var(--guru); }
+.kgrid-bar .stage-master { background: var(--master); }
+.kgrid-bar .stage-enlightened { background: var(--enlightened); }
+.kgrid-bar .stage-burned { background: var(--burned); }
+.kgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 3px; }
+.kcell {
+  position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-jp); font-size: 0.95rem; font-weight: 500; line-height: 1;
+  border-radius: 4px; color: #fff; text-decoration: none;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.kcell:hover, .kcell:focus-visible { transform: scale(1.35); box-shadow: var(--shadow-lg); z-index: 2; outline: none; }
+.kcell.stage-locked { background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+.kcell.stage-apprentice { background: var(--apprentice); }
+.kcell.stage-guru { background: var(--guru); }
+.kcell.stage-master { background: var(--master); }
+.kcell.stage-enlightened { background: var(--enlightened); }
+.kcell.stage-burned { background: var(--burned); }
+.kcell.type-radical { border-radius: 50%; }
+.kcell.is-due::after { content: ""; position: absolute; top: 2px; right: 2px; width: 5px; height: 5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.25); }
+.kgrid-level {
+  grid-column: 1 / -1; margin-top: 8px; padding: 0 2px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted); text-decoration: none; border-bottom: 1px solid var(--border); line-height: 1.8;
+}
+.kgrid-level:first-child { margin-top: 0; }
+@media (max-width: 640px) {
+  .kgrid { grid-template-columns: repeat(auto-fill, minmax(26px, 1fr)); gap: 2px; }
+  .kcell { font-size: 0.8rem; border-radius: 3px; }
 }
