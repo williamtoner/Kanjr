@@ -23,6 +23,20 @@ export function normalise(s) {
 }
 
 /**
+ * A looser form for comparing meanings: drops a leading article or "to",
+ * and a simple English plural, so "the tree", "to see" and "flowers" match
+ * "tree", "see" and "flower". Applied to both sides of a comparison.
+ */
+export function canonical(s) {
+  let out = normalise(s);
+  out = out.replace(/^(to|a|an|the) /, '');
+  if (out.length > 4 && /[^s]s$/.test(out) && !/ss$/.test(out)) {
+    out = out.replace(/ies$/, 'y').replace(/(ch|sh|x|z|s)es$/, '$1').replace(/s$/, '');
+  }
+  return out;
+}
+
+/**
  * Number of typos tolerated for an accepted answer of the given length
  * (WaniKani's thresholds): ≤3 → 0, 4–5 → 1, 6–8 → 2, ≥9 → 3.
  */
@@ -87,7 +101,12 @@ export function isCorrect(input, accepted, options = {}) {
   if (!guess) return 'wrong';
   const list = (accepted || []).map(normalise).filter(Boolean);
   if (list.includes(guess)) return 'exact';
+  const loose = canonical(input);
+  const looseList = list.map(canonical);
+  if (loose && looseList.includes(loose)) return 'exact';
   if (options.typoTolerance === false) return 'wrong';
+  // Typo tolerance is judged against the accepted answers as written, so the
+  // looser forms above never widen the thresholds.
   for (const answer of list) {
     const allowed = tolerance(answer.length);
     if (allowed === 0) continue;

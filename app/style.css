@@ -766,3 +766,16 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 @media (max-width: 640px) {
   .kgrid-actionbar { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px); }
 }
+
+/* --- Context menu ----------------------------------------------------- */
+.ctx-menu {
+  position: fixed; z-index: 60; min-width: 220px; padding: 6px; border-radius: var(--radius-sm);
+  background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+}
+.ctx-menu .ctx-title { padding: 6px 10px 8px; font-size: 0.8125rem; font-weight: 600; color: var(--text-2); border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.ctx-menu .ctx-title .jp { font-size: 1.1rem; margin-right: 4px; }
+.ctx-menu button { display: block; width: 100%; text-align: left; padding: 8px 10px; border: 0; background: none; color: var(--text); font: inherit; font-size: 0.875rem; border-radius: 6px; cursor: pointer; }
+.ctx-menu button:hover, .ctx-menu button:focus-visible { background: var(--accent-soft); color: var(--accent); outline: none; }
+.kgrid.is-selecting { user-select: none; -webkit-user-select: none; }
+.kgrid.is-selecting .kgrid-level { cursor: pointer; }
+.kgrid.is-selecting .kgrid-level:hover { color: var(--accent); }

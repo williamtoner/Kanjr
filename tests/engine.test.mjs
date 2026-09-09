@@ -4,7 +4,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import {
   orderedIds, stageOf, isUnlocked, apprenticeCount, groupCounts, lessonsDoneToday,
-  lessonQueue, lessonBlockReason, applyLesson, startManually,
+  lessonQueue, lessonBlockReason, applyLesson, startManually, retractWrong,
   dueIds, dueCount, shuffle, reviewQueue, createSession, currentId, answerCurrent,
   wrapUp, sessionStats, applyReview, REQUEUE_MIN, REQUEUE_MAX, REVIEW_LOG_CAP,
   currentLevel, levelProgress, forecast, nextReviewAt, streak, recentMistakes,
@@ -493,8 +493,11 @@ export const tests = {
     const p1 = startManually(p0, ids, NOW);
     for (const id of ids) {
       assert.strictEqual(stageOf(p1, id), 1);
-      assert.strictEqual(p1.items[id].due, iso(Math.floor(NOW.getTime() / HOUR) * HOUR + 4 * HOUR));
+      assert.strictEqual(p1.items[id].due, iso(NOW), 'due immediately');
+      assert.strictEqual(p1.items[id].manual, true);
     }
+    assert.strictEqual(dueCount(p1, NOW), 3, 'they are in the review queue at once');
+    assert.strictEqual(apprenticeCount(p1), 0, 'manual items do not count against the apprentice cap');
     assert.strictEqual(lessonsDoneToday(p1, NOW), 0);
     assert.strictEqual(p1.days[dayKey(NOW)].manual, 3);
     assert.strictEqual(p0.items[ids[0]], undefined, 'input progress is not mutated');
@@ -510,5 +513,18 @@ export const tests = {
     assert.strictEqual(stageOf(p1, b), 1);
     assert.strictEqual(p1.days[dayKey(NOW)].manual, 1);
     assert.strictEqual(startManually(p1, [a], NOW), p1, 'nothing to add returns the same object');
+  },
+  'retractWrong undoes a wrong answer and completes the item': () => {
+    const [a, b, c] = orderedIds(data);
+    let s = createSession([a, b, c], NOW);
+    s = answerCurrent(s, false, () => 0);           // a wrong, requeued
+    assert.strictEqual(s.wrong[a], 1);
+    assert.ok(s.queue.includes(a));
+    const r = retractWrong(s, a);
+    assert.strictEqual(r.wrong, 0);
+    assert.ok(!r.session.queue.includes(a));
+    assert.strictEqual(r.session.wrong[a], undefined);
+    assert.deepStrictEqual(r.session.done, [{ id: a, wrong: 0 }]);
+    assert.strictEqual(retractWrong(r.session, b).session, r.session, 'nothing to retract');
   },
 };

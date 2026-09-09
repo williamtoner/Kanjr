@@ -109,7 +109,7 @@ Groups: apprentice 1–4, guru 5–6, master 7, enlightened 8, burned 9.
 {
   "version": 1,
   "createdAt": "…", "updatedAt": "…",
-  "settings": { "dailyLessons": 6, "apprenticeCap": 120, "unlockStage": 3,
+  "settings": { "dailyLessons": 10, "apprenticeCap": 120, "unlockStage": 3,
                 "lessonBatch": 5, "lightning": false, "theme": "auto",
                 "typoTolerance": true },
   "items": { "k:日": { "stage": 3, "due": "2026-09-09T10:00:00Z",
@@ -163,7 +163,12 @@ result counts as correct but the UI flashes "close enough, check the
 spelling". If the input matches the name of a *different* item of the same
 type exactly, the UI shakes and lets the user retry once ("that's another
 kanji") before marking it wrong — WaniKani does this for readings; we do it
-for cross-item collisions. Any user synonym is accepted.
+for cross-item collisions. Any user synonym is accepted. Comparison also runs on a *canonical* form
+(leading "to"/"a"/"an"/"the" dropped, simple plurals singularised), and the
+build merges `data/overrides/synonyms.csv` groups into each item's
+alternates so "dirt" works for 土 "soil". On a wrong answer the feedback
+offers "My answer was right: accept …", which stores the word as a user
+synonym and retracts the miss (`engine.retractWrong`).
 
 ## Screens (app.js) — hash routes
 
@@ -193,7 +198,11 @@ for cross-item collisions. Any user synonym is accepted.
   kanji into a box to select them, then "Add to circulation" puts them straight
   in at Apprentice 1 (`engine.startManually`) without using the day's lesson
   allowance; the lesson queue continues from the remaining kanji in order. The
-  item page has the same action for a single locked item.
+  item page has the same action for a single locked item. Faster selection:
+  drag across boxes to paint, shift-click for a range, click a level number
+  to take the whole level, right-click (long-press on touch) any box for a
+  menu with "Seen before — add to circulation". Manually added items are due
+  immediately, flagged `manual`, and excluded from the apprentice cap.
 - `#/stats` **Stats**: totals by stage, accuracy over time, reviews per day
   (last 30 days bars), 7-day forecast, level timeline.
 - `#/settings` **Settings**: pace (dailyLessons), apprentice cap, unlock

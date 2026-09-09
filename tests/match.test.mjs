@@ -3,8 +3,7 @@ import { readFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import {
-  normalise, tolerance, damerau, isCorrect, acceptedFor, findCollision,
-} from '../app/match.js';
+  normalise, tolerance, damerau, isCorrect, acceptedFor, findCollision, canonical } from '../app/match.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const data = JSON.parse(readFileSync(join(here, 'fixture.json'), 'utf8'));
@@ -164,5 +163,22 @@ export const tests = {
     assert.strictEqual(findCollision('dya', data.items['k:月'], data.items), null);
     assert.strictEqual(findCollision('  DAY ', data.items['k:月'], data.items).id, 'k:日');
     assert.strictEqual(findCollision('', data.items['k:月'], data.items), null);
+  },
+  'canonical drops articles, "to" and simple plurals': () => {
+    assert.strictEqual(canonical('the tree'), 'tree');
+    assert.strictEqual(canonical('to see'), 'see');
+    assert.strictEqual(canonical('flowers'), 'flower');
+    assert.strictEqual(canonical('boxes'), 'box');
+    assert.strictEqual(canonical('cities'), 'city');
+    assert.strictEqual(canonical('glass'), 'glass');
+    assert.strictEqual(canonical('bus'), 'bus');
+  },
+  'isCorrect accepts plural, article and infinitive forms as exact': () => {
+    assert.strictEqual(isCorrect('flowers', ['flower']), 'exact');
+    assert.strictEqual(isCorrect('to see', ['see']), 'exact');
+    assert.strictEqual(isCorrect('the sea', ['sea']), 'exact');
+    assert.strictEqual(isCorrect('dirt', ['soil', 'dirt', 'ground']), 'exact');
+    assert.strictEqual(isCorrect('dirts', ['soil', 'dirt']), 'exact');
+    assert.strictEqual(isCorrect('drit', ['soil', 'dirt']), 'typo', 'one transposition within a 4-letter answer');
   },
 };

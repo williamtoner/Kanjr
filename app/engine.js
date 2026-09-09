@@ -75,7 +75,9 @@ export function apprenticeCount(progress) {
   const items = (progress && progress.items) || {};
   for (const id in items) {
     const s = Number(items[id].stage) || 0;
-    if (s >= 1 && s <= 4) n++;
+    // Items the learner marked as already known are not new material, so
+    // they do not count against the apprentice cap.
+    if (s >= 1 && s <= 4 && !items[id].manual) n++;
   }
   return n;
 }
@@ -183,10 +185,11 @@ export function applyLesson(progress, id, now) {
 /** Ids of items that are due (1 ≤ stage ≤ 8 and due ≤ now), unordered. */
 /**
  * Put items straight into circulation without a lesson, for kanji the
- * learner already knows. They enter at Apprentice 1 exactly like a lesson
- * would, but they do not use up today's lesson allowance: the day record
- * counts them under `manual` instead of `lessons`. Items that already have
- * progress are left untouched.
+ * learner already knows. They enter at Apprentice 1, due immediately, and
+ * do not use up today's lesson allowance: the day record counts them under
+ * `manual` instead of `lessons`. The entry is flagged `manual` so it is
+ * excluded from the apprentice cap. Items that already have progress are
+ * left untouched.
  */
 export function startManually(progress, ids, now) {
   const nowMs = toMillis(now);
@@ -195,8 +198,9 @@ export function startManually(progress, ids, now) {
   let added = 0;
   for (const id of ids) {
     if (items[id] && items[id].stage > 0) continue;
-    const { stage, due } = nextState({ stage: 0, wrong: 0 }, nowMs);
-    items[id] = { stage, due, startedAt: iso, guruAt: null, burnedAt: null, correct: 0, incorrect: 0 };
+    // Straight into the review queue: the learner says they know it, so the
+    // first review is a confirmation, not a wait.
+    items[id] = { stage: 1, due: iso, startedAt: iso, guruAt: null, burnedAt: null, correct: 0, incorrect: 0, manual: true };
     added += 1;
   }
   if (!added) return progress;
@@ -298,6 +302,27 @@ export function answerCurrent(session, ok, rng = Math.random) {
     queue: rest,
     wrong: Object.assign({}, session.wrong, { [id]: wrongCount + 1 }),
   });
+}
+
+/**
+ * Take back a wrong answer for `id` (the learner's answer was a valid
+ * synonym after all). The requeued copy is removed, the wrong count goes
+ * back down, and the item completes as if answered correctly. Returns the
+ * new session and the wrong count that should be applied to the SRS.
+ */
+export function retractWrong(session, id) {
+  const wrongCount = session.wrong[id] || 0;
+  if (!wrongCount) return { session, wrong: 0 };
+  const queue = session.queue.slice();
+  const at = queue.lastIndexOf(id);
+  if (at >= 0) queue.splice(at, 1);
+  const wrong = Object.assign({}, session.wrong);
+  const remaining = wrongCount - 1;
+  if (remaining) wrong[id] = remaining; else delete wrong[id];
+  return {
+    session: Object.assign({}, session, { queue, wrong, done: session.done.concat([{ id, wrong: remaining }]) }),
+    wrong: remaining,
+  };
 }
 
 /**

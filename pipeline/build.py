@@ -28,6 +28,37 @@ def load_radicals() -> dict[str, dict]:
     return {r["symbol"]: r for r in rows}
 
 
+def load_synonym_groups() -> list[list[str]]:
+    """data/overrides/synonyms.csv: one group per line, members separated by ';'.
+
+    Every kanji whose keyword or alternate is in a group accepts the whole
+    group. 'soil' and 'dirt' are the same answer for 土.
+    """
+    path = OVERRIDES / "synonyms.csv"
+    if not path.exists():
+        return []
+    groups = []
+    with open(path, encoding="utf-8") as fh:
+        for i, line in enumerate(fh):
+            line = line.strip()
+            if not line or line.startswith("#") or (i == 0 and line == "group"):
+                continue
+            groups.append([m.strip() for m in line.split(";") if m.strip()])
+    return groups
+
+
+def expand_synonyms(primary: str, alts: list[str], groups: list[list[str]]) -> list[str]:
+    have = {primary.lower(), *[a.lower() for a in alts]}
+    out = list(alts)
+    for g in groups:
+        if any(m.lower() in have for m in g):
+            for m in g:
+                if m.lower() not in have:
+                    out.append(m)
+                    have.add(m.lower())
+    return out
+
+
 def load_pins() -> dict[str, int]:
     path = OVERRIDES / "level_pins.csv"
     if not path.exists():
@@ -104,6 +135,7 @@ def build(check_only: bool = False) -> dict:
     examples = parse.load_jmdict_examples(joyo)
 
     mnemonics = load_mnemonics()
+    groups = load_synonym_groups()
 
     # ---- assemble items ---------------------------------------------------
     used_in: dict[str, list[str]] = defaultdict(list)
@@ -119,7 +151,7 @@ def build(check_only: bool = False) -> dict:
         ex_src = examples.get(k) or examples.get(decompose.GLYPH_VARIANTS.get(k, k), [])
         items[item_id] = {
             "id": item_id, "type": "kanji", "char": k,
-            "name": kw[k].primary, "alt": kw[k].alt,
+            "name": kw[k].primary, "alt": expand_synonyms(kw[k].primary, kw[k].alt, groups),
             "level": levels[item_id], "pos": 0,
             "strokes": r.strokes, "grade": r.grade, "jlpt": r.jlpt,
             "freq": rank[k], "freq_news": r.freq_news,

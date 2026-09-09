@@ -21,7 +21,7 @@ export const PROGRESS_VERSION = 1;
 const SAVE_DEBOUNCE_MS = 400;
 
 export const DEFAULT_SETTINGS = Object.freeze({
-  dailyLessons: 6,
+  dailyLessons: 10,
   apprenticeCap: 120,
   unlockStage: 3,
   lessonBatch: 5,

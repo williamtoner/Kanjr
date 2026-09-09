@@ -388,6 +388,7 @@ function mountQuiz(root, opts) {
     $$('[data-act="wrap"]', root).forEach((b) => b.addEventListener('click', wrap));
     $$('[data-act="next"]', root).forEach((b) => b.addEventListener('click', next));
     $$('[data-act="info"]', root).forEach((b) => b.addEventListener('click', toggleInfo));
+    $$('[data-act="accept-syn"]', root).forEach((b) => b.addEventListener('click', acceptAsSynonym));
     input.focus({ preventScroll: true });
     if (view.phase === 'ask') input.select();
 
@@ -434,6 +435,7 @@ function mountQuiz(root, opts) {
         ` : ''}
         <div class="feedback-actions">
           ${view.result !== 'wrong' ? `<button class="btn btn-sm" data-act="info">${view.info ? 'Hide' : 'Show'} details <kbd>?</kbd></button>` : ''}
+          ${view.result === 'wrong' && normalise(view.lastInput) ? `<button class="btn btn-sm" data-act="accept-syn" title="Mark this answer correct and accept it for this item from now on">My answer was right: accept “${esc(normalise(view.lastInput))}”</button>` : ''}
           <button class="btn btn-primary btn-sm" data-act="next">Continue <kbd>Enter</kbd></button>
         </div>
       </div>`;
@@ -472,6 +474,24 @@ function mountQuiz(root, opts) {
       opts.onCorrect(id, wrong);
     }
     opts.onSession(session);
+    render();
+  }
+
+  /** The learner's "wrong" answer was a synonym: accept it and undo the miss. */
+  function acceptAsSynonym() {
+    if (view.phase !== 'feedback' || view.result !== 'wrong') return;
+    const id = view.answeredId;
+    const word = normalise(view.lastInput);
+    if (!id || !word) return;
+    const list = (app.progress.synonyms[id] || []).slice();
+    if (!list.some((x) => normalise(x) === word)) list.push(word);
+    setProgress(Object.assign({}, app.progress, { synonyms: Object.assign({}, app.progress.synonyms, { [id]: list }) }));
+    const r = engine.retractWrong(session, id);
+    session = r.session;
+    opts.onSession(session);
+    if (opts.affectsSrs !== false) opts.onCorrect(id, r.wrong);
+    view.result = 'exact';
+    toast(`“${word}” accepted for ${itemOf(id).char}`, 'ok');
     render();
   }
 
@@ -605,6 +625,7 @@ function renderHome() {
             <div class="stat"><div class="stat-value">${today.lessons}<span class="muted" style="font-size:.9rem">/${p.settings.dailyLessons}</span></div><div class="stat-label">Lessons</div></div>
           </div>
           <p class="small muted" style="margin:12px 0 0">${nextAt ? `Next review ${esc(whenPhrase(nextAt, t))} (${relPhrase(nextAt, t)}).` : (dueNow ? 'Reviews are waiting for you.' : 'No reviews scheduled — do some lessons to get started.')}</p>
+          <p class="small muted" style="margin:6px 0 0">Pace: <strong>${esc(p.settings.dailyLessons)}</strong> new items a day · <a href="#/settings">change</a></p>
         </div>
         <div class="card">
           <h2>Next 24 hours <span class="muted">${plural(upcoming, 'review')}</span></h2>
@@ -902,7 +923,7 @@ function renderItem(id) {
               ${item.jlpt ? `<span class="pill">JLPT N${esc(item.jlpt)}</span>` : ''}
               ${item.freq ? `<span class="pill">Frequency #${esc(item.freq)}</span>` : ''}
             </div>
-            ${!entry ? `<div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="start-now">I already know this — add to circulation</button></div>` : ''}
+            ${!entry ? `<div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="start-now">Seen before — add to circulation</button></div>` : ''}
           </div>
         </div>
       </div>
@@ -991,7 +1012,7 @@ function wireStartNow(id) {
   if (!btn) return;
   btn.addEventListener('click', () => {
     setProgress(engine.startManually(app.progress, [id], now()), { immediate: true });
-    toast('Added to circulation — first review in about 4 hours', 'ok');
+    toast('Added to circulation — it is in your reviews now', 'ok');
     renderItem(id);
   });
 }
@@ -1163,8 +1184,8 @@ function renderGrid() {
       <div class="card kgrid-select fade-in">
         <div class="kgrid-select-head">
           <div>
-            <h2>Add kanji you already know</h2>
-            <p class="muted small">Click grey boxes to select them, or type the kanji below. They go straight into circulation at Apprentice 1, with the first review in about 4 hours, and do not use today's lesson allowance. Lessons carry on from the remaining kanji in order.</p>
+            <h2>Mark kanji as seen before</h2>
+            <p class="muted small">Click boxes, drag across them, shift-click a range, click a level number to take the whole level, or type the kanji below. Right-click any box for a quick menu. Marked kanji go straight into your reviews at Apprentice 1, do not use today's lesson allowance, and do not count against the apprentice cap. Lessons carry on from the remaining kanji in order.</p>
           </div>
           <button class="btn btn-ghost btn-sm" type="button" data-act="cancel-select">Cancel</button>
         </div>
@@ -1175,7 +1196,7 @@ function renderGrid() {
         </div>
       </div>` : `
       <div class="btn-row">
-        <button class="btn btn-sm" type="button" data-act="start-select">Add kanji you already know</button>
+        <button class="btn btn-sm" type="button" data-act="start-select">Mark kanji as seen before</button>
       </div>`}
       <div class="kgrid${prefs.byLevel ? ' is-by-level' : ''}${selecting ? ' is-selecting' : ''}">${cells.join('')}</div>
       ${selecting ? `
@@ -1221,14 +1242,62 @@ function renderGrid() {
     return true;
   };
 
+  // Click toggles; shift+click selects the range since the last click;
+  // press and drag paints a selection; clicking a level number takes the
+  // whole level.
+  let lastClicked = null;
+  const cellsInOrder = () => $$('.kcell.is-selectable', grid);
+  const paint = { on: false, value: true, moved: false };
   grid.addEventListener('click', (e) => {
+    const lvl = e.target.closest('.kgrid-level');
+    if (lvl) {
+      e.preventDefault();
+      const n = Number(lvl.textContent);
+      const ids = Object.keys(data.items).filter((id) => data.items[id].level === n && (!prefs.kanjiOnly || data.items[id].type === 'kanji'));
+      const allOn = ids.every((id) => gridSelect.ids.has(id) || engine.stageOf(p, id) > 0);
+      for (const id of ids) setSelected(id, !allOn);
+      syncBar();
+      return;
+    }
     const cell = e.target.closest('.kcell');
     if (!cell) return;
     e.preventDefault();
+    if (paint.moved) { paint.moved = false; return; }   // a drag already handled it
     if (!cell.classList.contains('is-selectable')) { toast('That kanji is already in circulation.'); return; }
-    setSelected(cell.dataset.id, !gridSelect.ids.has(cell.dataset.id));
+    const id = cell.dataset.id;
+    if (e.shiftKey && lastClicked) {
+      const all = cellsInOrder();
+      const a = all.findIndex((c) => c.dataset.id === lastClicked);
+      const b = all.findIndex((c) => c.dataset.id === id);
+      if (a >= 0 && b >= 0) {
+        for (let i = Math.min(a, b); i <= Math.max(a, b); i++) setSelected(all[i].dataset.id, true);
+        syncBar();
+        lastClicked = id;
+        return;
+      }
+    }
+    setSelected(id, !gridSelect.ids.has(id));
+    lastClicked = id;
     syncBar();
   });
+  grid.addEventListener('pointerdown', (e) => {
+    const cell = e.target.closest('.kcell.is-selectable');
+    if (!cell || e.button !== 0 || e.pointerType === 'touch') return;
+    e.preventDefault();   // no native link drag or text selection while painting
+    paint.on = true; paint.moved = false; paint.value = !gridSelect.ids.has(cell.dataset.id);
+  });
+  grid.addEventListener('dragstart', (e) => e.preventDefault());
+  grid.addEventListener('pointerover', (e) => {
+    if (!paint.on) return;
+    const cell = e.target.closest('.kcell.is-selectable');
+    if (!cell) return;
+    paint.moved = true;
+    setSelected(cell.dataset.id, paint.value);
+    syncBar();
+  });
+  const stopPaint = () => { paint.on = false; };
+  window.addEventListener('pointerup', stopPaint);
+  window.addEventListener('pointercancel', stopPaint);
 
   paste.addEventListener('input', () => {
     const chars = Array.from(paste.value).filter((c) => /[\u3400-\u9fff]/.test(c));
@@ -1259,19 +1328,77 @@ function renderGrid() {
     const ok = await confirmDialog({
       title: `Add ${plural(ids.length, 'kanji', 'kanji')} to circulation?`,
       body: `<div style="margin-bottom:10px">${chipList(ids.slice(0, 40))}${ids.length > 40 ? `<span class="muted small"> and ${ids.length - 40} more</span>` : ''}</div>
-             <p class="muted small">They start at Apprentice 1 and come back for review in about 4 hours. This does not use today's lesson allowance.</p>`,
+             <p class="muted small">They start at Apprentice 1 and are due for review straight away, so you can confirm them now. This does not use today's lesson allowance.</p>`,
       confirmLabel: 'Add to circulation',
     });
     if (!ok) return;
     setProgress(engine.startManually(app.progress, ids, now()), { immediate: true });
     backupIfNeeded(true);
     gridSelect.active = false; gridSelect.ids.clear();
-    toast(`${plural(ids.length, 'kanji', 'kanji')} added to circulation`, 'ok');
+    toast(`${plural(ids.length, 'kanji', 'kanji')} added — they are in your reviews now`, 'ok');
     renderGrid();
   });
   app.keyHandler = (e) => { if (e.key === 'Escape') { gridSelect.active = false; gridSelect.ids.clear(); renderGrid(); } };
-  app.cleanup = () => { gridSelect.active = false; gridSelect.ids.clear(); };
+  app.cleanup = () => { gridSelect.active = false; gridSelect.ids.clear(); window.removeEventListener('pointerup', stopPaint); window.removeEventListener('pointercancel', stopPaint); };
 }
+
+/** Right-click (or long-press) menu on a grid box. */
+function gridContextMenu(cell, x, y) {
+  closeContextMenu();
+  const id = cell.dataset.id;
+  const item = itemOf(id);
+  if (!item) return;
+  const stage = engine.stageOf(app.progress, id);
+  const menu = document.createElement('div');
+  menu.className = 'ctx-menu fade-in';
+  menu.setAttribute('role', 'menu');
+  menu.innerHTML = `
+    <div class="ctx-title"><span class="jp">${esc(item.char)}</span> ${esc(item.name)} <span class="muted">· ${esc(srs.stageName(stage))}</span></div>
+    ${stage === 0 ? `<button type="button" role="menuitem" data-act="add">Seen before — add to circulation</button>
+    <button type="button" role="menuitem" data-act="select">Select this and more…</button>` : ''}
+    <button type="button" role="menuitem" data-act="open">Open item page</button>`;
+  document.body.appendChild(menu);
+  const rect = menu.getBoundingClientRect();
+  menu.style.left = `${Math.max(8, Math.min(x, window.innerWidth - rect.width - 8))}px`;
+  menu.style.top = `${Math.max(8, Math.min(y, window.innerHeight - rect.height - 8))}px`;
+  menu.addEventListener('click', (e) => {
+    const act = e.target.closest('[data-act]');
+    if (!act) return;
+    closeContextMenu();
+    if (act.dataset.act === 'add') {
+      setProgress(engine.startManually(app.progress, [id], now()), { immediate: true });
+      toast(`${item.char} added — it is in your reviews now`, 'ok');
+      renderGrid();
+    } else if (act.dataset.act === 'select') {
+      gridSelect.active = true; gridSelect.ids.clear(); gridSelect.ids.add(id); renderGrid();
+    } else {
+      location.hash = itemHref(id);
+    }
+  });
+  app.contextMenu = menu;
+  const first = menu.querySelector('button');
+  if (first) first.focus();
+}
+
+function closeContextMenu() {
+  if (app.contextMenu) { app.contextMenu.remove(); app.contextMenu = null; }
+}
+document.addEventListener('click', (e) => { if (app.contextMenu && !e.target.closest('.ctx-menu')) closeContextMenu(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeContextMenu(); });
+document.addEventListener('contextmenu', (e) => {
+  const cell = e.target.closest('.kgrid .kcell');
+  if (!cell) return;
+  e.preventDefault();
+  gridContextMenu(cell, e.clientX, e.clientY);
+});
+// Long-press on touch devices opens the same menu.
+let pressTimer = null;
+document.addEventListener('pointerdown', (e) => {
+  const cell = e.target.closest('.kgrid .kcell');
+  if (!cell || e.pointerType !== 'touch') return;
+  pressTimer = setTimeout(() => { pressTimer = null; gridContextMenu(cell, e.clientX, e.clientY); }, 500);
+});
+['pointerup', 'pointercancel', 'pointermove'].forEach((ev) => document.addEventListener(ev, () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }));
 
 function renderStats() {
   const p = app.progress;
