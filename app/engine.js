@@ -325,6 +325,135 @@ export function retractWrong(session, id) {
   };
 }
 
+/* ---------------------------------------------------------------------- */
+/* Leeches and long-run statistics                                         */
+/* ---------------------------------------------------------------------- */
+
+export const LEECH_WINDOW = 8;      // answers looked at per item
+export const LEECH_MIN_WRONG = 3;   // wrong answers in that window
+
+/**
+ * Items the learner keeps missing: at least LEECH_MIN_WRONG wrong answers
+ * among the last LEECH_WINDOW, not burned, and not currently on a run of
+ * three correct answers (that counts as recovered). Sorted worst first.
+ */
+export function leeches(progress) {
+  const log = (progress && progress.reviews) || [];
+  const recent = {};   // id -> [ok, ...] newest first
+  for (let i = log.length - 1; i >= 0; i--) {
+    const e = log[i];
+    const arr = recent[e.id] || (recent[e.id] = []);
+    if (arr.length < LEECH_WINDOW) arr.push(!!e.ok);
+  }
+  const out = [];
+  for (const id in recent) {
+    const entry = progress.items[id];
+    if (!entry || entry.stage >= 9 || entry.stage === 0) continue;
+    const arr = recent[id];
+    const wrong = arr.filter((ok) => !ok).length;
+    if (wrong < LEECH_MIN_WRONG) continue;
+    if (arr.length >= 3 && arr[0] && arr[1] && arr[2]) continue;   // recovered
+    out.push({ id, recentWrong: wrong, recentTotal: arr.length, incorrect: Number(entry.incorrect) || 0, correct: Number(entry.correct) || 0 });
+  }
+  out.sort((a, b) => b.recentWrong - a.recentWrong || b.incorrect - a.incorrect || (a.id < b.id ? -1 : 1));
+  return out;
+}
+
+/** Accuracy per stage group, from log entries that recorded the stage. */
+export function accuracyByStage(progress) {
+  const out = {};
+  for (const g of GROUPS) out[g] = { ok: 0, total: 0 };
+  let counted = 0;
+  for (const e of (progress && progress.reviews) || []) {
+    if (typeof e.s !== 'number' || e.s < 1) continue;
+    const g = groupOf(e.s);
+    if (!out[g]) continue;
+    out[g].total += 1;
+    if (e.ok) out[g].ok += 1;
+    counted += 1;
+  }
+  return { groups: out, counted };
+}
+
+/**
+ * Cumulative number of items started, per local day, for the last `n` days
+ * ending today. Each point: { date, total }.
+ */
+export function learnedSeries(progress, now, n = 90) {
+  const nowMs = toMillis(now);
+  const startedDays = [];
+  for (const id in (progress && progress.items) || {}) {
+    const e = progress.items[id];
+    if (e && e.stage > 0 && e.startedAt) startedDays.push(dayKey(toMillis(e.startedAt)));
+  }
+  startedDays.sort();
+  const out = [];
+  let idx = 0;
+  for (let i = n - 1; i >= 0; i--) {
+    const d = new Date(nowMs); d.setDate(d.getDate() - i);
+    const key = dayKey(d);
+    while (idx < startedDays.length && startedDays[idx] <= key) idx++;
+    out.push({ date: key, total: idx });
+  }
+  return out;
+}
+
+/**
+ * Projected finish: how fast items have actually been started over the last
+ * `window` days, and when the remaining items will all be started at that
+ * rate, alongside the rate implied by the daily-lessons setting.
+ */
+export function projection(data, progress, now, window = 14) {
+  const nowMs = toMillis(now);
+  const total = Object.keys(data.items).length;
+  let started = 0, recent = 0;
+  const cutoff = nowMs - window * 86400000;
+  let earliest = null;
+  for (const id in progress.items) {
+    const e = progress.items[id];
+    if (!e || e.stage === 0) continue;
+    started += 1;
+    const t = e.startedAt ? toMillis(e.startedAt) : nowMs;
+    if (t >= cutoff) recent += 1;
+    if (earliest == null || t < earliest) earliest = t;
+  }
+  const remaining = total - started;
+  const daysObserved = earliest == null ? 0 : Math.max(1, Math.min(window, Math.ceil((nowMs - earliest) / 86400000)));
+  const rate = daysObserved ? recent / daysObserved : 0;
+  const settingRate = Number((progress.settings || {}).dailyLessons) || 0;
+  const eta = rate > 0 ? new Date(nowMs + (remaining / rate) * 86400000) : null;
+  const etaAtSetting = settingRate > 0 ? new Date(nowMs + (remaining / settingRate) * 86400000) : null;
+  return { total, started, remaining, rate, daysObserved, eta, settingRate, etaAtSetting };
+}
+
+/**
+ * Activity per day for a calendar heatmap: `weeks` columns of 7 days ending
+ * on today's week. Each cell: { date, count } (reviews + lessons + manual).
+ * The first column starts on a Monday; cells after today are null.
+ */
+export function heatmap(progress, now, weeks = 53) {
+  const nowMs = toMillis(now);
+  const today = new Date(nowMs); today.setHours(0, 0, 0, 0);
+  const dow = (today.getDay() + 6) % 7;            // Monday = 0
+  const start = new Date(today); start.setDate(today.getDate() - dow - (weeks - 1) * 7);
+  const days = (progress && progress.days) || {};
+  const cols = [];
+  let max = 0;
+  for (let w = 0; w < weeks; w++) {
+    const col = [];
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(start); date.setDate(start.getDate() + w * 7 + d);
+      if (date > today) { col.push(null); continue; }
+      const rec = days[dayKey(date)];
+      const count = rec ? (Number(rec.reviews) || 0) + (Number(rec.lessons) || 0) + (Number(rec.manual) || 0) : 0;
+      if (count > max) max = count;
+      col.push({ date: dayKey(date), count, month: date.getMonth(), day: date.getDate() });
+    }
+    cols.push(col);
+  }
+  return { cols, max };
+}
+
 /**
  * Wrap up: keep only items already in progress (answered wrongly at least
  * once and not yet completed); everything untouched is dropped so the
@@ -381,7 +510,7 @@ export function applyReview(progress, id, wrong, now) {
   const day = Object.assign({ lessons: 0, reviews: 0, correct: 0 }, progress.days && progress.days[key]);
   day.reviews += 1;
   if (ok) day.correct += 1;
-  let reviews = (progress.reviews || []).concat([{ t: iso, id, ok }]);
+  let reviews = (progress.reviews || []).concat([{ t: iso, id, ok, s: Number(prev.stage) || 0 }]);
   if (reviews.length > REVIEW_LOG_CAP) reviews = reviews.slice(reviews.length - REVIEW_LOG_CAP);
   return Object.assign({}, progress, {
     updatedAt: iso,

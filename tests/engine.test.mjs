@@ -9,6 +9,7 @@ import {
   wrapUp, sessionStats, applyReview, REQUEUE_MIN, REQUEUE_MAX, REVIEW_LOG_CAP,
   currentLevel, levelProgress, forecast, nextReviewAt, streak, recentMistakes,
   dailyHistory, overallAccuracy, dayKey, calendarDaysBetween,
+  leeches, accuracyByStage, learnedSeries, projection, heatmap,
 } from '../app/engine.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -308,7 +309,7 @@ export const tests = {
     assert.strictEqual(e.due, iso(Math.floor(NOW.getTime() / HOUR) * HOUR + 24 * HOUR));
     assert.strictEqual(e.correct, 4);
     assert.strictEqual(e.incorrect, 1);
-    assert.deepStrictEqual(next.reviews, [{ t: iso(NOW), id: 'k:一', ok: true }]);
+    assert.deepStrictEqual(next.reviews, [{ t: iso(NOW), id: 'k:一', ok: true, s: 2 }]);
     assert.deepStrictEqual(next.days[dayKey(NOW)], { lessons: 0, reviews: 1, correct: 1 });
     assert.strictEqual(p.items['k:一'].stage, 2, 'input not mutated');
   },
@@ -526,5 +527,69 @@ export const tests = {
     assert.strictEqual(r.session.wrong[a], undefined);
     assert.deepStrictEqual(r.session.done, [{ id: a, wrong: 0 }]);
     assert.strictEqual(retractWrong(r.session, b).session, r.session, 'nothing to retract');
+  },
+  'leeches: repeated misses flag an item, a run of three correct clears it': () => {
+    const [a, b] = orderedIds(data);
+    const p = progressWith({ [a]: 3, [b]: 3 });
+    const log = [];
+    for (const ok of [true, false, false, true, false]) log.push({ t: plus(-HOUR), id: a, ok, s: 2 });
+    for (const ok of [false, false, false, true, true, true]) log.push({ t: plus(-HOUR), id: b, ok, s: 2 });
+    p.reviews = log;
+    const l = leeches(p);
+    assert.deepStrictEqual(l.map((x) => x.id), [a]);
+    assert.strictEqual(l[0].recentWrong, 3);
+  },
+  'leeches ignore burned items and need three misses': () => {
+    const [a, b] = orderedIds(data);
+    const p = progressWith({ [a]: 9, [b]: 2 });
+    p.reviews = [
+      { t: plus(0), id: a, ok: false, s: 8 }, { t: plus(0), id: a, ok: false, s: 8 }, { t: plus(0), id: a, ok: false, s: 8 },
+      { t: plus(0), id: b, ok: false, s: 2 }, { t: plus(0), id: b, ok: false, s: 2 }, { t: plus(0), id: b, ok: true, s: 2 },
+    ];
+    assert.deepStrictEqual(leeches(p), []);
+  },
+  'applyReview records the stage at answer time and accuracyByStage reads it': () => {
+    const [a] = orderedIds(data);
+    let p = progressWith({ [a]: 5 });
+    p = applyReview(p, a, 0, NOW);
+    assert.strictEqual(p.reviews[p.reviews.length - 1].s, 5);
+    p = applyReview(p, a, 1, plus(HOUR * 200));
+    const acc = accuracyByStage(p);
+    assert.strictEqual(acc.counted, 2);
+    assert.deepStrictEqual(acc.groups.guru, { ok: 1, total: 2 }, 'stage 5 then stage 6 are both guru');
+  },
+  'learnedSeries is cumulative and ends at today': () => {
+    const [a, b, c] = orderedIds(data);
+    const p = progressWith({ [a]: 1, [b]: 1, [c]: 1 });
+    p.items[a].startedAt = plus(-3 * 86400000);
+    p.items[b].startedAt = plus(-3 * 86400000);
+    p.items[c].startedAt = plus(0);
+    const s = learnedSeries(p, NOW, 5);
+    assert.deepStrictEqual(s.map((x) => x.total), [0, 2, 2, 2, 3]);
+    assert.strictEqual(s[4].date, dayKey(NOW));
+  },
+  'projection uses the observed rate and the setting': () => {
+    const ids = orderedIds(data);
+    const p = progressWith({ [ids[0]]: 1, [ids[1]]: 1 });
+    p.items[ids[0]].startedAt = plus(-86400000);
+    p.items[ids[1]].startedAt = plus(0);
+    p.settings.dailyLessons = 4;
+    const pr = projection(data, p, NOW);
+    assert.strictEqual(pr.started, 2);
+    assert.strictEqual(pr.remaining, ids.length - 2);
+    assert.ok(pr.rate > 0 && pr.eta instanceof Date);
+    assert.strictEqual(Math.round((pr.etaAtSetting - NOW) / 86400000), Math.round(pr.remaining / 4));
+    assert.strictEqual(projection(data, progressWith({}), NOW).eta, null);
+  },
+  'heatmap covers the requested weeks and never goes past today': () => {
+    const p = progressWith({}, { days: { [dayKey(NOW)]: { lessons: 2, reviews: 5, correct: 4, manual: 1 } } });
+    const h = heatmap(p, NOW, 4);
+    assert.strictEqual(h.cols.length, 4);
+    const cells = h.cols.flat().filter(Boolean);
+    assert.strictEqual(cells[cells.length - 1].date, dayKey(NOW));
+    assert.strictEqual(cells[cells.length - 1].count, 8);
+    assert.strictEqual(h.max, 8);
+    const future = h.cols[3].filter((c) => c === null).length;
+    assert.strictEqual(future, 6 - ((NOW.getDay() + 6) % 7));
   },
 };

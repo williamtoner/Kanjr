@@ -321,6 +321,17 @@ function emptyState(glyph, title, body, actions = '') {
  *   affectsSrs     shows "no SRS effect" note when false
  * @returns {{destroy: Function}}
  */
+const GLYPH_FONTS = ['', 'font-mincho', 'font-pen', 'font-hand'];
+
+/** A typeface for this item in this session: fixed per item so a retry looks the same. */
+function glyphFont(item, session) {
+  if (!app.progress.settings.fontVariety || !item || item.type !== 'kanji') return '';
+  let h = 0;
+  const key = item.id + (session && session.startedAt || '');
+  for (let i = 0; i < key.length; i++) h = (h * 31 + key.charCodeAt(i)) >>> 0;
+  return GLYPH_FONTS[h % GLYPH_FONTS.length];
+}
+
 function mountQuiz(root, opts) {
   let session = opts.session;
   // `answeredId` and `counter` freeze what the feedback phase shows: the
@@ -366,7 +377,7 @@ function mountQuiz(root, opts) {
 
         <div class="card glyph-card type-${esc(item.type)} ${stateCls} ${view.phase === 'feedback' && view.result === 'wrong' ? 'shake' : ''}" data-role="card">
           <div class="glyph-type">${typeBadge(item)}</div>
-          <div class="glyph">${esc(item.char)}</div>
+          <div class="glyph ${esc(glyphFont(item, session))}">${esc(item.char)}</div>
           <div class="glyph-prompt">${typeLabel(item)} <strong>meaning</strong>${wrongSoFar ? ` · <span class="muted">missed ${wrongSoFar}×</span>` : ''}</div>
         </div>
 
@@ -435,7 +446,7 @@ function mountQuiz(root, opts) {
         ` : ''}
         <div class="feedback-actions">
           ${view.result !== 'wrong' ? `<button class="btn btn-sm" data-act="info">${view.info ? 'Hide' : 'Show'} details <kbd>?</kbd></button>` : ''}
-          ${view.result === 'wrong' && normalise(view.lastInput) ? `<button class="btn btn-sm" data-act="accept-syn" title="Mark this answer correct and accept it for this item from now on">My answer was right: accept “${esc(normalise(view.lastInput))}”</button>` : ''}
+          ${view.result === 'wrong' && normalise(view.lastInput) ? `<button class="btn btn-sm" data-act="accept-syn" title="Overrides this answer as correct and accepts “${esc(normalise(view.lastInput))}” for this item from now on">No, I got this right <kbd>R</kbd></button>` : ''}
           <button class="btn btn-primary btn-sm" data-act="next">Continue <kbd>Enter</kbd></button>
         </div>
       </div>`;
@@ -491,7 +502,7 @@ function mountQuiz(root, opts) {
     opts.onSession(session);
     if (opts.affectsSrs !== false) opts.onCorrect(id, r.wrong);
     view.result = 'exact';
-    toast(`“${word}” accepted for ${itemOf(id).char}`, 'ok');
+    toast(`Marked correct — “${word}” is now accepted for ${itemOf(id).char}`, 'ok');
     render();
   }
 
@@ -540,6 +551,7 @@ function mountQuiz(root, opts) {
       return;
     }
     if (e.key === 'Enter' && view.phase === 'feedback') { e.preventDefault(); next(); }
+    if ((e.key === 'r' || e.key === 'R') && view.phase === 'feedback' && view.result === 'wrong' && !e.ctrlKey && !e.metaKey) { e.preventDefault(); acceptAsSynonym(); }
   }
 
   app.keyHandler = onKey;
@@ -569,6 +581,7 @@ function renderHome() {
   const streak = engine.streak(p.days, t);
   const groups = engine.groupCounts(p, data);
   const mistakes = engine.recentMistakes(p, 12);
+  const leechList = engine.leeches(p);
   const blockReason = lessons.length ? null : engine.lessonBlockReason(data, p, t);
   const hasSession = !!(app.session && app.session.queue.length);
 
@@ -640,6 +653,9 @@ function renderHome() {
         </div>
       </div>
 
+      ${leechList.length ? `<div class="card"><h2>Leeches <span class="muted">${plural(leechList.length, 'item')} you keep missing</span></h2>
+        <div style="margin-bottom:12px">${chipList(leechList.map((l) => l.id))}</div>
+        <div class="btn-row"><a class="btn btn-sm btn-primary" href="#/drill/leeches">Drill leeches</a><a class="btn btn-sm btn-ghost" href="#/stats">Details</a></div></div>` : ''}
       ${mistakes.length ? `<div class="card"><h2>Recent mistakes</h2>${chipList(mistakes)}</div>` : ''}
 
       ${!Object.keys(p.items).length ? `
@@ -900,6 +916,7 @@ function renderItem(id) {
   const syn = p.synonyms[id] || [];
   const note = p.notes[id] || '';
   const unlocked = engine.isUnlocked(item, p, p.settings.unlockStage);
+  const isLeech = engine.leeches(p).some((l) => l.id === id);
   const alt = Array.isArray(item.alt) ? item.alt : [];
   const total = entry ? entry.correct + entry.incorrect : 0;
 
@@ -913,7 +930,7 @@ function renderItem(id) {
         <div class="item-head">
           <div class="glyph">${esc(item.char)}</div>
           <div class="item-title">
-            <div class="btn-row" style="margin-bottom:6px">${typeBadge(item)} ${stageBadge(stage)} ${!entry && !unlocked ? '<span class="badge stage-locked">Locked</span>' : ''}</div>
+            <div class="btn-row" style="margin-bottom:6px">${typeBadge(item)} ${stageBadge(stage)} ${!entry && !unlocked ? '<span class="badge stage-locked">Locked</span>' : ''}${isLeech ? '<span class="badge leech" title="Missed repeatedly — try rewriting the mnemonic in your own words">Leech</span>' : ''}</div>
             <h1>${esc(item.name)}</h1>
             ${alt.length ? `<p class="muted">also: ${esc(alt.join(', '))}</p>` : ''}
             <div class="item-facts">
@@ -958,6 +975,7 @@ function renderItem(id) {
         ${mnemonicBlock(item, '')}
         ${item.type === 'radical' && item.note ? `<p class="muted small" style="margin-top:8px">${esc(item.note)}</p>` : ''}
         <div class="section-label">Your note</div>
+        ${isLeech ? '<p class="small muted" style="margin:0 0 8px">This one keeps slipping. Rewrite the mnemonic here in your own words, with a picture that is vivid to you; then run a <a href="#/drill/leeches">leech drill</a>.</p>' : ''}
         <textarea data-role="note" placeholder="Write your own mnemonic or reminder…" aria-label="Your note">${esc(note)}</textarea>
         <div class="small muted" data-role="note-status" style="margin-top:4px">Saved automatically.</div>
       </div>
@@ -1401,6 +1419,89 @@ document.addEventListener('pointerdown', (e) => {
 });
 ['pointerup', 'pointercancel', 'pointermove'].forEach((ev) => document.addEventListener(ev, () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }));
 
+/* ---------- Leech drill: extra practice that never touches the SRS ---------- */
+
+function renderLeechDrill() {
+  const ids = engine.leeches(app.progress).map((l) => l.id);
+  if (!ids.length) {
+    main.innerHTML = `<section class="screen">${emptyState('無', 'No leeches right now', 'Items you miss three times in a recent stretch show up here for extra practice.', '<a class="btn btn-primary" href="#/">Home</a>')}</section>`;
+    return;
+  }
+  let session = engine.createSession(engine.shuffle(ids), now());
+  main.innerHTML = `
+    <section class="screen lesson">
+      <div class="screen-head"><h1>Leech drill</h1><span class="muted small">${plural(ids.length, 'item')} · practice only, the SRS is not changed</span></div>
+      <div data-role="quiz"></div>
+    </section>`;
+  const host = $('[data-role="quiz"]', main);
+  const view = mountQuiz(host, {
+    session,
+    lightning: app.progress.settings.lightning,
+    affectsSrs: false,
+    onSession(s2) { session = s2; },
+    onCorrect() { /* practice only */ },
+    onWrapUp() { /* nothing to persist */ },
+    onFinish(s2) {
+      view.destroy();
+      const stats = engine.sessionStats(s2);
+      const missed = s2.done.filter((d) => d.wrong > 0).map((d) => d.id);
+      main.innerHTML = `
+        <section class="screen lesson">
+          <div class="card session-summary fade-in">
+            <div class="big-number">${stats.done ? pct(stats.accuracy) : '—'}</div>
+            <h2>${stats.firstTry} of ${plural(stats.done, 'leech', 'leeches')} right first time</h2>
+            <p class="muted">Still slipping? Open the item and rewrite its mnemonic in your own words; a story you made yourself sticks better.</p>
+            ${missed.length ? `<div class="section-label" style="text-align:left">Missed again</div><div style="text-align:left">${chipList(missed)}</div>` : ''}
+            <div class="btn-row" style="justify-content:center;margin-top:16px">
+              <a class="btn btn-primary" href="#/drill/leeches">Drill again</a>
+              <a class="btn" href="#/">Home</a>
+            </div>
+          </div>
+        </section>`;
+    },
+  });
+  app.cleanup = () => view.destroy();
+}
+
+/* ---------- Stats helpers ---------- */
+
+function heatmapHtml(h) {
+  const level = (c) => (!h.max || !c.count ? 0 : Math.min(4, Math.ceil((c.count / h.max) * 4)));
+  const months = h.cols.map((col, i) => {
+    const first = col.find(Boolean);
+    const prev = i ? h.cols[i - 1].find(Boolean) : null;
+    return first && (!prev || prev.month !== first.month) ? `<span>${new Date(first.date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short' })}</span>` : '<span></span>';
+  }).join('');
+  const cells = h.cols.map((col) => col.map((c) => c
+    ? `<i class="h${level(c)}" title="${esc(c.date)} · ${plural(c.count, 'item')}"></i>`
+    : '<i class="future"></i>').join('')).join('');
+  return `<div class="heatmap-wrap"><div class="heatmap-months">${months}</div><div class="heatmap" role="img" aria-label="Daily activity for the last year">${cells}</div></div>
+    <div class="heatmap-legend">Less <i></i><i class="h1"></i><i class="h2"></i><i class="h3"></i><i class="h4"></i> More</div>`;
+}
+
+function areaChart(series, { width = 640, height = 170, label = '' } = {}) {
+  const n = series.length;
+  if (!n) return '';
+  const max = Math.max(1, ...series.map((d) => d.total));
+  const padL = 36, padR = 16, padT = 14, padB = 24;
+  const w = width - padL - padR, hgt = height - padT - padB;
+  const x = (i) => padL + (n === 1 ? 0 : (i / (n - 1)) * w);
+  const y = (v) => padT + hgt - (v / max) * hgt;
+  const pts = series.map((d, i) => `${x(i).toFixed(1)},${y(d.total).toFixed(1)}`);
+  const line = `M${pts.join(' L')}`;
+  const area = `${line} L${x(n - 1).toFixed(1)},${(padT + hgt).toFixed(1)} L${x(0).toFixed(1)},${(padT + hgt).toFixed(1)} Z`;
+  const ticks = [0, Math.round(max / 2), max];
+  const fmt = (k) => new Date(k + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return `<svg class="area-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(label)}">
+    ${ticks.map((v) => `<line class="axis" x1="${padL}" x2="${width - padR}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke-dasharray="2 4"/><text x="${padL - 6}" y="${(y(v) + 4).toFixed(1)}" text-anchor="end">${v}</text>`).join('')}
+    <path class="fill" d="${area}"/><path class="line" d="${line}"/>
+    <circle cx="${x(n - 1).toFixed(1)}" cy="${y(series[n - 1].total).toFixed(1)}" r="3.5" fill="var(--accent)"/>
+    <text class="end" x="${(x(n - 1) - 8).toFixed(1)}" y="${(y(series[n - 1].total) + (series[n - 1].total > max * 0.85 ? 16 : -8)).toFixed(1)}" text-anchor="end">${series[n - 1].total}</text>
+    <text x="${padL}" y="${height - 6}">${esc(fmt(series[0].date))}</text>
+    <text x="${width - padR}" y="${height - 6}" text-anchor="end">${esc(fmt(series[n - 1].date))}</text>
+  </svg>`;
+}
+
 function renderStats() {
   const p = app.progress;
   const data = app.data;
@@ -1442,6 +1543,14 @@ function renderStats() {
     return { level: lv.level, started, passed: allGuru ? lastGuru : null, lp };
   }).filter(Boolean);
 
+  const leechList = engine.leeches(p);
+  const acc = engine.accuracyByStage(p);
+  const learned = engine.learnedSeries(p, t, 90);
+  const proj = engine.projection(data, p, t);
+  const heat = engine.heatmap(p, t, 53);
+  const kanjiStarted = Object.keys(p.items).filter((id) => p.items[id].stage > 0 && data.items[id] && data.items[id].type === 'kanji').length;
+  const kanjiTotal = Object.values(data.items).filter((i) => i.type === 'kanji').length;
+
   main.innerHTML = `
     <section class="screen stack">
       <div class="screen-head"><h1>Stats</h1><span class="muted small">${Object.keys(p.items).length} of ${totalItems} items started</span></div>
@@ -1471,6 +1580,45 @@ function renderStats() {
             <div class="group-count" style="background:var(--surface-3);color:var(--text)"><div class="n">${groups.locked}</div><div class="l">locked</div></div>
           </div>
         </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Projected finish</h2>
+          <dl class="kv">
+            <dt>Kanji started</dt><dd>${kanjiStarted} of ${kanjiTotal} (${pct(kanjiTotal ? kanjiStarted / kanjiTotal : 0)})</dd>
+            <dt>Your pace</dt><dd>${proj.rate ? `${proj.rate.toFixed(1)} new items a day <span class="muted">(last ${plural(proj.daysObserved, 'day')})</span>` : '—'}</dd>
+            <dt>All items at your pace</dt><dd>${proj.eta ? `${esc(fmtDate(proj.eta))} <span class="muted">(${Math.round((proj.eta - t) / 86400000)} days)</span>` : 'Start a few lessons to see a projection'}</dd>
+            <dt>At ${proj.settingRate} a day</dt><dd>${proj.etaAtSetting ? `${esc(fmtDate(proj.etaAtSetting))} <span class="muted">(${Math.round((proj.etaAtSetting - t) / 86400000)} days)</span>` : '—'}</dd>
+          </dl>
+        </div>
+        <div class="card">
+          <h2>Accuracy by stage <span class="muted">${acc.counted ? `${acc.counted} answers` : 'collected from now on'}</span></h2>
+          <div class="stage-acc">
+            ${srs.GROUPS.filter((g) => g !== 'burned').map((g) => { const r = acc.groups[g]; const v = r.total ? r.ok / r.total : 0; return `
+              <div class="row"><span>${g[0].toUpperCase() + g.slice(1)}</span>
+                <div class="track"><div style="width:${v * 100}%;background:var(--${g})"></div></div>
+                <span class="n">${r.total ? pct(v) : '—'}</span></div>`; }).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Items learned <span class="muted">cumulative, last 90 days</span></h2>
+        ${areaChart(learned, { label: 'Items started over the last 90 days' })}
+      </div>
+
+      <div class="card">
+        <h2>Activity <span class="muted">last 12 months · reviews and lessons per day</span></h2>
+        ${heatmapHtml(heat)}
+      </div>
+
+      <div class="card">
+        <h2>Leeches <span class="muted">${leechList.length ? `${plural(leechList.length, 'item')} missed ${engine.LEECH_MIN_WRONG}+ times in their last ${engine.LEECH_WINDOW} answers` : 'none right now'}</span></h2>
+        ${leechList.length ? `<ul class="leech-list">${leechList.map((l) => { const it = itemOf(l.id); return `
+          <li><a class="jp" href="${itemHref(l.id)}">${esc(it ? it.char : l.id)}</a><span>${esc(it ? it.name : '')} <span class="muted">· ${esc(srs.stageName(engine.stageOf(p, l.id)))}</span></span><span class="n">${l.recentWrong}/${l.recentTotal} wrong</span></li>`; }).join('')}</ul>
+          <div class="btn-row" style="margin-top:12px"><a class="btn btn-primary btn-sm" href="#/drill/leeches">Drill leeches</a></div>`
+        : '<p class="muted">Items you keep missing will be listed here with an extra drill. A run of three correct answers clears one.</p>'}
       </div>
 
       <div class="card">
@@ -1535,6 +1683,7 @@ function renderSettings() {
       <div class="card">
         <h2>Reviews</h2>
         ${toggle('lightning', 'Lightning mode', 'Move on automatically after a correct answer.')}
+        ${toggle('fontVariety', 'Typeface variety in reviews', 'Show kanji in a rotating set of typefaces (Gothic, Mincho, pen, handwriting) so recognition is not tied to one design.')}
         ${toggle('typoTolerance', 'Typo tolerance', 'Accept answers within a small edit distance (0 for ≤3 letters, up to 3 for long ones).')}
       </div>
 
@@ -1700,7 +1849,7 @@ function route() {
   app.keyHandler = null;
   const parts = parseRoute();
   const head = parts[0] || 'home';
-  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'levels', grid: 'grid', stats: 'stats', settings: 'settings' }[head] || '';
+  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'levels', grid: 'grid', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
   $$('#nav a').forEach((a) => {
     if (a.dataset.route === routeName) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
@@ -1721,6 +1870,7 @@ function route() {
         } else renderLevels();
         break;
       case 'grid': renderGrid(); break;
+      case 'drill': renderLeechDrill(); break;
       case 'stats': renderStats(); break;
       case 'settings': renderSettings(); break;
       default: renderNotFound();
@@ -1730,7 +1880,7 @@ function route() {
     main.innerHTML = `<section class="screen">${emptyState('誤', 'Something went wrong', `<span class="small muted">${esc(err && err.message)}</span>`, '<a class="btn btn-primary" href="#/">Home</a>')}</section>`;
   }
   window.scrollTo({ top: 0 });
-  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Grid · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
+  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Grid · Kanjr', drill: 'Leech drill · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
 }
 
 function showBanner(html, { kind = '', dismiss = null } = {}) {

@@ -814,3 +814,42 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 .kgrid-key { display: inline-flex; align-items: center; gap: 6px; }
 .kgrid-key .dot + .dot { margin-left: -3px; }
 .kgrid-key .dot { box-shadow: 0 0 0 1.5px var(--surface); }
+
+/* --- Review typeface variety ------------------------------------------- */
+.glyph.font-mincho { font-family: "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", "MS Mincho", serif; font-weight: 500; }
+.glyph.font-pen { font-family: "Klee One", "Noto Sans JP", sans-serif; font-weight: 600; }
+.glyph.font-hand { font-family: "Zen Kurenaido", "Noto Sans JP", sans-serif; }
+.glyph-font-note { font-size: 0.6875rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-top: 2px; }
+
+/* --- Leeches ------------------------------------------------------------ */
+.badge.leech { background: var(--warn-soft); color: var(--warn); }
+.leech-list { display: grid; gap: 6px; }
+.leech-list li { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+.leech-list li:last-child { border-bottom: 0; }
+.leech-list .jp { font-size: 1.4rem; }
+.leech-list .n { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* --- Stats: heatmap, area chart, stage accuracy ----------------------- */
+.heatmap-wrap { overflow-x: auto; padding-bottom: 4px; }
+.heatmap { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 11px); gap: 3px; width: max-content; }
+.heatmap i { display: block; width: 11px; height: 11px; border-radius: 2px; background: var(--surface-3); }
+.heatmap i.h1 { background: color-mix(in srgb, var(--accent) 25%, var(--surface-3)); }
+.heatmap i.h2 { background: color-mix(in srgb, var(--accent) 50%, var(--surface-3)); }
+.heatmap i.h3 { background: color-mix(in srgb, var(--accent) 75%, var(--surface-3)); }
+.heatmap i.h4 { background: var(--accent); }
+.heatmap i.future { visibility: hidden; }
+.heatmap-months { display: grid; grid-auto-flow: column; width: max-content; font-size: 0.6875rem; color: var(--muted); margin-bottom: 4px; }
+.heatmap-months span { width: 14px; white-space: nowrap; overflow: visible; }
+.heatmap-legend { display: flex; align-items: center; gap: 4px; font-size: 0.6875rem; color: var(--muted); margin-top: 8px; }
+.heatmap-legend i { width: 11px; height: 11px; border-radius: 2px; display: inline-block; background: var(--surface-3); }
+.area-chart { width: 100%; height: auto; display: block; }
+.area-chart .axis { stroke: var(--border-strong); stroke-width: 1; }
+.area-chart .fill { fill: var(--accent); opacity: 0.18; }
+.area-chart .line { fill: none; stroke: var(--accent); stroke-width: 2; }
+.area-chart text { fill: var(--muted); font-size: 11px; font-family: var(--font-ui); }
+.area-chart .end { fill: var(--text); font-weight: 600; }
+.stage-acc { display: grid; gap: 8px; }
+.stage-acc .row { display: grid; grid-template-columns: 96px 1fr 64px; align-items: center; gap: 10px; font-size: 0.875rem; }
+.stage-acc .track { height: 10px; border-radius: 5px; background: var(--surface-3); overflow: hidden; }
+.stage-acc .track div { height: 100%; border-radius: 5px; }
+.stage-acc .n { text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }

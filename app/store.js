@@ -26,6 +26,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   unlockStage: 3,
   lessonBatch: 5,
   lightning: false,
+  fontVariety: true,
   theme: 'auto',
   typoTolerance: true,
 });
@@ -113,6 +114,7 @@ export function validateProgress(raw) {
       correct: Math.max(0, Math.trunc(Number(e.correct) || 0)),
       incorrect: Math.max(0, Math.trunc(Number(e.incorrect) || 0)),
     };
+    if (e.manual) out.items[id].manual = true;   // marked "seen before": exempt from the apprentice cap
   }
   const synonyms = isObject(raw.synonyms) ? raw.synonyms : {};
   for (const id in synonyms) {
@@ -127,7 +129,9 @@ export function validateProgress(raw) {
   }
   for (const r of raw.reviews || []) {
     if (isObject(r) && typeof r.id === 'string' && typeof r.t === 'string') {
-      out.reviews.push({ t: r.t, id: r.id, ok: !!r.ok });
+      const entry = { t: r.t, id: r.id, ok: !!r.ok };
+      if (typeof r.s === 'number') entry.s = r.s;   // stage at answer time, for accuracy by stage
+      out.reviews.push(entry);
     }
   }
   const days = raw.days || {};
@@ -139,6 +143,7 @@ export function validateProgress(raw) {
       reviews: Math.max(0, Math.trunc(Number(d.reviews) || 0)),
       correct: Math.max(0, Math.trunc(Number(d.correct) || 0)),
     };
+    if (d.manual) out.days[key].manual = Math.max(0, Math.trunc(Number(d.manual) || 0));
   }
   return { ok: true, progress: out };
 }
@@ -152,6 +157,7 @@ export function normaliseSettings(raw) {
     s[key] = Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : DEFAULT_SETTINGS[key];
   }
   s.lightning = !!s.lightning;
+  s.fontVariety = s.fontVariety !== false;
   s.typoTolerance = s.typoTolerance !== false;
   s.theme = ['auto', 'light', 'dark'].includes(s.theme) ? s.theme : 'auto';
   return s;

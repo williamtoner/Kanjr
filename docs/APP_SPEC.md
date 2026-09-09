@@ -111,7 +111,7 @@ Groups: apprentice 1–4, guru 5–6, master 7, enlightened 8, burned 9.
   "createdAt": "…", "updatedAt": "…",
   "settings": { "dailyLessons": 10, "apprenticeCap": 120, "unlockStage": 3,
                 "lessonBatch": 5, "lightning": false, "theme": "auto",
-                "typoTolerance": true },
+                "typoTolerance": true, "fontVariety": true },
   "items": { "k:日": { "stage": 3, "due": "2026-09-09T10:00:00Z",
                        "startedAt": "…", "guruAt": null, "burnedAt": null,
                        "correct": 5, "incorrect": 1 } },
@@ -167,8 +167,9 @@ for cross-item collisions. Any user synonym is accepted. Comparison also runs on
 (leading "to"/"a"/"an"/"the" dropped, simple plurals singularised), and the
 build merges `data/overrides/synonyms.csv` groups into each item's
 alternates so "dirt" works for 土 "soil". On a wrong answer the feedback
-offers "My answer was right: accept …", which stores the word as a user
-synonym and retracts the miss (`engine.retractWrong`). Digits stand for
+offers "No, I got this right" (key `R`), which overrides the miss: the word
+is stored as a user synonym and the wrong answer is retracted
+(`engine.retractWrong`), so the item advances as if answered correctly. Digits stand for
 number words ("7" = seven, "10,000" = ten thousand).
 
 ## Screens (app.js) — hash routes
@@ -204,8 +205,17 @@ number words ("7" = seven, "10,000" = ten thousand).
   to take the whole level, right-click (long-press on touch) any box for a
   menu with "Seen before — add to circulation". Manually added items are due
   immediately, flagged `manual`, and excluded from the apprentice cap.
-- `#/stats` **Stats**: totals by stage, accuracy over time, reviews per day
-  (last 30 days bars), 7-day forecast, level timeline.
+- `#/stats` **Stats**: totals by stage, projected finish (observed pace over
+  the last 14 days and the pace implied by the setting), accuracy by stage
+  (from the `s` field logged with each review), cumulative items learned
+  (90-day area chart), a 12-month activity heatmap, the leech list, accuracy
+  over time, reviews per day (last 30 days bars), 7-day forecast, level
+  timeline.
+- `#/drill/leeches` **Leech drill**: a practice quiz over `engine.leeches`
+  (items with 3+ wrong among their last 8 answers, not burned, not on a run
+  of three correct). Never touches the SRS. Home shows a leech card with the
+  drill button; the item page shows a Leech badge and a nudge to rewrite the
+  mnemonic.
 - `#/settings` **Settings**: pace (dailyLessons), apprentice cap, unlock
   stage, batch size, lightning, theme, typo tolerance; export/import; backups;
   reset with confirmation; about + licences (link to `../data/LICENSES.md`).
@@ -224,6 +234,9 @@ tab; focus rings visible.
   slate, so a grid reads as one spectrum of progress.
 - Neutral UI: near-white background, slate text; dark theme swaps to a slate
   background. Respect `prefers-color-scheme` and the theme setting.
+- Typeface variety (setting `fontVariety`, default on): review glyphs rotate
+  per item between Noto Sans JP, Noto Serif JP, Klee One and Zen Kurenaido so
+  recognition is not tied to one design. Lessons always use the Gothic.
 - Glyph sizes: reviews 8–10 rem on desktop, `min(28vw, 8rem)` on phones.
 - Subtle motion only: shake on wrong, fade between cards, progress ring
   animates. Respect `prefers-reduced-motion`.
