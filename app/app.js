@@ -1734,7 +1734,7 @@ function renderSettings() {
 
       <div class="card">
         <h2>Pace</h2>
-        ${num('dailyLessons', 'Lessons per day', 'Gentle 4 · Standard 6 · Fast 10. New items per day.', 0, 100)}
+        ${num('dailyLessons', 'Lessons per day', 'Gentle 4 · Standard 10 · Fast 15. New items per day; each kanji is a single meaning card.', 0, 100)}
         ${num('apprenticeCap', 'Apprentice cap', 'No new lessons while this many items sit in Apprentice. Keeps review debt in check.', 1, 1000)}
         ${num('unlockStage', 'Unlock stage', 'A kanji becomes available once all its parts reach this stage (3 = Apprentice 3, 5 = Guru 1).', 1, 9)}
         ${num('lessonBatch', 'Lesson batch size', 'Items per lesson batch before the quiz.', 1, 20)}
@@ -1780,7 +1780,7 @@ function renderSettings() {
 
       <div class="card">
         <h2>Your data</h2>
-        <p class="small muted">Progress lives in this browser (${itemCount} items, ${app.progress.reviews.length} logged reviews). Export a copy regularly — it is the only way to move to another device.
+        <p class="small muted">Progress lives in this browser (${itemCount} items, ${app.progress.reviews.length} logged reviews). Sync above keeps devices together; export a copy now and then as a backup.
         ${lastExport ? `Last export: ${esc(fmtDate(lastExport))}.` : 'Never exported yet.'}</p>
         <div class="btn-row">
           <button class="btn btn-primary" data-act="export">Export JSON</button>
