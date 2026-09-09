@@ -902,6 +902,7 @@ function renderItem(id) {
               ${item.jlpt ? `<span class="pill">JLPT N${esc(item.jlpt)}</span>` : ''}
               ${item.freq ? `<span class="pill">Frequency #${esc(item.freq)}</span>` : ''}
             </div>
+            ${!entry ? `<div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="start-now">I already know this — add to circulation</button></div>` : ''}
           </div>
         </div>
       </div>
@@ -980,9 +981,20 @@ function renderItem(id) {
     statusEl.textContent = 'Saving…';
     setTimeout(() => { statusEl.textContent = 'Saved.'; }, 600);
   });
+  wireStartNow(id);
 }
 
 // --- Levels ----------------------------------------------------------------
+
+function wireStartNow(id) {
+  const btn = $('[data-act="start-now"]', main);
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    setProgress(engine.startManually(app.progress, [id], now()), { immediate: true });
+    toast('Added to circulation — first review in about 4 hours', 'ok');
+    renderItem(id);
+  });
+}
 
 function renderLevels() {
   const p = app.progress;
@@ -1095,11 +1107,15 @@ function saveGridPrefs(prefs) {
   try { localStorage.setItem(GRID_PREFS_KEY, JSON.stringify(prefs)); } catch (_) { /* fine */ }
 }
 
+/** Selection state for "add kanji you already know" on the Grid. */
+const gridSelect = { active: false, ids: new Set() };
+
 function renderGrid() {
   const data = app.data;
   const p = app.progress;
   const prefs = gridPrefs();
   const t = now().getTime();
+  const selecting = gridSelect.active;
 
   const counts = { locked: 0, apprentice: 0, guru: 0, master: 0, enlightened: 0, burned: 0 };
   let total = 0;
@@ -1116,7 +1132,10 @@ function renderGrid() {
       total += 1;
       const entry = p.items[id];
       const due = entry && entry.due && stage > 0 && stage < 9 && srs.toMillis(entry.due) <= t;
-      cells.push(`<a class="kcell stage-${group}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}" href="${itemHref(id)}"
+      const selectable = selecting && stage === 0;
+      const selected = selectable && gridSelect.ids.has(id);
+      cells.push(`<a class="kcell stage-${group}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}"
+        href="${itemHref(id)}" data-id="${esc(id)}" ${selectable ? 'role="checkbox" aria-checked="' + selected + '"' : ''}
         title="${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${due ? ' · due now' : ''} · Lv ${lv.level}">${esc(it.char)}</a>`);
     }
   }
@@ -1140,7 +1159,33 @@ function renderGrid() {
       <div class="kgrid-bar" aria-hidden="true">
         ${['burned', 'enlightened', 'master', 'guru', 'apprentice'].map((g) => `<i class="stage-${g}" style="width:${total ? (counts[g] / total) * 100 : 0}%"></i>`).join('')}
       </div>
-      <div class="kgrid${prefs.byLevel ? ' is-by-level' : ''}">${cells.join('')}</div>
+      ${selecting ? `
+      <div class="card kgrid-select fade-in">
+        <div class="kgrid-select-head">
+          <div>
+            <h2>Add kanji you already know</h2>
+            <p class="muted small">Click grey boxes to select them, or type the kanji below. They go straight into circulation at Apprentice 1, with the first review in about 4 hours, and do not use today's lesson allowance. Lessons carry on from the remaining kanji in order.</p>
+          </div>
+          <button class="btn btn-ghost btn-sm" type="button" data-act="cancel-select">Cancel</button>
+        </div>
+        <div class="kgrid-select-row">
+          <label class="sr-only" for="kgrid-paste">Type or paste kanji</label>
+          <input type="text" id="kgrid-paste" class="jp" placeholder="Type or paste kanji, e.g. 日本人" autocomplete="off" spellcheck="false">
+          <span class="muted small" data-role="paste-note"></span>
+        </div>
+      </div>` : `
+      <div class="btn-row">
+        <button class="btn btn-sm" type="button" data-act="start-select">Add kanji you already know</button>
+      </div>`}
+      <div class="kgrid${prefs.byLevel ? ' is-by-level' : ''}${selecting ? ' is-selecting' : ''}">${cells.join('')}</div>
+      ${selecting ? `
+      <div class="kgrid-actionbar" role="region" aria-label="Selection">
+        <span data-role="sel-count">${gridSelect.ids.size} selected</span>
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-sm" type="button" data-act="clear-select" ${gridSelect.ids.size ? '' : 'disabled'}>Clear</button>
+          <button class="btn btn-primary" type="button" data-act="confirm-select" ${gridSelect.ids.size ? '' : 'disabled'}>Add to circulation</button>
+        </div>
+      </div>` : ''}
     </section>`;
 
   $$('input[data-pref]', main).forEach((box) => box.addEventListener('change', () => {
@@ -1149,6 +1194,83 @@ function renderGrid() {
     saveGridPrefs(next);
     renderGrid();
   }));
+
+  const startBtn = $('[data-act="start-select"]', main);
+  if (startBtn) startBtn.addEventListener('click', () => { gridSelect.active = true; gridSelect.ids.clear(); renderGrid(); $('#kgrid-paste', main).focus(); });
+  if (!selecting) return;
+
+  const grid = $('.kgrid', main);
+  const countEl = $('[data-role="sel-count"]', main);
+  const confirmBtn = $('[data-act="confirm-select"]', main);
+  const clearBtn = $('[data-act="clear-select"]', main);
+  const paste = $('#kgrid-paste', main);
+  const pasteNote = $('[data-role="paste-note"]', main);
+
+  const syncBar = () => {
+    const n = gridSelect.ids.size;
+    countEl.textContent = `${n} selected`;
+    confirmBtn.disabled = !n;
+    clearBtn.disabled = !n;
+  };
+  const setSelected = (id, on) => {
+    const cell = grid.querySelector(`.kcell[data-id="${CSS.escape(id)}"]`);
+    if (!cell || !cell.classList.contains('is-selectable')) return false;
+    if (on) gridSelect.ids.add(id); else gridSelect.ids.delete(id);
+    cell.classList.toggle('is-selected', on);
+    cell.setAttribute('aria-checked', String(on));
+    return true;
+  };
+
+  grid.addEventListener('click', (e) => {
+    const cell = e.target.closest('.kcell');
+    if (!cell) return;
+    e.preventDefault();
+    if (!cell.classList.contains('is-selectable')) { toast('That kanji is already in circulation.'); return; }
+    setSelected(cell.dataset.id, !gridSelect.ids.has(cell.dataset.id));
+    syncBar();
+  });
+
+  paste.addEventListener('input', () => {
+    const chars = Array.from(paste.value).filter((c) => /[\u3400-\u9fff]/.test(c));
+    let added = 0, known = 0, missing = 0;
+    for (const c of chars) {
+      const id = `k:${c}`;
+      if (!data.items[id]) { missing += 1; continue; }
+      if (engine.stageOf(p, id) > 0) { known += 1; continue; }
+      if (!gridSelect.ids.has(id) && setSelected(id, true)) added += 1;
+    }
+    const bits = [];
+    if (added) bits.push(`${added} selected`);
+    if (known) bits.push(`${known} already in circulation`);
+    if (missing) bits.push(`${missing} not in the jōyō set`);
+    pasteNote.textContent = bits.join(' · ');
+    if (added) {
+      const first = grid.querySelector('.kcell.is-selected');
+      if (first) first.scrollIntoView({ block: 'nearest' });
+    }
+    syncBar();
+  });
+
+  $('[data-act="cancel-select"]', main).addEventListener('click', () => { gridSelect.active = false; gridSelect.ids.clear(); renderGrid(); });
+  clearBtn.addEventListener('click', () => { for (const id of Array.from(gridSelect.ids)) setSelected(id, false); syncBar(); });
+  confirmBtn.addEventListener('click', async () => {
+    const ids = Array.from(gridSelect.ids);
+    if (!ids.length) return;
+    const ok = await confirmDialog({
+      title: `Add ${plural(ids.length, 'kanji', 'kanji')} to circulation?`,
+      body: `<div style="margin-bottom:10px">${chipList(ids.slice(0, 40))}${ids.length > 40 ? `<span class="muted small"> and ${ids.length - 40} more</span>` : ''}</div>
+             <p class="muted small">They start at Apprentice 1 and come back for review in about 4 hours. This does not use today's lesson allowance.</p>`,
+      confirmLabel: 'Add to circulation',
+    });
+    if (!ok) return;
+    setProgress(engine.startManually(app.progress, ids, now()), { immediate: true });
+    backupIfNeeded(true);
+    gridSelect.active = false; gridSelect.ids.clear();
+    toast(`${plural(ids.length, 'kanji', 'kanji')} added to circulation`, 'ok');
+    renderGrid();
+  });
+  app.keyHandler = (e) => { if (e.key === 'Escape') { gridSelect.active = false; gridSelect.ids.clear(); renderGrid(); } };
+  app.cleanup = () => { gridSelect.active = false; gridSelect.ids.clear(); };
 }
 
 function renderStats() {

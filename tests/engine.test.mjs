@@ -4,7 +4,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import {
   orderedIds, stageOf, isUnlocked, apprenticeCount, groupCounts, lessonsDoneToday,
-  lessonQueue, lessonBlockReason, applyLesson,
+  lessonQueue, lessonBlockReason, applyLesson, startManually,
   dueIds, dueCount, shuffle, reviewQueue, createSession, currentId, answerCurrent,
   wrapUp, sessionStats, applyReview, REQUEUE_MIN, REQUEUE_MAX, REVIEW_LOG_CAP,
   currentLevel, levelProgress, forecast, nextReviewAt, streak, recentMistakes,
@@ -486,5 +486,29 @@ export const tests = {
     assert.strictEqual(h[2].reviews, 10);
     assert.ok(Math.abs(overallAccuracy(p) - 11 / 14) < 1e-9);
     assert.strictEqual(overallAccuracy(progressWith({})), null);
+  },
+  'startManually puts locked items at Apprentice 1 without spending lessons': () => {
+    const p0 = progressWith({});
+    const ids = orderedIds(data).slice(0, 3);
+    const p1 = startManually(p0, ids, NOW);
+    for (const id of ids) {
+      assert.strictEqual(stageOf(p1, id), 1);
+      assert.strictEqual(p1.items[id].due, iso(Math.floor(NOW.getTime() / HOUR) * HOUR + 4 * HOUR));
+    }
+    assert.strictEqual(lessonsDoneToday(p1, NOW), 0);
+    assert.strictEqual(p1.days[dayKey(NOW)].manual, 3);
+    assert.strictEqual(p0.items[ids[0]], undefined, 'input progress is not mutated');
+    // The normal lesson queue no longer offers them.
+    const queue = lessonQueue(data, p1, NOW);
+    for (const id of ids) assert.ok(!queue.includes(id));
+  },
+  'startManually leaves items that already have progress alone': () => {
+    const [a, b] = orderedIds(data);
+    const p0 = progressWith({ [a]: 5 });
+    const p1 = startManually(p0, [a, b], NOW);
+    assert.strictEqual(stageOf(p1, a), 5);
+    assert.strictEqual(stageOf(p1, b), 1);
+    assert.strictEqual(p1.days[dayKey(NOW)].manual, 1);
+    assert.strictEqual(startManually(p1, [a], NOW), p1, 'nothing to add returns the same object');
   },
 };

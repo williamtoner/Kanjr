@@ -746,3 +746,23 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
   .kgrid { grid-template-columns: repeat(auto-fill, minmax(26px, 1fr)); gap: 2px; }
   .kcell { font-size: 0.8rem; border-radius: 3px; }
 }
+
+/* --- Grid: selection mode ------------------------------------------- */
+.kgrid-select-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.kgrid-select-head h2 { margin-bottom: 4px; }
+.kgrid-select-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.kgrid-select-row input { flex: 1 1 260px; font-size: 1.125rem; padding: 10px 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); }
+.kgrid-select-row input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+.kgrid.is-selecting .kcell.is-dim { opacity: 0.35; }
+.kgrid.is-selecting .kcell.is-selectable { cursor: pointer; border-color: var(--border-strong); }
+.kgrid.is-selecting .kcell.is-selectable:hover { transform: scale(1.2); border-color: var(--accent); }
+.kgrid.is-selecting .kcell.is-selected { background: var(--accent-soft); color: var(--accent); border: 2px solid var(--accent); font-weight: 600; }
+.kgrid-actionbar {
+  position: sticky; bottom: calc(var(--tabbar-h) * 0 + 12px); z-index: 20; margin-top: 8px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  font-weight: 600; font-variant-numeric: tabular-nums;
+}
+@media (max-width: 640px) {
+  .kgrid-actionbar { bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 8px); }
+}

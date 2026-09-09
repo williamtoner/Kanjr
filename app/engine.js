@@ -181,6 +181,35 @@ export function applyLesson(progress, id, now) {
 // ---------------------------------------------------------------------------
 
 /** Ids of items that are due (1 ≤ stage ≤ 8 and due ≤ now), unordered. */
+/**
+ * Put items straight into circulation without a lesson, for kanji the
+ * learner already knows. They enter at Apprentice 1 exactly like a lesson
+ * would, but they do not use up today's lesson allowance: the day record
+ * counts them under `manual` instead of `lessons`. Items that already have
+ * progress are left untouched.
+ */
+export function startManually(progress, ids, now) {
+  const nowMs = toMillis(now);
+  const iso = new Date(nowMs).toISOString();
+  const items = Object.assign({}, progress.items);
+  let added = 0;
+  for (const id of ids) {
+    if (items[id] && items[id].stage > 0) continue;
+    const { stage, due } = nextState({ stage: 0, wrong: 0 }, nowMs);
+    items[id] = { stage, due, startedAt: iso, guruAt: null, burnedAt: null, correct: 0, incorrect: 0 };
+    added += 1;
+  }
+  if (!added) return progress;
+  const key = dayKey(nowMs);
+  const day = Object.assign({ lessons: 0, reviews: 0, correct: 0, manual: 0 }, progress.days && progress.days[key]);
+  day.manual = (Number(day.manual) || 0) + added;
+  return Object.assign({}, progress, {
+    updatedAt: iso,
+    items,
+    days: Object.assign({}, progress.days, { [key]: day }),
+  });
+}
+
 export function dueIds(progress, now) {
   const nowMs = toMillis(now);
   const out = [];
