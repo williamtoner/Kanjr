@@ -27,9 +27,20 @@ export function normalise(s) {
  * and a simple English plural, so "the tree", "to see" and "flowers" match
  * "tree", "see" and "flower". Applied to both sides of a comparison.
  */
+const NUMBER_WORDS = {
+  '0': 'zero', '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six', '7': 'seven',
+  '8': 'eight', '9': 'nine', '10': 'ten', '100': 'hundred', '1000': 'thousand', '10000': 'ten thousand',
+  '1000000': 'million', '100000000': 'hundred million', '1000000000000': 'trillion',
+};
+
 export function canonical(s) {
   let out = normalise(s);
   out = out.replace(/^(to|a|an|the) /, '');
+  // Digits stand for the number word: "7" is "seven", "10,000" is "ten thousand".
+  const digits = out.replace(/[\s,]/g, '');
+  if (/^\d+$/.test(digits) && NUMBER_WORDS[digits]) return NUMBER_WORDS[digits];
+  // "one hundred" and "a thousand" are just "hundred" and "thousand".
+  out = out.replace(/^(one|a) (hundred|thousand|million|trillion)\b/, '$2');
   if (out.length > 4 && /[^s]s$/.test(out) && !/ss$/.test(out)) {
     out = out.replace(/ies$/, 'y').replace(/(ch|sh|x|z|s)es$/, '$1').replace(/s$/, '');
   }

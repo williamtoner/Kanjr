@@ -168,7 +168,8 @@ for cross-item collisions. Any user synonym is accepted. Comparison also runs on
 build merges `data/overrides/synonyms.csv` groups into each item's
 alternates so "dirt" works for 土 "soil". On a wrong answer the feedback
 offers "My answer was right: accept …", which stores the word as a user
-synonym and retracts the miss (`engine.retractWrong`).
+synonym and retracts the miss (`engine.retractWrong`). Digits stand for
+number words ("7" = seven, "10,000" = ten thousand).
 
 ## Screens (app.js) — hash routes
 
@@ -216,8 +217,11 @@ tab; focus rings visible.
 ## Visual design
 
 - Type colours: radical `#0ea5e9` (blue), kanji `#ec4899` (pink). Stage
-  colours: apprentice `#f472b6`, guru `#a855f7`, master `#3b82f6`,
-  enlightened `#06b6d4`, burned `#374151`.
+  group colours: apprentice `#f472b6`, guru `#a855f7`, master `#3b82f6`,
+  enlightened `#06b6d4`, burned `#374151`. Grid boxes, level tiles and legend
+  dots use a per-stage ramp (`--st-1` … `--st-9`) whose hue walks from pale
+  pink (Apprentice 1) through magenta and violet (Guru) into blue, cyan and
+  slate, so a grid reads as one spectrum of progress.
 - Neutral UI: near-white background, slate text; dark theme swaps to a slate
   background. Respect `prefers-color-scheme` and the theme setting.
 - Glyph sizes: reviews 8–10 rem on desktop, `min(28vw, 8rem)` on phones.

@@ -181,4 +181,15 @@ export const tests = {
     assert.strictEqual(isCorrect('dirts', ['soil', 'dirt']), 'exact');
     assert.strictEqual(isCorrect('drit', ['soil', 'dirt']), 'typo', 'one transposition within a 4-letter answer');
   },
+  'digits are accepted for number kanji': () => {
+    assert.strictEqual(isCorrect('7', ['seven']), 'exact');
+    assert.strictEqual(isCorrect('10', ['ten']), 'exact');
+    assert.strictEqual(isCorrect('10,000', ['ten thousand']), 'exact');
+    assert.strictEqual(isCorrect('10000', ['ten thousand']), 'exact');
+    assert.strictEqual(isCorrect('100', ['hundred']), 'exact');
+    assert.strictEqual(isCorrect('one hundred', ['hundred']), 'exact');
+    assert.strictEqual(isCorrect('0', ['zero']), 'exact');
+    assert.strictEqual(isCorrect('8', ['seven']), 'wrong');
+    assert.strictEqual(isCorrect('11', ['ten']), 'wrong');
+  },
 };

@@ -1079,7 +1079,7 @@ function renderLevel(n) {
     const stage = engine.stageOf(p, id);
     const entry = p.items[id];
     const dueSoon = entry && entry.due && stage < 9 && srs.toMillis(entry.due) <= t.getTime();
-    return `<a class="tile stage-${srs.groupOf(stage)} type-${esc(it.type)}" href="${itemHref(id)}"
+    return `<a class="tile stage-${srs.groupOf(stage)} st-${stage} type-${esc(it.type)}" href="${itemHref(id)}"
       title="${esc(it.name)} · ${esc(srs.stageName(stage))}${dueSoon ? ' · due now' : ''}">
       <span class="tile-mark" aria-hidden="true"></span>${esc(it.char)}<span class="tile-name">${esc(it.name)}</span></a>`;
   }).join('');
@@ -1155,14 +1155,15 @@ function renderGrid() {
       const due = entry && entry.due && stage > 0 && stage < 9 && srs.toMillis(entry.due) <= t;
       const selectable = selecting && stage === 0;
       const selected = selectable && gridSelect.ids.has(id);
-      cells.push(`<a class="kcell stage-${group}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}"
+      cells.push(`<a class="kcell stage-${group} st-${stage}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}"
         href="${itemHref(id)}" data-id="${esc(id)}" ${selectable ? 'role="checkbox" aria-checked="' + selected + '"' : ''}
         title="${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${due ? ' · due now' : ''} · Lv ${lv.level}">${esc(it.char)}</a>`);
     }
   }
   const learned = total - counts.locked;
+  const SUBSTAGES = { apprentice: [1, 2, 3, 4], guru: [5, 6], master: [7], enlightened: [8], burned: [9], locked: [0] };
   const legend = ['locked', 'apprentice', 'guru', 'master', 'enlightened', 'burned'].map((g) =>
-    `<span class="kgrid-key"><i class="dot stage-${g}"></i>${g[0].toUpperCase() + g.slice(1)} <b>${counts[g]}</b></span>`).join('');
+    `<span class="kgrid-key" title="${SUBSTAGES[g].map((n) => srs.stageName(n)).join(' → ')}">${SUBSTAGES[g].map((n) => `<i class="dot stage-${g} st-${n}"></i>`).join('')}${g[0].toUpperCase() + g.slice(1)} <b>${counts[g]}</b></span>`).join('');
 
   main.innerHTML = `
     <section class="screen stack">

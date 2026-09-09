@@ -36,6 +36,18 @@
 
   --apprentice: #f472b6;
   --guru: #a855f7;
+  /* Sub-stage ramp: the hue walks from warm pink through magenta and violet
+     into the guru purples, then master blue, enlightened cyan, burned slate.
+     A grid of these reads as one spectrum of progress. */
+  --st-1: #f9a8d4;
+  --st-2: #f472b6;
+  --st-3: #e64aa8;
+  --st-4: #cf3fb8;
+  --st-5: #b04ee6;
+  --st-6: #9146f0;
+  --st-7: #3b82f6;
+  --st-8: #06b6d4;
+  --st-9: #374151;
   --master: #3b82f6;
   --enlightened: #06b6d4;
   --burned: #374151;
@@ -77,6 +89,15 @@
     --kanji-soft: #3b1a2c;
     --locked: #334155;
     --burned: #6b7280;
+    --st-1: #f5a3cf;
+    --st-2: #ee6fb3;
+    --st-3: #e04aa5;
+    --st-4: #c847b8;
+    --st-5: #a95ce8;
+    --st-6: #8b5cf6;
+    --st-7: #3b82f6;
+    --st-8: #22d3ee;
+    --st-9: #6b7280;
     --ok-soft: #14351f;
     --bad-soft: #3d1717;
     --warn-soft: #3b2a0a;
@@ -779,3 +800,17 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 .kgrid.is-selecting { user-select: none; -webkit-user-select: none; }
 .kgrid.is-selecting .kgrid-level { cursor: pointer; }
 .kgrid.is-selecting .kgrid-level:hover { color: var(--accent); }
+
+/* --- Sub-stage colours (grid boxes, level tiles, legend dots) ---------- */
+.kcell.st-1, .tile.st-1, .dot.st-1 { background: var(--st-1); }
+.kcell.st-2, .tile.st-2, .dot.st-2 { background: var(--st-2); }
+.kcell.st-3, .tile.st-3, .dot.st-3 { background: var(--st-3); }
+.kcell.st-4, .tile.st-4, .dot.st-4 { background: var(--st-4); }
+.kcell.st-5, .tile.st-5, .dot.st-5 { background: var(--st-5); }
+.kcell.st-6, .tile.st-6, .dot.st-6 { background: var(--st-6); }
+.kcell.st-7, .tile.st-7, .dot.st-7 { background: var(--st-7); }
+.kcell.st-8, .tile.st-8, .dot.st-8 { background: var(--st-8); }
+.kcell.st-9, .tile.st-9, .dot.st-9 { background: var(--st-9); }
+.kgrid-key { display: inline-flex; align-items: center; gap: 6px; }
+.kgrid-key .dot + .dot { margin-left: -3px; }
+.kgrid-key .dot { box-shadow: 0 0 0 1.5px var(--surface); }
