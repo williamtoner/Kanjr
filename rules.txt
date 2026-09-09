@@ -33,3 +33,8 @@ RULE 5 - Rules live in this file
   rules.txt is the single source of truth for how we work. When a new
   working rule is agreed, it is appended here in polished form with
   the date it was adopted.
+
+RULE 6 - The log stays private (adopted 2026-09-09)
+  The prompts/ directory is kept on the working machine only. It is listed
+  in .gitignore and was removed from the repository history before the
+  repository was made public, so the conversation log is never published.
