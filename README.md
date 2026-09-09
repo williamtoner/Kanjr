@@ -35,6 +35,14 @@ Pace simulation (predicts daily review load for each pace setting):
 python3 -m pipeline.simulate
 ```
 
+## Hosted app
+
+The app is published from this repository with GitHub Pages at
+https://williamtoner.github.io/Kanjr/app/ and installs to a phone home screen
+as a web app (Safari: Share → Add to Home Screen). Progress lives in the
+browser; Settings → "Sync between devices" keeps several devices on one file
+via a private GitHub Gist.
+
 ## Layout
 
 ```

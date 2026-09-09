@@ -12,13 +12,14 @@
  * invalidate old caches.
  */
 
-const CACHE_VERSION = 'kanjr-v2';
+const CACHE_VERSION = 'kanjr-v3';
 const SHELL = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './engine.js',
+  './sync.js',
   './srs.js',
   './match.js',
   './store.js',

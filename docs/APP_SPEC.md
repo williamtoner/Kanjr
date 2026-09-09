@@ -129,6 +129,22 @@ state after confirmation. Also keep a daily snapshot in IndexedDB
 list in Settings. Wrap every storage access in try/catch and work in memory
 if storage is unavailable.
 
+## Device sync (sync.js)
+
+Progress can be shared between devices through a private GitHub Gist. The
+learner pastes a personal access token with only the gist permission;
+`connect` finds the account's existing `kanjr-progress.json` gist or creates
+one. `syncOnce` pulls, merges with `mergeProgress` (pure: per item the entry
+with more answers wins, days take the max of each field, review log is the
+union capped at 6000, synonyms union, notes prefer the longer text, settings
+from the newer side) and pushes when the result differs. The app syncs on
+boot, when it returns to the foreground, when it comes online, and a few
+seconds after any progress change; remote changes are not applied while a
+review session is in progress. Token and gist id live in localStorage under
+`kanjr.sync.v1`. Settings also offers "Copy as text" / "Paste text…" for
+copies that cannot download files (the sandboxed hosted copy); pasted text
+is merged, not replaced.
+
 ## Lesson and review logic (engine.js)
 
 - **Lesson queue**: items with no progress (stage 0), taken in global order

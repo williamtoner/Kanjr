@@ -18,6 +18,7 @@ import * as srs from './srs.js';
 import * as engine from './engine.js';
 import { isCorrect, acceptedFor, findCollision, normalise } from './match.js';
 import * as store from './store.js';
+import * as sync from './sync.js';
 
 // ===========================================================================
 // 1. State and utilities
@@ -144,6 +145,64 @@ function setProgress(next, { immediate = false } = {}) {
   app.progress = next;
   if (immediate) store.writeNow(next); else store.save(next);
   updateLevelBadge();
+  scheduleSync();
+}
+
+/* ---------- Device sync (GitHub Gist) ---------- */
+
+const syncState = { timer: null, busy: false, lastResult: '', lastAt: null, error: '' };
+
+function scheduleSync(delay = 4000) {
+  if (!sync.loadSyncConfig()) return;
+  if (syncState.timer) clearTimeout(syncState.timer);
+  syncState.timer = setTimeout(() => { syncState.timer = null; runSync({ quiet: true }); }, delay);
+}
+
+/**
+ * Pull, merge, push. Remote changes are only applied when no review session
+ * is in progress, so a half-finished session on this device is never
+ * disturbed; they are picked up at the next sync.
+ */
+async function runSync({ quiet = false } = {}) {
+  const cfg = sync.loadSyncConfig();
+  if (!cfg || syncState.busy) return null;
+  if (!navigator.onLine) { syncState.error = 'Offline'; return null; }
+  syncState.busy = true;
+  syncState.error = '';
+  try {
+    store.flush();
+    const r = await sync.syncOnce(cfg, app.progress, store.validateProgress);
+    const midSession = app.session && app.session.queue && app.session.queue.length;
+    if (r.pulledChanges && !midSession) {
+      app.progress = r.progress;
+      store.writeNow(r.progress);
+      applyTheme(r.progress.settings.theme);
+      updateLevelBadge();
+      if ((parseRoute()[0] || 'home') !== 'reviews') route();
+    }
+    syncState.lastAt = new Date();
+    syncState.lastResult = r.pulledChanges ? 'Merged changes from another device' : r.pushed ? 'Uploaded' : 'Up to date';
+    sync.saveSyncConfig(Object.assign({}, cfg, { lastSyncedAt: syncState.lastAt.toISOString() }));
+    if (!quiet) toast(`Synced — ${syncState.lastResult.toLowerCase()}`, 'ok');
+    else if (r.pulledChanges) toast('Synced changes from another device', 'ok');
+    return r;
+  } catch (err) {
+    syncState.error = err && err.message ? err.message : String(err);
+    if (!quiet) toast(`Sync failed: ${syncState.error}`, 'error');
+    else console.warn('Sync failed:', err);
+    return null;
+  } finally {
+    syncState.busy = false;
+    const el = $('[data-role="sync-status"]');
+    if (el) el.innerHTML = syncStatusHtml();
+  }
+}
+
+function syncStatusHtml() {
+  const cfg = sync.loadSyncConfig();
+  if (!cfg) return '';
+  const when = syncState.lastAt || (cfg.lastSyncedAt ? new Date(cfg.lastSyncedAt) : null);
+  return `${syncState.busy ? 'Syncing…' : syncState.error ? `<span style="color:var(--bad)">${esc(syncState.error)}</span>` : (syncState.lastResult || 'Connected')}${when ? ` · last sync ${esc(fmtDateTime(when))}` : ''}`;
 }
 
 /** Update a few settings keys (shallow) and persist. */
@@ -1650,6 +1709,7 @@ function renderStats() {
 // --- Settings --------------------------------------------------------------
 
 function renderSettings() {
+  const syncCfg = sync.loadSyncConfig();
   const s = app.progress.settings;
   const st = store.status();
   const itemCount = Object.keys(app.progress.items).length;
@@ -1700,6 +1760,24 @@ function renderSettings() {
         </div>
       </div>
 
+      <div class="card" data-role="sync-card">
+        <h2>Sync between devices <span class="muted">via a private GitHub Gist</span></h2>
+        ${syncCfg ? `
+        <p class="small muted">Connected. Progress is merged with the shared file when the app opens, returns to the foreground, and a few seconds after you finish answering. Gist <a href="https://gist.github.com/${esc(syncCfg.gistId)}" target="_blank" rel="noopener">${esc(syncCfg.gistId.slice(0, 8))}…</a></p>
+        <p class="small" data-role="sync-status">${syncStatusHtml()}</p>
+        <div class="btn-row">
+          <button class="btn btn-primary btn-sm" data-act="sync-now">Sync now</button>
+          <button class="btn btn-ghost btn-sm" data-act="sync-disconnect">Disconnect</button>
+        </div>` : `
+        <p class="small muted">Keep the phone and the desktop on one progress file. You need a GitHub personal access token with only the <strong>gist</strong> permission; paste it below and the app finds or creates a private gist on your account. The token is stored in this browser only.</p>
+        <div class="kgrid-select-row" style="margin-top:8px">
+          <label class="sr-only" for="sync-token">GitHub token</label>
+          <input type="password" id="sync-token" placeholder="github_pat_… or ghp_…" autocomplete="off" spellcheck="false">
+          <button class="btn btn-primary" data-act="sync-connect">Connect</button>
+        </div>
+        <p class="small" data-role="sync-status"></p>`}
+      </div>
+
       <div class="card">
         <h2>Your data</h2>
         <p class="small muted">Progress lives in this browser (${itemCount} items, ${app.progress.reviews.length} logged reviews). Export a copy regularly — it is the only way to move to another device.
@@ -1708,6 +1786,16 @@ function renderSettings() {
           <button class="btn btn-primary" data-act="export">Export JSON</button>
           <button class="btn" data-act="import">Import JSON…</button>
           <input type="file" accept="application/json,.json" data-role="file" class="sr-only" tabindex="-1" aria-hidden="true">
+          <button class="btn" data-act="copy-text">Copy as text</button>
+          <button class="btn" data-act="paste-text">Paste text…</button>
+        </div>
+        <div data-role="text-transfer" hidden style="margin-top:12px">
+          <p class="small muted" data-role="text-help"></p>
+          <textarea data-role="text-area" rows="6" style="width:100%;font-family:var(--font-mono);font-size:0.75rem" spellcheck="false"></textarea>
+          <div class="btn-row" style="margin-top:8px">
+            <button class="btn btn-primary btn-sm" data-act="text-import" hidden>Import pasted text</button>
+            <button class="btn btn-ghost btn-sm" data-act="text-close">Close</button>
+          </div>
         </div>
         <div class="section-label">Daily backups <span class="muted" style="font-weight:500;text-transform:none;letter-spacing:0">(kept in this browser for 14 days)</span></div>
         <ul class="backup-list" data-role="backups"><li class="muted">Loading…</li></ul>
@@ -1748,6 +1836,77 @@ function renderSettings() {
     toast('Progress exported', 'ok');
     hideExportReminder();
   });
+  // Text transfer: for copies that cannot download or read files (a sandboxed page).
+  const transfer = $('[data-role="text-transfer"]', main);
+  const textArea = $('[data-role="text-area"]', main);
+  const textHelp = $('[data-role="text-help"]', main);
+  const textImportBtn = $('[data-act="text-import"]', main);
+  $('[data-act="copy-text"]', main).addEventListener('click', async () => {
+    store.flush();
+    const text = store.exportJSON(app.progress);
+    transfer.hidden = false; textImportBtn.hidden = true;
+    textArea.value = text; textArea.readOnly = true;
+    let copied = false;
+    try { await navigator.clipboard.writeText(text); copied = true; } catch (_) { copied = false; }
+    textHelp.textContent = copied
+      ? 'Copied to the clipboard. On the other device open Settings, press “Paste text…”, paste, and import.'
+      : 'Select everything in the box (click inside, then Ctrl+A or Cmd+A) and copy it. On the other device open Settings, press “Paste text…”, paste, and import.';
+    if (!copied) { textArea.focus(); textArea.select(); }
+    else toast('Progress copied to the clipboard', 'ok');
+    markExported();
+  });
+  $('[data-act="paste-text"]', main).addEventListener('click', () => {
+    transfer.hidden = false; textImportBtn.hidden = false;
+    textArea.value = ''; textArea.readOnly = false;
+    textHelp.textContent = 'Paste the progress text here, then press “Import pasted text”.';
+    textArea.focus();
+  });
+  $('[data-act="text-close"]', main).addEventListener('click', () => { transfer.hidden = true; textArea.value = ''; });
+  textImportBtn.addEventListener('click', async () => {
+    const result = store.parseImport(textArea.value);
+    if (!result.ok) { toast(`Import failed: ${result.error}`, 'error'); return; }
+    const incoming = result.progress;
+    const merged = sync.mergeProgress(app.progress, incoming);
+    const ok = await confirmDialog({
+      title: 'Import this progress?',
+      body: `The text contains <strong>${Object.keys(incoming.items).length} items</strong> (last updated ${esc(fmtDate(incoming.updatedAt))}). It will be merged with what is here (${itemCount} items); where both know an item, the one with more answers wins.`,
+      confirmLabel: 'Import and merge',
+    });
+    if (!ok) return;
+    replaceProgress(merged);
+    toast('Progress imported and merged', 'ok');
+  });
+
+  // Sync
+  const connectBtn = $('[data-act="sync-connect"]', main);
+  if (connectBtn) connectBtn.addEventListener('click', async () => {
+    const token = ($('#sync-token', main).value || '').trim();
+    const status = $('[data-role="sync-status"]', main);
+    if (!token) { status.textContent = 'Paste a token first.'; return; }
+    connectBtn.disabled = true; status.textContent = 'Connecting to GitHub…';
+    try {
+      store.flush();
+      const { gistId, created } = await sync.connect(token, app.progress);
+      sync.saveSyncConfig({ token, gistId, connectedAt: new Date().toISOString() });
+      toast(created ? 'Connected — created a private gist for your progress' : 'Connected — found your existing progress gist', 'ok');
+      await runSync({ quiet: false });
+      renderSettings();
+    } catch (err) {
+      status.innerHTML = `<span style="color:var(--bad)">${esc(err && err.message ? err.message : String(err))}</span>`;
+      connectBtn.disabled = false;
+    }
+  });
+  const syncNowBtn = $('[data-act="sync-now"]', main);
+  if (syncNowBtn) syncNowBtn.addEventListener('click', () => runSync({ quiet: false }));
+  const disconnectBtn = $('[data-act="sync-disconnect"]', main);
+  if (disconnectBtn) disconnectBtn.addEventListener('click', async () => {
+    const ok = await confirmDialog({ title: 'Disconnect sync?', body: 'This device stops syncing. Your progress stays here and in the gist; nothing is deleted.', confirmLabel: 'Disconnect' });
+    if (!ok) return;
+    sync.clearSyncConfig();
+    toast('Sync disconnected');
+    renderSettings();
+  });
+
   const file = $('[data-role="file"]', main);
   $('[data-act="import"]', main).addEventListener('click', () => file.click());
   file.addEventListener('change', async () => {
@@ -1981,6 +2140,11 @@ async function boot() {
   if (!location.hash) location.hash = '#/';
   route();
   registerServiceWorker();
+  if (sync.loadSyncConfig()) {
+    runSync({ quiet: true });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') runSync({ quiet: true }); });
+    window.addEventListener('online', () => runSync({ quiet: true }));
+  }
 }
 
 boot();
