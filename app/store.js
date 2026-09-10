@@ -29,6 +29,10 @@ export const DEFAULT_SETTINGS = Object.freeze({
   fontVariety: true,
   theme: 'auto',
   typoTolerance: true,
+  sounds: true,
+  volume: 70,
+  haptics: true,
+  celebrations: true,
 });
 
 /** Allowed ranges for numeric settings (used by import validation and the UI). */
@@ -37,6 +41,7 @@ export const SETTING_RANGES = Object.freeze({
   apprenticeCap: [1, 1000],
   unlockStage: [1, 9],
   lessonBatch: [1, 20],
+  volume: [0, 100],
 });
 
 const state = {
@@ -159,6 +164,11 @@ export function normaliseSettings(raw) {
   s.lightning = !!s.lightning;
   s.fontVariety = s.fontVariety !== false;
   s.typoTolerance = s.typoTolerance !== false;
+  s.sounds = s.sounds !== false;
+  s.haptics = s.haptics !== false;
+  s.celebrations = s.celebrations !== false;
+  const vol = Number(s.volume);
+  s.volume = Number.isFinite(vol) ? Math.max(0, Math.min(100, Math.round(vol))) : 70;
   s.theme = ['auto', 'light', 'dark'].includes(s.theme) ? s.theme : 'auto';
   return s;
 }

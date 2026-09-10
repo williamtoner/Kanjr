@@ -19,6 +19,7 @@ import * as engine from './engine.js';
 import { isCorrect, acceptedFor, findCollision, normalise } from './match.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
+import { sfx, configure as configureSfx, unlock as unlockAudio } from './sfx.js';
 
 // ===========================================================================
 // 1. State and utilities
@@ -145,7 +146,76 @@ function setProgress(next, { immediate = false } = {}) {
   app.progress = next;
   if (immediate) store.writeNow(next); else store.save(next);
   updateLevelBadge();
+  applySfxSettings();
   scheduleSync();
+}
+
+function applySfxSettings() {
+  const st = app.progress && app.progress.settings;
+  if (!st) return;
+  configureSfx({ enabled: st.sounds !== false, volume: (Number(st.volume) || 0) / 100, haptics: st.haptics !== false });
+}
+
+/* ---------- Juice: little visual rewards ---------- */
+
+function reducedMotion() {
+  return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+/** A short burst of coloured specks from the middle of an element. */
+function burst(el, { count = 14, colour = 'var(--ok)' } = {}) {
+  if (!el || reducedMotion() || app.progress.settings.celebrations === false) return;
+  const host = document.createElement('div');
+  host.className = 'burst';
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('i');
+    const angle = (Math.PI * 2 * i) / count + (Math.random() - 0.5) * 0.6;
+    const dist = 60 + Math.random() * 70;
+    p.style.setProperty('--dx', `${Math.cos(angle) * dist}px`);
+    p.style.setProperty('--dy', `${Math.sin(angle) * dist}px`);
+    p.style.setProperty('--c', colour);
+    p.style.animationDelay = `${Math.random() * 60}ms`;
+    host.appendChild(p);
+  }
+  el.appendChild(host);
+  setTimeout(() => host.remove(), 900);
+}
+
+/** Text that floats up out of an element and fades ("+1", "×5 streak!"). */
+function floatText(el, text, cls = '') {
+  if (!el || reducedMotion() || app.progress.settings.celebrations === false) return;
+  const f = document.createElement('div');
+  f.className = `float-text ${cls}`;
+  f.textContent = text;
+  el.appendChild(f);
+  setTimeout(() => f.remove(), 1100);
+}
+
+/** Confetti across the whole screen for a finished session. */
+function confetti(duration = 1800) {
+  if (reducedMotion() || app.progress.settings.celebrations === false) return;
+  const canvas = document.createElement('canvas');
+  canvas.className = 'confetti';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.width = window.innerWidth * dpr, H = canvas.height = window.innerHeight * dpr;
+  const colours = ['#ec4899', '#a855f7', '#3b82f6', '#06b6d4', '#f59e0b', '#22c55e'];
+  const bits = Array.from({ length: 140 }, () => ({
+    x: Math.random() * W, y: -20 * dpr - Math.random() * H * 0.3, vx: (Math.random() - 0.5) * 3 * dpr, vy: (2 + Math.random() * 3) * dpr,
+    w: (6 + Math.random() * 6) * dpr, h: (8 + Math.random() * 8) * dpr, r: Math.random() * Math.PI, vr: (Math.random() - 0.5) * 0.3, c: colours[Math.floor(Math.random() * colours.length)],
+  }));
+  const t0 = performance.now();
+  (function frame(t) {
+    const k = (t - t0) / duration;
+    ctx.clearRect(0, 0, W, H);
+    for (const b of bits) {
+      b.x += b.vx; b.y += b.vy; b.vy += 0.05 * dpr; b.r += b.vr;
+      ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.r); ctx.globalAlpha = Math.max(0, 1 - Math.max(0, k - 0.6) / 0.4);
+      ctx.fillStyle = b.c; ctx.fillRect(-b.w / 2, -b.h / 2, b.w, b.h); ctx.restore();
+    }
+    if (k < 1) requestAnimationFrame(frame); else canvas.remove();
+  })(t0);
 }
 
 /* ---------- Device sync (GitHub Gist) ---------- */
@@ -395,7 +465,7 @@ function mountQuiz(root, opts) {
   let session = opts.session;
   // `answeredId` and `counter` freeze what the feedback phase shows: the
   // session has already moved on to the next item by then.
-  const view = { phase: 'ask', result: null, retried: false, info: false, collision: null, timer: null, answeredId: null, counter: 1 };
+  const view = { phase: 'ask', result: null, retried: false, info: false, collision: null, timer: null, answeredId: null, counter: 1, streak: 0, best: 0 };
   const typo = app.progress.settings.typoTolerance !== false;
 
   function current() { return engine.currentId(session); }
@@ -428,7 +498,9 @@ function mountQuiz(root, opts) {
         <div class="review-top">
           <span class="counter" aria-live="polite">${view.counter} / ${stats.total}</span>
           <span class="accuracy" title="Accuracy so far">${stats.done ? pct(stats.accuracy) : '—'}</span>
+          ${view.streak >= 2 ? `<span class="streak ${view.streak >= 5 ? 'is-hot' : ''}" title="Correct answers in a row">×${view.streak}</span>` : ''}
           <span class="spacer"></span>
+          <button class="btn btn-ghost btn-sm btn-icon" data-act="mute" title="${app.progress.settings.sounds === false ? 'Sounds off — click to turn on' : 'Sounds on — click to mute'}" aria-label="Toggle sounds">${app.progress.settings.sounds === false ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9zm13.5 3 3 3-1.4 1.4-3-3-3 3L10.7 15l3-3-3-3 1.4-1.4 3 3 3-3L19.5 9z"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>'}</button>
           ${opts.onWrapUp ? `<button class="btn btn-ghost btn-sm" data-act="wrap" title="Finish the items in progress and stop (Esc)">
             <span class="label">${session.wrappingUp ? 'Wrapping up' : 'Wrap up'}</span> <kbd>Esc</kbd></button>` : ''}
         </div>
@@ -456,6 +528,7 @@ function mountQuiz(root, opts) {
     const form = $('[data-role="form"]', root);
     form.addEventListener('submit', (e) => { e.preventDefault(); if (view.phase === 'ask') submit(input.value); else next(); });
     $$('[data-act="wrap"]', root).forEach((b) => b.addEventListener('click', wrap));
+    $$('[data-act="mute"]', root).forEach((b) => b.addEventListener('click', () => { updateSettings({ sounds: app.progress.settings.sounds === false }); render(); }));
     $$('[data-act="next"]', root).forEach((b) => b.addEventListener('click', next));
     $$('[data-act="info"]', root).forEach((b) => b.addEventListener('click', toggleInfo));
     $$('[data-act="accept-syn"]', root).forEach((b) => b.addEventListener('click', acceptAsSynonym));
@@ -537,14 +610,24 @@ function mountQuiz(root, opts) {
     view.info = false;
     view.answeredId = id;
     if (verdict === 'wrong') {
+      view.streak = 0;
       session = engine.answerCurrent(session, false);
+      sfx.wrong();
     } else {
+      view.streak += 1;
+      view.best = Math.max(view.best, view.streak);
       const wrong = session.wrong[id] || 0;
       session = engine.answerCurrent(session, true);
       opts.onCorrect(id, wrong);
+      if (verdict === 'typo') sfx.typo(); else sfx.correct(view.streak);
     }
     opts.onSession(session);
     render();
+    const card = $('[data-role="card"]', root);
+    if (verdict !== 'wrong') {
+      burst(card, { count: view.streak >= 5 ? 22 : 14, colour: view.streak >= 5 ? 'var(--accent)' : 'var(--ok)' });
+      floatText(card, view.streak >= 5 && view.streak % 5 === 0 ? `×${view.streak} streak!` : view.streak >= 2 ? `×${view.streak}` : 'Correct', view.streak >= 5 ? 'is-hot' : '');
+    }
   }
 
   /** The learner's "wrong" answer was a synonym: accept it and undo the miss. */
@@ -561,8 +644,11 @@ function mountQuiz(root, opts) {
     opts.onSession(session);
     if (opts.affectsSrs !== false) opts.onCorrect(id, r.wrong);
     view.result = 'exact';
+    view.streak += 1;
+    sfx.correct(view.streak);
     toast(`Marked correct — “${word}” is now accepted for ${itemOf(id).char}`, 'ok');
     render();
+    burst($('[data-role="card"]', root));
   }
 
   function next() {
@@ -871,6 +957,8 @@ function finishLessonBatch(L) {
   setProgress(p, { immediate: true });
   backupIfNeeded(true);
   L.phase = 'done';
+  sfx.lessonDone();
+  confetti(1200);
   const more = engine.lessonQueue(app.data, p, t).length;
   const due = engine.dueCount(p, t);
   const firstDue = engine.nextReviewAt(p, t);
@@ -925,7 +1013,11 @@ function renderReviews() {
     affectsSrs: true,
     onSession(s) { app.session = s; store.saveSession(s); },
     onCorrect(id, wrong) {
+      const before = engine.stageOf(app.progress, id);
       setProgress(engine.applyReview(app.progress, id, wrong, now()));
+      const after = engine.stageOf(app.progress, id);
+      if (after >= 9 && before < 9) { setTimeout(() => sfx.burned(), 260); setTimeout(() => toast(`${itemOf(id).char} burned!`, 'ok'), 300); }
+      else if (srs.groupOf(after) !== srs.groupOf(before) && after > before) { setTimeout(() => sfx.stageUp(), 260); setTimeout(() => toast(`${itemOf(id).char} reached ${srs.stageName(after)}`, 'ok'), 300); }
     },
     onWrapUp() { /* session already saved via onSession */ },
     onFinish(s) {
@@ -942,6 +1034,7 @@ function finishReviewSession(s) {
   store.flush();
   backupIfNeeded(true);
   const stats = engine.sessionStats(s);
+  if (stats.done) { sfx.complete(); if (stats.accuracy >= 0.8) confetti(); }
   const missed = s.done.filter((d) => d.wrong > 0).map((d) => d.id);
   const t = now();
   const nextAt = engine.nextReviewAt(app.progress, t);
@@ -1445,6 +1538,7 @@ function gridContextMenu(cell, x, y) {
     closeContextMenu();
     if (act.dataset.act === 'add') {
       setProgress(engine.startManually(app.progress, [id], now()), { immediate: true });
+      sfx.tap();
       toast(`${item.char} added — it is in your reviews now`, 'ok');
       renderGrid();
     } else if (act.dataset.act === 'select') {
@@ -1760,6 +1854,15 @@ function renderSettings() {
         </div>
       </div>
 
+      <div class="card">
+        <h2>Sounds and feedback</h2>
+        ${toggle('sounds', 'Sounds', 'A ding for a correct answer that climbs with your streak, a soft double-note for a miss, clicks on buttons, and a chime when an item reaches a new stage.')}
+        ${num('volume', 'Volume', '0 to 100.', 0, 100)}
+        ${toggle('haptics', 'Vibration', 'A tiny buzz on answers and taps, on phones that support it (Android; iPhones do not vibrate for websites).')}
+        ${toggle('celebrations', 'Celebrations', 'Bursts on correct answers, streak counters and confetti at the end of a session.')}
+        <div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="sound-test">Play the ding</button></div>
+      </div>
+
       <div class="card" data-role="sync-card">
         <h2>Sync between devices <span class="muted">via a private GitHub Gist</span></h2>
         ${syncCfg ? `
@@ -1827,6 +1930,8 @@ function renderSettings() {
       toast('Saved');
     });
   });
+
+  $('[data-act="sound-test"]', main).addEventListener('click', (e) => { unlockAudio(); sfx.correct(3); burst(e.currentTarget.closest('.card')); });
 
   // Export / import
   $('[data-act="export"]', main).addEventListener('click', () => {
@@ -2140,6 +2245,15 @@ async function boot() {
   if (!location.hash) location.hash = '#/';
   route();
   registerServiceWorker();
+  applySfxSettings();
+  const unlockOnce = () => { unlockAudio(); };
+  document.addEventListener('pointerdown', unlockOnce, { passive: true });
+  document.addEventListener('keydown', unlockOnce);
+  // Every button and nav tap gives a tiny click, so the interface feels physical.
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('.btn, .nav a, .kgrid-toggle, .switch, .ctx-menu button');
+    if (t && !t.disabled) sfx.click();
+  });
   if (sync.loadSyncConfig()) {
     runSync({ quiet: true });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') runSync({ quiet: true }); });

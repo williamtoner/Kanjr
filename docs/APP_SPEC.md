@@ -129,6 +129,22 @@ state after confirmation. Also keep a daily snapshot in IndexedDB
 list in Settings. Wrap every storage access in try/catch and work in memory
 if storage is unavailable.
 
+## Sounds and feedback (sfx.js)
+
+All sounds are synthesised with the Web Audio API (no files): a two-note
+ding for a correct answer whose pitch climbs a semitone per streak step (up
+to an octave) with a four-note flourish every fifth in a row; a softer single
+note for a typo; a quiet falling pair for a miss; a click on every button and
+nav tap; a rising chime when an item reaches a new stage group and a longer
+one when it burns; fanfares for a finished session and a finished lesson
+batch. Haptics via `navigator.vibrate` where supported. Visual "juice": a
+streak badge in the review header, a particle burst and floating text on
+correct answers, a glow on the card, confetti at the end of a session with
+80 % accuracy or better and after each lesson batch. Settings: sounds,
+volume, vibration, celebrations; a mute button in the review header. The
+AudioContext is created lazily and resumed on the first gesture (iOS).
+Everything respects `prefers-reduced-motion`.
+
 ## Device sync (sync.js)
 
 Progress can be shared between devices through a private GitHub Gist. The
