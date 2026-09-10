@@ -129,6 +129,26 @@ state after confirmation. Also keep a daily snapshot in IndexedDB
 list in Settings. Wrap every storage access in try/catch and work in memory
 if storage is unavailable.
 
+## Add from a photo (scan.js)
+
+`#/scan` lets the learner photograph a sign or menu ("Take a photo" opens the
+camera via `<input capture="environment">`; "Choose from library" picks an
+existing image). Recognition runs on the device with tesseract.js (loaded on
+first use from cdnjs) and the fast Japanese model (about 1.5 MB from
+tessdata.projectnaptha.com, cached in IndexedDB), page-segmentation mode 11
+(sparse text). The photo is downscaled to 1600 px, converted to grayscale and
+contrast-stretched first. Recognised CJK characters are filtered to the jōyō
+set (`extractKanji`, pure, tested) and shown as tiles with meaning and level;
+those already in circulation are dimmed; the rest are pre-selected and one
+button adds them via `engine.startManually`. A text box on the same screen
+accepts pasted text (for iOS Live Text) and goes through the same tiles.
+Nothing is uploaded anywhere.
+
+Phone ergonomics: in reviews, tapping the kanji card acts as Enter (continue
+after feedback, submit when text is typed) and a sticky continue bar sits
+above the tab bar during feedback on narrow screens. Lesson cards can be
+swiped left/right on touch screens and the progress dots are tappable.
+
 ## Sounds and feedback (sfx.js)
 
 All sounds are synthesised with the Web Audio API (no files): a two-note

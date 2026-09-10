@@ -20,6 +20,7 @@ import { isCorrect, acceptedFor, findCollision, normalise } from './match.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
 import { sfx, configure as configureSfx, unlock as unlockAudio } from './sfx.js';
+import * as scan from './scan.js';
 
 // ===========================================================================
 // 1. State and utilities
@@ -509,7 +510,7 @@ function mountQuiz(root, opts) {
         <div class="card glyph-card type-${esc(item.type)} ${stateCls} ${view.phase === 'feedback' && view.result === 'wrong' ? 'shake' : ''}" data-role="card">
           <div class="glyph-type">${typeBadge(item)}</div>
           <div class="glyph ${esc(glyphFont(item, session))}">${esc(item.char)}</div>
-          <div class="glyph-prompt">${typeLabel(item)} <strong>meaning</strong>${wrongSoFar ? ` · <span class="muted">missed ${wrongSoFar}×</span>` : ''}</div>
+          <div class="glyph-prompt">${typeLabel(item)} <strong>meaning</strong>${wrongSoFar ? ` · <span class="muted">missed ${wrongSoFar}×</span>` : ''}${view.phase === 'feedback' ? ' · <span class="muted">tap to continue</span>' : ''}</div>
         </div>
 
         <form class="answer-form" data-role="form" autocomplete="off">
@@ -522,11 +523,20 @@ function mountQuiz(root, opts) {
         </form>
 
         ${view.phase === 'feedback' ? feedbackHtml(item, note) : ''}
+        ${view.phase === 'feedback' ? `<div class="continue-bar"><span class="muted small">${view.result === 'wrong' ? 'Not quite' : 'Correct'} · tap the kanji or</span><button class="btn btn-primary btn-sm" data-act="next">Continue</button></div>` : ''}
       </div>`;
 
     const input = $('#answer', root);
     const form = $('[data-role="form"]', root);
     form.addEventListener('submit', (e) => { e.preventDefault(); if (view.phase === 'ask') submit(input.value); else next(); });
+    // Tapping the kanji card acts like Enter: continue after feedback, or
+    // submit the typed answer. Saves reaching for a button on a phone.
+    const cardEl = $('[data-role="card"]', root);
+    cardEl.addEventListener('click', () => {
+      if (view.phase === 'feedback') next();
+      else if (normalise(input.value)) submit(input.value);
+      else input.focus();
+    });
     $$('[data-act="wrap"]', root).forEach((b) => b.addEventListener('click', wrap));
     $$('[data-act="mute"]', root).forEach((b) => b.addEventListener('click', () => { updateSettings({ sounds: app.progress.settings.sounds === false }); render(); }));
     $$('[data-act="next"]', root).forEach((b) => b.addEventListener('click', next));
@@ -783,7 +793,7 @@ function renderHome() {
             <div class="stat"><div class="stat-value">${today.lessons}<span class="muted" style="font-size:.9rem">/${p.settings.dailyLessons}</span></div><div class="stat-label">Lessons</div></div>
           </div>
           <p class="small muted" style="margin:12px 0 0">${nextAt ? `Next review ${esc(whenPhrase(nextAt, t))} (${relPhrase(nextAt, t)}).` : (dueNow ? 'Reviews are waiting for you.' : 'No reviews scheduled — do some lessons to get started.')}</p>
-          <p class="small muted" style="margin:6px 0 0">Pace: <strong>${esc(p.settings.dailyLessons)}</strong> new items a day · <a href="#/settings">change</a></p>
+          <p class="small muted" style="margin:6px 0 0">Pace: <strong>${esc(p.settings.dailyLessons)}</strong> new items a day · <a href="#/settings">change</a> · <a href="#/scan">add from a photo</a></p>
         </div>
         <div class="card">
           <h2>Next 24 hours <span class="muted">${plural(upcoming, 'review')}</span></h2>
@@ -848,10 +858,25 @@ function renderLessons() {
 }
 
 function lessonDots(L, quizActive) {
-  return `<div class="lesson-dots" aria-hidden="true">
-    ${L.ids.map((_, i) => `<span class="${i < L.index || quizActive ? 'is-done' : ''} ${i === L.index && !quizActive ? 'is-current' : ''}"></span>`).join('')}
+  return `<div class="lesson-dots">
+    ${L.ids.map((_, i) => `<span ${quizActive ? '' : `data-dot="${i}" role="button" tabindex="0" title="Card ${i + 1}"`} class="${i < L.index || quizActive ? 'is-done' : ''} ${i === L.index && !quizActive ? 'is-current' : ''}"></span>`).join('')}
     <span class="is-quiz ${quizActive ? 'is-current' : ''}"></span>
   </div>`;
+}
+
+/** Horizontal swipe detection on touch screens. cb('left'|'right'). */
+function attachSwipe(el, cb) {
+  let x0 = null, y0 = null, t0 = 0;
+  el.addEventListener('touchstart', (e) => { const t = e.touches[0]; x0 = t.clientX; y0 = t.clientY; t0 = Date.now(); }, { passive: true });
+  el.addEventListener('touchend', (e) => {
+    if (x0 == null) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - x0, dy = t.clientY - y0;
+    x0 = null;
+    if (Date.now() - t0 > 800) return;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    cb(dx < 0 ? 'left' : 'right');
+  }, { passive: true });
 }
 
 function renderLessonCard(L) {
@@ -863,7 +888,7 @@ function renderLessonCard(L) {
 
   main.innerHTML = `
     <section class="screen lesson">
-      <div class="screen-head"><h1>Lesson ${L.index + 1} of ${L.ids.length}</h1><span class="muted small"><kbd>←</kbd> <kbd>→</kbd> to move · <kbd>Enter</kbd> for next</span></div>
+      <div class="screen-head"><h1>Lesson ${L.index + 1} of ${L.ids.length}</h1><span class="muted small"><kbd>←</kbd> <kbd>→</kbd> to move · <kbd>Enter</kbd> for next · swipe on a phone</span></div>
       ${lessonDots(L, false)}
       <div class="card glyph-card lesson-card type-${esc(item.type)} fade-in" data-role="card">
         <div class="glyph-type">${typeBadge(item)} <span class="badge stage-locked">New</span></div>
@@ -908,6 +933,9 @@ function renderLessonCard(L) {
   };
   $('[data-act="prev"]', main).addEventListener('click', () => go(-1));
   $('[data-act="next"]', main).addEventListener('click', () => go(1));
+  // Swipe left for the next card, right for the previous one; tap a dot to jump.
+  attachSwipe($('.lesson', main) || main, (dir) => { if (dir === 'left' && L.index < L.ids.length - 1) go(1); else if (dir === 'right') go(-1); });
+  $$('[data-dot]', main).forEach((d) => d.addEventListener('click', () => { L.index = Number(d.dataset.dot); L.peek = null; renderLessonCard(L); }));
   $$('[data-peek]', main).forEach((b) => b.addEventListener('click', () => {
     L.peek = L.peek === b.dataset.peek ? null : b.dataset.peek;
     renderLessonCard(L);
@@ -1368,6 +1396,7 @@ function renderGrid() {
       </div>` : `
       <div class="btn-row">
         <button class="btn btn-sm" type="button" data-act="start-select">Mark kanji as seen before</button>
+        <a class="btn btn-sm" href="#/scan">Add from a photo</a>
       </div>`}
       <div class="kgrid${prefs.byLevel ? ' is-by-level' : ''}${selecting ? ' is-selecting' : ''}">${cells.join('')}</div>
       ${selecting ? `
@@ -1571,6 +1600,131 @@ document.addEventListener('pointerdown', (e) => {
   pressTimer = setTimeout(() => { pressTimer = null; gridContextMenu(cell, e.clientX, e.clientY); }, 500);
 });
 ['pointerup', 'pointercancel', 'pointermove'].forEach((ev) => document.addEventListener(ev, () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }));
+
+/* ---------- Scan: photograph a kanji and add it ---------- */
+
+const scanState = { file: null, result: null, selected: new Set(), busy: false, error: '', progress: null };
+
+function renderScan() {
+  const data = app.data;
+  const p = app.progress;
+  const known = scanKnownSet();
+  const r = scanState.result;
+  const tiles = r ? r.kanji.map(({ char, count }) => {
+    const id = `k:${char}`;
+    const it = data.items[id];
+    const stage = engine.stageOf(p, id);
+    const inCirc = stage > 0;
+    const sel = scanState.selected.has(id);
+    return `<button type="button" class="scan-tile ${inCirc ? 'is-known' : ''} ${sel ? 'is-selected' : ''}" data-id="${esc(id)}" ${inCirc ? 'disabled' : ''} aria-pressed="${sel}">
+      <span class="scan-char jp">${esc(char)}</span>
+      <span class="scan-name">${esc(it.name)}</span>
+      <span class="scan-meta">${inCirc ? esc(srs.stageName(stage)) : `Level ${esc(it.level)}`}${count > 1 ? ` · seen ${count}×` : ''}</span>
+    </button>`;
+  }).join('') : '';
+  const selectable = r ? r.kanji.filter(({ char }) => engine.stageOf(p, `k:${char}`) === 0).length : 0;
+
+  main.innerHTML = `
+    <section class="screen stack scan">
+      <div class="screen-head"><h1>Add from a photo</h1><a class="btn btn-sm btn-ghost" href="#/grid">Grid</a></div>
+      <div class="card">
+        <p class="small muted">Take a photo of a sign, a menu or a package. The kanji are recognised on your phone (nothing is uploaded) and shown below; tap the ones you already know to add them to your reviews. Printed text works well; handwriting and fancy logos less so.</p>
+        <div class="btn-row" style="margin-top:8px">
+          <label class="btn btn-primary" for="scan-file">${scanState.file ? 'Take another photo' : 'Take a photo'}</label>
+          <input type="file" id="scan-file" accept="image/*" capture="environment" class="sr-only" tabindex="-1">
+          <label class="btn" for="scan-pick">Choose from library</label>
+          <input type="file" id="scan-pick" accept="image/*" class="sr-only" tabindex="-1">
+        </div>
+        ${scanState.busy ? `<div class="scan-progress"><div class="muted small" data-role="scan-label">${esc(scanState.progress ? scanState.progress.label : 'Preparing…')}</div><div class="level-bar"><div data-role="scan-bar" style="width:${scanState.progress ? Math.round(scanState.progress.ratio * 100) : 0}%"></div></div></div>` : ''}
+        ${scanState.error ? `<p class="small" style="color:var(--bad);margin-top:10px">${esc(scanState.error)}</p>` : ''}
+        <div data-role="scan-preview" class="scan-preview" ${scanState.file ? '' : 'hidden'}></div>
+      </div>
+      ${r ? `
+      <div class="card">
+        <h2>Found ${plural(r.kanji.length, 'kanji', 'kanji')} <span class="muted">${r.unknown ? `· ${r.unknown} not in the jōyō set` : ''}</span></h2>
+        ${r.kanji.length ? `<div class="scan-tiles">${tiles}</div>` : '<p class="muted" data-role="scan-empty">No kanji recognised. Try a closer, straighter, better-lit photo, or type what you see below.</p>'}
+        ${selectable ? `<div class="btn-row" style="margin-top:12px">
+          <button class="btn btn-sm btn-ghost" type="button" data-act="scan-all">Select all new</button>
+          <button class="btn btn-primary" type="button" data-act="scan-add" ${scanState.selected.size ? '' : 'disabled'}>Add ${scanState.selected.size || ''} to circulation</button>
+        </div>` : (r.kanji.length ? '<p class="small muted" style="margin-top:8px">Everything found is already in circulation.</p>' : '')}
+      </div>` : ''}
+      <div class="card">
+        <h2>Or type what you see</h2>
+        <p class="small muted">On an iPhone the Camera app can also read Japanese: tap the Live Text icon in the corner of the viewfinder, select the kanji, copy, and paste here.</p>
+        <div class="kgrid-select-row"><input type="text" class="jp" id="scan-typed" placeholder="Paste or type kanji" autocomplete="off" spellcheck="false"><button class="btn btn-sm" type="button" data-act="scan-typed">Show</button></div>
+      </div>
+    </section>`;
+
+  const preview = $('[data-role="scan-preview"]', main);
+  if (scanState.file) {
+    const url = URL.createObjectURL(scanState.file);
+    preview.innerHTML = `<img src="${url}" alt="Your photo">`;
+    preview.querySelector('img').addEventListener('load', () => URL.revokeObjectURL(url));
+  }
+  const onFile = async (input) => {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    scanState.file = f; scanState.result = null; scanState.selected.clear(); scanState.error = ''; scanState.busy = true; scanState.progress = null;
+    renderScan();
+    try {
+      const res = await scan.recognizeKanji(f, known, (label, ratio) => {
+        scanState.progress = { label, ratio };
+        const lbl = $('[data-role="scan-label"]', main), bar = $('[data-role="scan-bar"]', main);
+        if (lbl) lbl.textContent = label;
+        if (bar) bar.style.width = `${Math.round(ratio * 100)}%`;
+      });
+      scanState.result = res;
+      for (const { char } of res.kanji) if (engine.stageOf(app.progress, `k:${char}`) === 0) scanState.selected.add(`k:${char}`);
+      sfx.tap();
+    } catch (err) {
+      scanState.error = err && err.message ? err.message : String(err);
+    } finally {
+      scanState.busy = false;
+      renderScan();
+    }
+  };
+  $('#scan-file', main).addEventListener('change', (e) => onFile(e.target));
+  $('#scan-pick', main).addEventListener('change', (e) => onFile(e.target));
+  $$('.scan-tile', main).forEach((t) => t.addEventListener('click', () => {
+    const id = t.dataset.id;
+    if (scanState.selected.has(id)) scanState.selected.delete(id); else scanState.selected.add(id);
+    renderScan();
+  }));
+  const addBtn = $('[data-act="scan-add"]', main);
+  if (addBtn) addBtn.addEventListener('click', () => {
+    const ids = Array.from(scanState.selected);
+    if (!ids.length) return;
+    setProgress(engine.startManually(app.progress, ids, now()), { immediate: true });
+    sfx.lessonDone();
+    toast(`${plural(ids.length, 'kanji', 'kanji')} added — in your reviews now`, 'ok');
+    scanState.selected.clear();
+    renderScan();
+  });
+  const allBtn = $('[data-act="scan-all"]', main);
+  if (allBtn) allBtn.addEventListener('click', () => {
+    for (const { char } of scanState.result.kanji) if (engine.stageOf(app.progress, `k:${char}`) === 0) scanState.selected.add(`k:${char}`);
+    renderScan();
+  });
+  const typed = $('#scan-typed', main);
+  const showTyped = () => {
+    const res = scan.extractKanji(typed.value, known);
+    scanState.result = Object.assign(res, { text: typed.value });
+    scanState.selected.clear();
+    for (const { char } of res.kanji) if (engine.stageOf(app.progress, `k:${char}`) === 0) scanState.selected.add(`k:${char}`);
+    renderScan();
+  };
+  $('[data-act="scan-typed"]', main).addEventListener('click', showTyped);
+  typed.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); showTyped(); } });
+  app.cleanup = () => { scanState.file = null; scanState.result = null; scanState.selected.clear(); scanState.error = ''; };
+}
+
+function scanKnownSet() {
+  if (!app.knownSet) {
+    app.knownSet = new Set();
+    for (const id in app.data.items) if (app.data.items[id].type === 'kanji') app.knownSet.add(app.data.items[id].char);
+  }
+  return app.knownSet;
+}
 
 /* ---------- Leech drill: extra practice that never touches the SRS ---------- */
 
@@ -2113,7 +2267,7 @@ function route() {
   app.keyHandler = null;
   const parts = parseRoute();
   const head = parts[0] || 'home';
-  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'levels', grid: 'grid', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
+  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'levels', grid: 'grid', scan: 'grid', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
   $$('#nav a').forEach((a) => {
     if (a.dataset.route === routeName) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
@@ -2135,6 +2289,7 @@ function route() {
         break;
       case 'grid': renderGrid(); break;
       case 'drill': renderLeechDrill(); break;
+      case 'scan': renderScan(); break;
       case 'stats': renderStats(); break;
       case 'settings': renderSettings(); break;
       default: renderNotFound();
@@ -2144,7 +2299,7 @@ function route() {
     main.innerHTML = `<section class="screen">${emptyState('誤', 'Something went wrong', `<span class="small muted">${esc(err && err.message)}</span>`, '<a class="btn btn-primary" href="#/">Home</a>')}</section>`;
   }
   window.scrollTo({ top: 0 });
-  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Grid · Kanjr', drill: 'Leech drill · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
+  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Grid · Kanjr', drill: 'Leech drill · Kanjr', scan: 'Add from a photo · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
 }
 
 function showBanner(html, { kind = '', dismiss = null } = {}) {

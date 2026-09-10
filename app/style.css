@@ -883,3 +883,34 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 @media (prefers-reduced-motion: reduce) {
   .glyph-card.is-correct, .streak { animation: none; }
 }
+
+/* --- Review: sticky continue bar on phones, tappable card ------------- */
+.glyph-card { cursor: pointer; }
+.continue-bar { display: none; }
+@media (max-width: 640px) {
+  .continue-bar {
+    position: fixed; left: 12px; right: 12px; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 10px); z-index: 30;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 8px 8px 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  }
+  .feedback-actions [data-act="next"] { display: none; }
+}
+.lesson-dots span[data-dot] { cursor: pointer; }
+
+/* --- Scan screen -------------------------------------------------------- */
+.scan-preview { margin-top: 12px; }
+.scan-preview img { max-height: 260px; width: auto; max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border); display: block; }
+.scan-progress { margin-top: 12px; display: grid; gap: 6px; }
+.scan-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; }
+.scan-tile {
+  display: grid; gap: 2px; justify-items: center; padding: 10px 6px; border-radius: var(--radius-sm); cursor: pointer;
+  border: 2px solid var(--border); background: var(--surface); color: var(--text); font: inherit; text-align: center;
+  transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+.scan-tile .scan-char { font-size: 2.2rem; line-height: 1.1; }
+.scan-tile .scan-name { font-weight: 600; font-size: 0.875rem; }
+.scan-tile .scan-meta { font-size: 0.6875rem; color: var(--muted); }
+.scan-tile.is-selected { border-color: var(--accent); background: var(--accent-soft); }
+.scan-tile.is-selected .scan-char { color: var(--accent); }
+.scan-tile.is-known { opacity: 0.55; cursor: default; }
+.scan-tile:not(:disabled):hover { transform: translateY(-1px); }
