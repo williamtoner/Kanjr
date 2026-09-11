@@ -1030,4 +1030,4 @@ h1 { font-size: 1.9rem; }
 .capture-box i:nth-child(4) { bottom: -3px; right: -3px; border-left: 0; border-top: 0; }
 .capture-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; }
 .capture-controls input[type="range"] { vertical-align: middle; width: 140px; accent-color: var(--accent); }
-.scan-stage { cursor: grab; }
+.scan-stage { cursor: grab; overflow: hidden; border-radius: var(--radius-sm); }
