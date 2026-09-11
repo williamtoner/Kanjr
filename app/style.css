@@ -13,16 +13,16 @@
   --font-jp: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --bg: #f7f2e8;
-  --surface: #fbf8f1;
-  --surface-2: #efe8db;
-  --surface-3: #e3dacb;
-  --text: #17130f;
-  --text-2: #3a332c;
-  --muted: #6f655a;
-  --border: #17130f;
-  --border-strong: #17130f;
-  --line: #d9d0c1;
+  --bg: #efe8dc;
+  --surface: #f6f1e6;
+  --surface-2: #e8e0d1;
+  --surface-3: #ddd3c2;
+  --text: #211b16;
+  --text-2: #423a32;
+  --muted: #75695d;
+  --border: #2a231d;
+  --border-strong: #2a231d;
+  --line: #d3c8b6;
   --shadow: 4px 4px 0 var(--border);
   --shadow-lg: 6px 6px 0 var(--border);
 
@@ -75,24 +75,24 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #14110e;
-    --surface: #1b1713;
-    --surface-2: #241f1a;
-    --surface-3: #332b24;
-    --text: #f4ede2;
-    --text-2: #d9cfc0;
-    --muted: #a3968a;
-    --border: #f4ede2;
-    --border-strong: #f4ede2;
-    --line: #3a3129;
-    --shadow: 4px 4px 0 #6b5e50;
-    --shadow-lg: 6px 6px 0 #6b5e50;
-    --accent-soft: #3a1516;
+    --bg: #2a241f;
+    --surface: #332c26;
+    --surface-2: #3d352e;
+    --surface-3: #4a4139;
+    --text: #f3ebde;
+    --text-2: #ddd2c3;
+    --muted: #b0a394;
+    --border: #ebe1d2;
+    --border-strong: #ebe1d2;
+    --line: #55493f;
+    --shadow: 4px 4px 0 #15110e;
+    --shadow-lg: 6px 6px 0 #15110e;
+    --accent-soft: #4a2325;
     --gold-soft: #3a3012;
     --radical-soft: #332b24;
     --kanji-soft: #3a1516;
-    --radical: #f4ede2;
-    --locked: #332b24;
+    --radical: #ebe1d2;
+    --locked: #4a4139;
     --enlightened: #d9c9c9;
     --st-8: #d9c9c9;
     --ok-soft: #14351f;
@@ -104,24 +104,24 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #14110e;
-  --surface: #1b1713;
-  --surface-2: #241f1a;
-  --surface-3: #332b24;
-  --text: #f4ede2;
-  --text-2: #d9cfc0;
-  --muted: #a3968a;
-  --border: #f4ede2;
-  --border-strong: #f4ede2;
-  --line: #3a3129;
-  --shadow: 4px 4px 0 #6b5e50;
-  --shadow-lg: 6px 6px 0 #6b5e50;
-  --accent-soft: #3a1516;
+  --bg: #2a241f;
+  --surface: #332c26;
+  --surface-2: #3d352e;
+  --surface-3: #4a4139;
+  --text: #f3ebde;
+  --text-2: #ddd2c3;
+  --muted: #b0a394;
+  --border: #ebe1d2;
+  --border-strong: #ebe1d2;
+  --line: #55493f;
+  --shadow: 4px 4px 0 #15110e;
+  --shadow-lg: 6px 6px 0 #15110e;
+  --accent-soft: #4a2325;
   --gold-soft: #3a3012;
   --radical-soft: #332b24;
   --kanji-soft: #3a1516;
-  --radical: #f4ede2;
-  --locked: #332b24;
+  --radical: #ebe1d2;
+  --locked: #4a4139;
   --enlightened: #d9c9c9;
   --st-8: #d9c9c9;
   --ok-soft: #14351f;
@@ -1031,3 +1031,20 @@ h1 { font-size: 1.9rem; }
 .capture-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; }
 .capture-controls input[type="range"] { vertical-align: middle; width: 140px; accent-color: var(--accent); }
 .scan-stage { cursor: grab; overflow: hidden; border-radius: var(--radius-sm); }
+
+/* --- Evolution -------------------------------------------------------- */
+.evo { position: fixed; inset: 0; z-index: 85; display: grid; place-items: center; background: rgba(20, 14, 10, 0.72); cursor: pointer; animation: fadeIn 240ms var(--ease); }
+.evo.is-leaving { animation: introOut 340ms var(--ease) forwards; }
+.evo-card { width: min(92vw, 420px); text-align: center; padding: 26px 20px 18px; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
+.evo-title { font-family: var(--font-display); font-weight: 900; font-size: 1.35rem; margin-bottom: 14px; }
+.evo-stage { position: relative; display: grid; place-items: center; height: 190px; }
+.evo-glyph { font-size: 7rem; line-height: 1; font-weight: 700; padding: 6px 22px; border-radius: 20px; border: 3px solid var(--border); background: var(--bg); animation: evoPulse 1.7s ease-in-out; }
+.evo-glyph.stage-apprentice { color: var(--apprentice); } .evo-glyph.stage-guru { color: var(--guru); } .evo-glyph.stage-master { color: var(--master); } .evo-glyph.stage-enlightened { color: var(--enlightened); } .evo-glyph.stage-burned { color: var(--burned); border-color: var(--gold); }
+.evo-glyph.is-evolved { animation: evoPop 600ms cubic-bezier(0.2, 1.4, 0.3, 1); box-shadow: 0 0 0 6px color-mix(in srgb, currentColor 25%, transparent); }
+.evo-name { font-family: var(--font-display); font-weight: 900; font-size: 1.15rem; margin-top: 8px; }
+.evo-arrow { font-weight: 900; color: var(--muted); }
+.evo-hint { margin: 12px 0 0; }
+@keyframes evoPulse { 0%, 100% { filter: brightness(1); transform: scale(1); } 20% { filter: brightness(2.2) saturate(0); transform: scale(1.06); } 40% { filter: brightness(1); } 60% { filter: brightness(2.6) saturate(0); transform: scale(1.1); } 80% { filter: brightness(1); } 90% { filter: brightness(3) saturate(0); transform: scale(1.14); } }
+@keyframes evoPop { 0% { transform: scale(0.6); filter: brightness(3) saturate(0); } 60% { transform: scale(1.12); filter: brightness(1.2); } 100% { transform: scale(1); filter: brightness(1); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .evo-glyph, .evo-glyph.is-evolved { animation: none; } }

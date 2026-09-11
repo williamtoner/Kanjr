@@ -128,12 +128,40 @@ const VICTORY = {
   once: true,
 };
 
-export const TUNES = { overworld: OVERWORLD, encounter: ENCOUNTER, sighting: SIGHTING, dex: DEX, victory: VICTORY };
+// Celebration: opens with the victory fanfare exactly as before, then settles
+// into a cheerful loop with two variations (A: skipping melody over I IV V I;
+// B: a higher answer over vi IV V I). Loops from the end of the fanfare.
+const CELEBRATION = {
+  bpm: 132,
+  loopStart: 36,
+  lead: { duty: 0.5, gain: 0.17, pattern: `
+    c5:2 e5:2 g5:2 c6:4 b5:2 c6:6 -:2 e6:4 c6:4 g5:4 c6:4
+    e5:2 g5:2 c6:4 g5:2 e5:2 g5:4   f5:2 a5:2 c6:4 a5:2 f5:2 a5:4   g5:2 b5:2 d6:4 b5:2 g5:2 b5:4   c6:4 e6:2 d6:2 c6:8
+    e5:2 g5:2 c6:4 g5:2 e5:2 g5:4   f5:2 a5:2 c6:4 a5:2 f5:2 d6:4   g5:2 b5:2 d6:4 e6:2 d6:2 b5:4   c6:12 -:4
+    a5:2 c6:2 e6:4 c6:2 a5:2 c6:4   f5:2 a5:2 c6:4 a5:2 f5:2 a5:4   g5:2 b5:2 d6:4 g6:2 f6:2 d6:4   e6:4 c6:2 d6:2 e6:8
+    a5:2 c6:2 e6:4 c6:2 a5:2 e6:4   f5:2 a5:2 c6:4 d6:2 c6:2 a5:4   g5:4 b5:4 d6:4 b5:4   c6:8 g5:2 e5:2 c5:4` },
+  harmony: { duty: 0.25, gain: 0.08, pattern: `
+    e4:2 g4:2 c5:2 e5:4 g5:2 e5:6 -:2 g5:4 e5:4 c5:4 e5:4
+    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   f4:2 a4:2 c5:2 a4:2 f4:2 a4:2 c5:2 a4:2   g4:2 b4:2 d5:2 b4:2 g4:2 b4:2 d5:2 b4:2   c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2
+    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   f4:2 a4:2 c5:2 a4:2 f4:2 a4:2 c5:2 a4:2   g4:2 b4:2 d5:2 b4:2 g4:2 b4:2 d5:2 b4:2   c4:2 e4:2 g4:2 e4:2 c4:4 -:4
+    a4:2 c5:2 e5:2 c5:2 a4:2 c5:2 e5:2 c5:2   f4:2 a4:2 c5:2 a4:2 f4:2 a4:2 c5:2 a4:2   g4:2 b4:2 d5:2 b4:2 g4:2 b4:2 d5:2 b4:2   c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2
+    a4:2 c5:2 e5:2 c5:2 a4:2 c5:2 e5:2 c5:2   f4:2 a4:2 c5:2 a4:2 f4:2 a4:2 c5:2 a4:2   g4:2 b4:2 d5:2 b4:2 g4:2 b4:2 d5:2 b4:2   c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 c4:4` },
+  bass: { gain: 0.22, pattern: `
+    c3:4 g2:4 c3:8 f2:4 g2:4 c3:4 c3:8
+    c3:4 g2:4 c3:4 g2:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:4 g2:4 c3:4 g2:4
+    c3:4 g2:4 c3:4 g2:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:8 c3:4 -:4
+    a2:4 e3:4 a2:4 e3:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:4 g2:4 c3:4 g2:4
+    a2:4 e3:4 a2:4 e3:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:8 g2:4 c3:4` },
+  drums: { gain: 0.13, pattern: `k:2 h:2 s:2 h:2 k:2 s:2 k:2 h:2 k:2 h:2 s:2 h:2 k:2 s:2 k:2 h:2 k:2 h:2 ` + ('k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 '.repeat(16)).trim() },
+};
+
+export const TUNES = { overworld: OVERWORLD, encounter: ENCOUNTER, sighting: SIGHTING, dex: DEX, victory: VICTORY, celebration: CELEBRATION };
 
 /** Validate a tune: every channel must have the same length in 16ths. */
 export function tuneLength(tune) {
   const lens = ['lead', 'harmony', 'bass', 'drums'].filter((k) => tune[k]).map((k) => patternLength(parsePattern(tune[k].pattern)));
   if (new Set(lens).size !== 1) throw new Error(`channel lengths differ: ${lens.join(', ')}`);
+  if (tune.loopStart != null && !(tune.loopStart >= 0 && tune.loopStart < lens[0])) throw new Error('loopStart out of range');
   return lens[0];
 }
 
@@ -267,7 +295,7 @@ function tick() {
     seq.step += 1;
     if (seq.step >= seq.length) {
       if (seq.tune.once) { stopInternal(); if (state.wanted && state.wanted !== seq.name) startInternal(state.wanted); return; }
-      seq.step = 0;
+      seq.step = seq.tune.loopStart || 0;
     }
   }
 }

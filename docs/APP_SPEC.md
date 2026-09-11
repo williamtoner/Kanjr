@@ -189,6 +189,16 @@ at the end of a review session, then the scene tune resumes). Music starts
 on the first user gesture (intro tap), pauses when the tab is hidden, and
 has its own `music` toggle and `musicVolume` setting.
 
+Celebration: finishing a review session or a lesson batch switches the
+music to `celebration`, which opens with the victory fanfare and then loops a
+longer cheerful body (two variations) from `loopStart`; it plays until the
+learner leaves the screen. Evolution: when an item rises to a new stage group
+(Guru, Master, Enlightened, Burned) an overlay shows "What? 日 is evolving!",
+flashes the glyph, then reveals the new form with before/after stage badges;
+tap or Enter continues, auto-dismisses after a few seconds, off with the
+celebrations setting. Themes: light paper is a softer parchment (bg #efe8dc),
+dark is a warm brown (bg #2a241f) rather than near-black.
+
 ## Sounds and feedback (sfx.js)
 
 All sounds are synthesised with the Web Audio API (no files): a two-note

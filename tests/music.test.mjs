@@ -22,4 +22,10 @@ export const tests = {
       for (const ev of parsePattern(tune.drums.pattern)) if (ev.note) assert.ok('khs'.includes(ev.note), `${name}: drum ${ev.note}`);
     }
   },
+  'the celebration opens with the victory fanfare and loops after it': () => {
+    const v = parsePattern(TUNES.victory.lead.pattern), c = parsePattern(TUNES.celebration.lead.pattern);
+    assert.deepStrictEqual(c.slice(0, v.length).map((e) => [e.note, e.len]), v.map((e) => [e.note, e.len]));
+    assert.strictEqual(TUNES.celebration.loopStart, patternLength(v));
+    assert.ok(tuneLength(TUNES.celebration) > TUNES.celebration.loopStart + 100, 'a proper body after the fanfare');
+  },
 };

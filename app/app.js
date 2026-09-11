@@ -1039,6 +1039,7 @@ function finishLessonBatch(L) {
   backupIfNeeded(true);
   L.phase = 'done';
   sfx.lessonDone();
+  music.play('celebration');
   confetti(1200);
   const more = engine.lessonQueue(app.data, p, t).length;
   const due = engine.dueCount(p, t);
@@ -1058,7 +1059,7 @@ function finishLessonBatch(L) {
       </div>
     </section>`;
   const moreBtn = $('[data-act="more"]', main);
-  if (moreBtn) { moreBtn.addEventListener('click', () => { app.lesson = null; renderLessons(); }); moreBtn.focus(); }
+  if (moreBtn) { moreBtn.addEventListener('click', () => { app.lesson = null; music.play('sighting'); renderLessons(); }); moreBtn.focus(); }
   app.keyHandler = (e) => { if (e.key === 'Enter' && moreBtn) { e.preventDefault(); moreBtn.click(); } };
 }
 
@@ -1098,7 +1099,7 @@ function renderReviews() {
       setProgress(engine.applyReview(app.progress, id, wrong, now()));
       const after = engine.stageOf(app.progress, id);
       if (after >= 9 && before < 9) { setTimeout(() => sfx.burned(), 260); setTimeout(() => toast(`${itemOf(id).char} burned — a gold stamp in your dex`, 'ok'), 300); }
-      else if (srs.groupOf(after) !== srs.groupOf(before) && after > before) { setTimeout(() => sfx.stageUp(), 260); setTimeout(() => toast(`${itemOf(id).char} reached ${srs.stageName(after)}`, 'ok'), 300); }
+      else if (srs.groupOf(after) !== srs.groupOf(before) && after > before) { setTimeout(() => showEvolution(id, before, after), 420); }
     },
     onWrapUp() { /* session already saved via onSession */ },
     onFinish(s) {
@@ -1115,7 +1116,7 @@ function finishReviewSession(s) {
   store.flush();
   backupIfNeeded(true);
   const stats = engine.sessionStats(s);
-  if (stats.done) { sfx.complete(); music.jingle('victory'); if (stats.accuracy >= 0.8) confetti(); }
+  if (stats.done) { sfx.complete(); music.play('celebration'); if (stats.accuracy >= 0.8) confetti(); }
   const missed = s.done.filter((d) => d.wrong > 0).map((d) => d.id);
   const t = now();
   const nextAt = engine.nextReviewAt(app.progress, t);
@@ -2003,6 +2004,52 @@ function scanKnownSet() {
   return app.knownSet;
 }
 
+/* ---------- Evolution: a kanji reaches a new stage group ---------- */
+
+function showEvolution(id, fromStage, toStage) {
+  const item = itemOf(id);
+  if (!item || app.progress.settings.celebrations === false) { sfx.stageUp(); toast(`${item ? item.char : id} reached ${srs.stageName(toStage)}`, 'ok'); return; }
+  const fromGroup = srs.groupOf(fromStage), toGroup = srs.groupOf(toStage);
+  const form = { guru: 'Guru form', master: 'Master form', enlightened: 'Enlightened form', burned: 'Burned form' }[toGroup] || srs.stageName(toStage);
+  const el = document.createElement('div');
+  el.className = 'evo';
+  el.setAttribute('role', 'dialog');
+  el.innerHTML = `
+    <div class="evo-card">
+      <div class="evo-title">What? ${esc(item.char)} is evolving!</div>
+      <div class="evo-stage"><div class="evo-glyph jp stage-${esc(fromGroup)}">${esc(item.char)}</div></div>
+      <div class="evo-result" hidden>
+        <div class="evo-name">${esc(item.char)} evolved into its <strong>${esc(form)}</strong></div>
+        <div class="btn-row" style="justify-content:center;margin-top:6px">${stageBadge(fromStage)}<span class="evo-arrow">→</span>${stageBadge(toStage)}</div>
+        <p class="small muted" style="margin:10px 0 0">Meaning: ${esc(item.name)} · next encounter in ${esc(srs.intervalHours(toStage) >= 24 ? `${Math.round(srs.intervalHours(toStage) / 24)} days` : `${srs.intervalHours(toStage)} hours`)}</p>
+      </div>
+      <p class="small muted evo-hint">tap to continue</p>
+    </div>`;
+  document.body.appendChild(el);
+  const glyph = el.querySelector('.evo-glyph');
+  const result = el.querySelector('.evo-result');
+  sfx.stageUp();
+  let done = false;
+  const finish = () => {
+    if (done) return; done = true;
+    el.classList.add('is-leaving');
+    setTimeout(() => el.remove(), 350);
+  };
+  const reveal = () => {
+    if (done) return;
+    glyph.classList.remove(`stage-${fromGroup}`);
+    glyph.classList.add(`stage-${toGroup}`, 'is-evolved');
+    result.hidden = false;
+    if (toGroup === 'burned') sfx.burned(); else sfx.lessonDone();
+    burst(glyph.parentElement, { count: 26, colour: toGroup === 'burned' ? 'var(--gold)' : 'var(--accent)' });
+    setTimeout(finish, 3200);
+  };
+  setTimeout(reveal, reducedMotion() ? 200 : 1700);
+  el.addEventListener('click', () => { if (result.hidden) reveal(); else finish(); });
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); if (result.hidden) reveal(); else finish(); } });
+  el.tabIndex = -1; el.focus();
+}
+
 /* ---------- Leech drill: extra practice that never touches the SRS ---------- */
 
 function renderLeechDrill() {
@@ -2689,6 +2736,7 @@ async function boot() {
   route();
   registerServiceWorker();
   applySfxSettings();
+  window.kanjrMusic = music;   // handy in the console
   maybeIntro();
   // iOS only unlocks audio from click, touchend or a key press (not
   // touchstart/pointerdown), so listen to those.
