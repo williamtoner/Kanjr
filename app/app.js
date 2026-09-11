@@ -1661,10 +1661,10 @@ function introScene() {
       <linearGradient id="hill3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6e58f"/><stop offset="1" stop-color="#78c25a"/></linearGradient>
     </defs>
     <rect width="400" height="720" fill="url(#sky)"/>
-    <circle cx="322" cy="118" r="42" fill="#fff4b3" stroke="#17130f" stroke-width="3"/>
+    <circle cx="52" cy="66" r="30" fill="#fff4b3" stroke="#17130f" stroke-width="3"/>
     <g fill="#fff" stroke="#17130f" stroke-width="3" stroke-linejoin="round">
-      <path d="M52 150a22 22 0 0 1 30-22 26 26 0 0 1 48-4 20 20 0 0 1 24 26z"/>
-      <path d="M212 96a18 18 0 0 1 26-16 22 22 0 0 1 40-2 16 16 0 0 1 18 18z"/>
+      <path d="M40 214a22 22 0 0 1 30-22 26 26 0 0 1 48-4 20 20 0 0 1 24 26z"/>
+      <path d="M262 186a18 18 0 0 1 26-16 22 22 0 0 1 40-2 16 16 0 0 1 18 18z"/>
     </g>
     <path d="M0 356 L150 246 L190 268 L226 236 L400 356z" fill="#6e7f9a" stroke="#17130f" stroke-width="3" stroke-linejoin="round"/>
     <path d="M124 264 L150 246 L190 268 L226 236 L252 256 L236 262 L212 250 L192 280 L150 256 L130 270z" fill="#fff" stroke="#17130f" stroke-width="3" stroke-linejoin="round"/>
