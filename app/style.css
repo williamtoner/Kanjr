@@ -1020,3 +1020,14 @@ h1 { font-size: 1.9rem; }
 .review-top .counter { white-space: nowrap; }
 .streak { white-space: nowrap; }
 @media (max-width: 420px) { .review-top .accuracy { display: none; } .review-top .counter { font-size: 0.875rem; } }
+
+/* --- Capture square ---------------------------------------------------- */
+.capture-box { position: absolute; border: 3px solid var(--accent); border-radius: 6px; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.35); pointer-events: none; }
+.capture-box i { position: absolute; width: 14px; height: 14px; border: 3px solid var(--accent); }
+.capture-box i:nth-child(1) { top: -3px; left: -3px; border-right: 0; border-bottom: 0; }
+.capture-box i:nth-child(2) { top: -3px; right: -3px; border-left: 0; border-bottom: 0; }
+.capture-box i:nth-child(3) { bottom: -3px; left: -3px; border-right: 0; border-top: 0; }
+.capture-box i:nth-child(4) { bottom: -3px; right: -3px; border-left: 0; border-top: 0; }
+.capture-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; margin-top: 10px; }
+.capture-controls input[type="range"] { vertical-align: middle; width: 140px; accent-color: var(--accent); }
+.scan-stage { cursor: grab; }

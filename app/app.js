@@ -22,6 +22,7 @@ import * as sync from './sync.js';
 import { sfx, configure as configureSfx, unlock as unlockAudio, audioState } from './sfx.js';
 import { music } from './music.js';
 import * as scan from './scan.js';
+import * as visual from './visual.js';
 import * as game from './game.js';
 
 // ===========================================================================
@@ -1730,7 +1731,7 @@ function maybeIntro() {
 
 /* ---------- Scan: photograph a kanji and add it ---------- */
 
-const scanState = { file: null, result: null, selected: new Set(), busy: false, error: '', progress: null, crop: null, usedCrop: false };
+const scanState = { file: null, result: null, selected: new Set(), busy: false, error: '', progress: null, crop: null, usedCrop: false, box: null, candidates: null, boxSize: 0.28 };
 
 function renderScan() {
   const data = app.data;
@@ -1758,7 +1759,7 @@ function renderScan() {
     <section class="screen stack scan">
       <div class="screen-head"><h1>Catch a kanji</h1><a class="btn btn-sm btn-ghost" href="#/grid">Dex</a></div>
       <div class="card">
-        <p class="small muted">Snap a sign, a menu or a package. The kanji are recognised on your phone (nothing is uploaded) and shown below as wild kanji; tap the ones you know and catch them into your encounters. For best results fill the frame with the text, hold the phone level, and avoid glare; a tilt of up to about 9° is straightened automatically, and vertical signs are read too. Printed text works well; handwriting and fancy logos less so.</p>
+        <p class="small muted">Snap a sign, a menu or a package, then drag the red square onto one kanji and capture it. You get a handful of best guesses with their meanings; tap the right one to catch it. Everything is recognised on your phone; nothing is uploaded. "Read the whole photo" is there for clean, straight-on shots with several kanji.</p>
         <div class="btn-row" style="margin-top:8px">
           <label class="btn btn-primary" for="scan-file">${scanState.file ? 'Snap another' : 'Snap a photo'}</label>
           <input type="file" id="scan-file" accept="image/*" capture="environment" class="sr-only" tabindex="-1">
@@ -1768,12 +1769,22 @@ function renderScan() {
         ${scanState.busy ? `<div class="scan-progress"><div class="muted small" data-role="scan-label">${esc(scanState.progress ? scanState.progress.label : 'Preparing…')}</div><div class="level-bar"><div data-role="scan-bar" style="width:${scanState.progress ? Math.round(scanState.progress.ratio * 100) : 0}%"></div></div></div>` : ''}
         ${scanState.error ? `<p class="small" style="color:var(--bad);margin-top:10px">${esc(scanState.error)}</p>` : ''}
         <div data-role="scan-preview" class="scan-preview" ${scanState.file ? '' : 'hidden'}></div>
-        ${scanState.file && !scanState.busy ? `<p class="small muted" style="margin-top:8px">Busy photo? Drag a box over the text on the picture, then press “Read selected area”.${r && r.angle ? ` Straightened by ${esc(Math.abs(r.angle))}°.` : ''}${r && r.vertical ? ' Read as vertical text.' : ''}</p>
-        <div class="btn-row" data-role="crop-actions" ${scanState.crop ? '' : 'hidden'}>
-          <button class="btn btn-primary btn-sm" type="button" data-act="scan-crop">Read selected area</button>
-          <button class="btn btn-ghost btn-sm" type="button" data-act="scan-uncrop">Clear box</button>
-        </div>` : ''}
+        ${scanState.file && !scanState.busy ? `
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-primary" type="button" data-act="capture-one">Capture the kanji in the square</button>
+          <button class="btn btn-sm" type="button" data-act="scan-whole">Read the whole photo</button>
+        </div>
+        ${r && (r.angle || r.vertical) ? `<p class="small muted" style="margin-top:8px">${r.angle ? `Straightened by ${esc(Math.abs(r.angle))}°. ` : ''}${r.vertical ? 'Read as vertical text.' : ''}</p>` : ''}` : ''}
       </div>
+      ${scanState.candidates ? `
+      <div class="card">
+        <h2>Which one is it? <span class="muted">best guesses for the square</span></h2>
+        ${scanState.candidates.length ? `<div class="scan-tiles">${scanState.candidates.map((c) => { const id = `k:${c.char}`; const it = data.items[id]; const st = engine.stageOf(p, id); return `
+          <button type="button" class="scan-tile ${st > 0 ? 'is-known' : ''}" data-act="pick-candidate" data-id="${esc(id)}" title="Match ${c.score}%${c.source === 'shape' ? ' (by shape)' : ''}">
+            <span class="scan-char jp">${esc(c.char)}</span><span class="scan-name">${esc(it.name)}</span>
+            <span class="scan-meta">${st > 0 ? `caught · ${esc(srs.stageName(st))}` : `${esc(game.rarityOf(it).label)} · Lv ${esc(it.level)}`}</span></button>`; }).join('')}</div>
+        <p class="small muted" style="margin-top:10px">Tap the right one to catch it. Not there? Tighten the square around a single kanji, or type it below.</p>` : '<p class="muted">Nothing readable in the square. Make it a little larger than the kanji, keep it to one character, and try again.</p>'}
+      </div>` : ''}
       ${r ? `
       <div class="card">
         <h2>${r.kanji.length ? `${plural(r.kanji.length, 'wild kanji', 'wild kanji')} spotted` : 'Nothing spotted'} <span class="muted">${r.unknown ? `· ${r.unknown} not in the jōyō set` : ''}</span></h2>
@@ -1793,42 +1804,134 @@ function renderScan() {
   const preview = $('[data-role="scan-preview"]', main);
   if (scanState.file) {
     const url = URL.createObjectURL(scanState.file);
-    preview.innerHTML = `<div class="scan-stage"><img src="${url}" alt="Your photo" draggable="false"><div class="scan-box" data-role="crop-box" hidden></div></div>`;
+    preview.innerHTML = `<div class="scan-stage"><img src="${url}" alt="Your photo" draggable="false"><div class="capture-box" data-role="capture-box" hidden><i></i><i></i><i></i><i></i></div></div>
+      <div class="capture-controls">
+        <label class="small muted">Square size <input type="range" min="10" max="70" value="${Math.round(scanState.boxSize * 100)}" data-role="box-size"></label>
+        <span class="small muted">Drag the square onto one kanji, then capture.</span>
+      </div>`;
     const img = preview.querySelector('img');
-    img.addEventListener('load', () => { URL.revokeObjectURL(url); drawCropBox(); });
     const stage = preview.querySelector('.scan-stage');
-    const box = preview.querySelector('[data-role="crop-box"]');
-    const drawCropBox = () => {
-      const c = scanState.crop;
-      if (!c || !img.naturalWidth) { box.hidden = true; return; }
-      const kx = img.clientWidth / img.naturalWidth, ky = img.clientHeight / img.naturalHeight;
-      box.hidden = false;
-      box.style.left = `${c.x * kx}px`; box.style.top = `${c.y * ky}px`; box.style.width = `${c.w * kx}px`; box.style.height = `${c.h * ky}px`;
+    const box = preview.querySelector('[data-role="capture-box"]');
+    const sizeInput = preview.querySelector('[data-role="box-size"]');
+    // Box is kept in image pixels: { cx, cy, side } around its centre.
+    const ensureBox = () => {
+      if (!img.naturalWidth) return;
+      if (!scanState.box) {
+        const side = Math.round(Math.min(img.naturalWidth, img.naturalHeight) * scanState.boxSize);
+        scanState.box = { cx: Math.round(img.naturalWidth / 2), cy: Math.round(img.naturalHeight / 2), side };
+      }
     };
-    // Drag a rectangle over the text (mouse or finger).
+    const drawBox = () => {
+      ensureBox();
+      const b = scanState.box;
+      if (!b || !img.clientWidth) { box.hidden = true; return; }
+      const k = img.clientWidth / img.naturalWidth;
+      box.hidden = false;
+      box.style.width = `${b.side * k}px`; box.style.height = `${b.side * k}px`;
+      box.style.left = `${(b.cx - b.side / 2) * k}px`; box.style.top = `${(b.cy - b.side / 2) * k}px`;
+    };
+    img.addEventListener('load', () => { URL.revokeObjectURL(url); drawBox(); });
+    if (img.complete) drawBox();
     let drag = null;
-    const pt = (e) => { const rct = img.getBoundingClientRect(); return { x: Math.max(0, Math.min(rct.width, e.clientX - rct.left)), y: Math.max(0, Math.min(rct.height, e.clientY - rct.top)) }; };
-    stage.addEventListener('pointerdown', (e) => { if (scanState.busy) return; e.preventDefault(); drag = pt(e); stage.setPointerCapture(e.pointerId); });
+    const toImg = (e) => { const r = img.getBoundingClientRect(); const k = img.naturalWidth / r.width; return { x: (e.clientX - r.left) * k, y: (e.clientY - r.top) * k }; };
+    stage.addEventListener('pointerdown', (e) => {
+      if (scanState.busy) return;
+      e.preventDefault(); ensureBox();
+      const pt = toImg(e);
+      drag = { dx: scanState.box.cx - pt.x, dy: scanState.box.cy - pt.y };
+      // Tapping away from the box jumps it there.
+      if (Math.abs(pt.x - scanState.box.cx) > scanState.box.side || Math.abs(pt.y - scanState.box.cy) > scanState.box.side) {
+        const half = scanState.box.side / 2;
+        scanState.box.cx = Math.max(half, Math.min(img.naturalWidth - half, pt.x));
+        scanState.box.cy = Math.max(half, Math.min(img.naturalHeight - half, pt.y));
+        drag = { dx: 0, dy: 0 };
+      }
+      drawBox();
+      try { stage.setPointerCapture(e.pointerId); } catch (_) { /* synthetic pointer */ }
+    });
     stage.addEventListener('pointermove', (e) => {
       if (!drag) return;
-      const q = pt(e);
-      const kx = img.naturalWidth / img.clientWidth, ky = img.naturalHeight / img.clientHeight;
-      const x = Math.min(drag.x, q.x), y = Math.min(drag.y, q.y), w = Math.abs(q.x - drag.x), h = Math.abs(q.y - drag.y);
-      scanState.crop = { x: Math.round(x * kx), y: Math.round(y * ky), w: Math.round(w * kx), h: Math.round(h * ky) };
-      drawCropBox();
+      const pt = toImg(e);
+      const half = scanState.box.side / 2;
+      scanState.box.cx = Math.max(half, Math.min(img.naturalWidth - half, pt.x + drag.dx));
+      scanState.box.cy = Math.max(half, Math.min(img.naturalHeight - half, pt.y + drag.dy));
+      drawBox();
     });
-    const endDrag = () => {
-      if (!drag) return;
-      drag = null;
-      if (scanState.crop && (scanState.crop.w < 24 || scanState.crop.h < 24)) scanState.crop = null;
-      drawCropBox();
-      const acts = $('[data-role="crop-actions"]', main);
-      if (acts) acts.hidden = !scanState.crop;
-    };
+    const endDrag = () => { drag = null; };
     stage.addEventListener('pointerup', endDrag);
     stage.addEventListener('pointercancel', endDrag);
-    if (scanState.crop) drawCropBox();
+    sizeInput.addEventListener('input', () => {
+      ensureBox();
+      scanState.boxSize = Number(sizeInput.value) / 100;
+      scanState.box.side = Math.round(Math.min(img.naturalWidth, img.naturalHeight) * scanState.boxSize);
+      const half = scanState.box.side / 2;
+      scanState.box.cx = Math.max(half, Math.min(img.naturalWidth - half, scanState.box.cx));
+      scanState.box.cy = Math.max(half, Math.min(img.naturalHeight - half, scanState.box.cy));
+      drawBox();
+    });
   }
+  const captureOne = async () => {
+    const b = scanState.box;
+    if (!b || !scanState.file) return;
+    const crop = { x: Math.round(b.cx - b.side / 2), y: Math.round(b.cy - b.side / 2), w: b.side, h: b.side };
+    scanState.candidates = null; scanState.error = ''; scanState.busy = true; scanState.progress = null; scanState.result = null;
+    renderScan();
+    try {
+      const r = await scan.recognizeSingle(scanState.file, crop, known, (label, ratio) => {
+        scanState.progress = { label, ratio };
+        const lbl = $('[data-role="scan-label"]', main), bar = $('[data-role="scan-bar"]', main);
+        if (lbl) lbl.textContent = label;
+        if (bar) bar.style.width = `${Math.round(ratio * 100)}%`;
+      });
+      // Combine three opinions: the reader's confidence, the shape matcher's
+      // similarity, and whether the stroke complexity is in the right league.
+      let templates = null, q = null;
+      try {
+        templates = await visual.getTemplates(Array.from(known));
+        q = visual.normaliseBitmap(visual.canvasGray(r.canvas), r.canvas.width, r.canvas.height);
+      } catch (_) { /* visual matcher unavailable */ }
+      const visualTop = q && templates ? visual.rank(q, templates, 6) : [];
+      const qComplexity = q ? visual.complexity(q) : 0;
+      const pool = new Map();
+      for (const c of r.candidates) pool.set(c.char, { char: c.char, ocr: c.conf / 100, vis: 0 });
+      for (const v of visualTop) { const e = pool.get(v.char) || { char: v.char, ocr: 0, vis: 0 }; e.vis = v.score; pool.set(v.char, e); }
+      const merged = [];
+      for (const e of pool.values()) {
+        if (q && templates && templates.has(e.char) && !e.vis) e.vis = visual.bestSimilarity(q, templates.get(e.char));
+        const visN = Math.max(0, Math.min(1, (e.vis - 0.15) / 0.4));
+        const tmpl = templates && templates.get(e.char);
+        const cx = tmpl ? visual.complexityMatch(qComplexity, visual.complexity(Array.isArray(tmpl) ? tmpl[0] : tmpl)) : 0.5;
+        // A confident reading counts most, unless its stroke complexity is
+        // nowhere near what is in the square (a 16-stroke guess for a
+        // 3-stroke blob), in which case it is probably noise.
+        const ocrW = cx < 0.2 ? 0.35 : 0.7;
+        e.score = ocrW * e.ocr + 0.45 * visN + 0.25 * cx;
+        e.source = e.ocr * ocrW >= visN * 0.45 ? 'ocr' : 'shape';
+        merged.push(e);
+      }
+      merged.sort((a, b) => b.score - a.score);
+      for (const e of merged) e.score = Math.round(e.score * 100);
+      scanState.candidates = merged.slice(0, 6);
+      window.kanjrScanDebug = { ocr: r.candidates, passes: r.debug && r.debug.passes, visualTop, merged: merged.slice(0, 6) };   // handy in the console when tuning
+      sfx.tap();
+    } catch (err) {
+      scanState.error = err && err.message ? err.message : String(err);
+    } finally {
+      scanState.busy = false;
+      renderScan();
+    }
+  };
+  const capBtn = $('[data-act="capture-one"]', main);
+  if (capBtn) capBtn.addEventListener('click', captureOne);
+  $$('[data-act="pick-candidate"]', main).forEach((t) => t.addEventListener('click', () => {
+    const id = t.dataset.id;
+    if (engine.stageOf(app.progress, id) > 0) { toast(`${itemOf(id).char} is already in your dex`); return; }
+    setProgress(engine.startManually(app.progress, [id], now()), { immediate: true });
+    stampHit(t, 'Caught');
+    sfx.lessonDone();
+    toast(`${itemOf(id).char} caught — in your encounters now`, 'ok');
+    setTimeout(() => renderScan(), 500);
+  }));
   const recognise = async (f, crop) => {
     scanState.result = null; scanState.selected.clear(); scanState.error = ''; scanState.busy = true; scanState.progress = null; scanState.usedCrop = !!crop;
     renderScan();
@@ -1852,15 +1955,13 @@ function renderScan() {
   const onFile = (input) => {
     const f = input.files && input.files[0];
     if (!f) return;
-    scanState.file = f; scanState.crop = null;
-    recognise(f, null);
+    scanState.file = f; scanState.crop = null; scanState.box = null; scanState.candidates = null; scanState.result = null; scanState.error = '';
+    renderScan();
   };
   $('#scan-file', main).addEventListener('change', (e) => onFile(e.target));
   $('#scan-pick', main).addEventListener('change', (e) => onFile(e.target));
-  const cropBtn = $('[data-act="scan-crop"]', main);
-  if (cropBtn) cropBtn.addEventListener('click', () => { if (scanState.crop) recognise(scanState.file, scanState.crop); });
-  const uncropBtn = $('[data-act="scan-uncrop"]', main);
-  if (uncropBtn) uncropBtn.addEventListener('click', () => { scanState.crop = null; renderScan(); });
+  const wholeBtn = $('[data-act="scan-whole"]', main);
+  if (wholeBtn) wholeBtn.addEventListener('click', () => { scanState.candidates = null; recognise(scanState.file, null); });
   $$('.scan-tile', main).forEach((t) => t.addEventListener('click', () => {
     const id = t.dataset.id;
     if (scanState.selected.has(id)) scanState.selected.delete(id); else scanState.selected.add(id);
@@ -1891,7 +1992,7 @@ function renderScan() {
   };
   $('[data-act="scan-typed"]', main).addEventListener('click', showTyped);
   typed.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); showTyped(); } });
-  app.cleanup = () => { scanState.file = null; scanState.result = null; scanState.selected.clear(); scanState.error = ''; scanState.crop = null; };
+  app.cleanup = () => { scanState.file = null; scanState.result = null; scanState.selected.clear(); scanState.error = ''; scanState.crop = null; scanState.box = null; scanState.candidates = null; };
 }
 
 function scanKnownSet() {

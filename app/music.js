@@ -255,6 +255,11 @@ function buildSequence(name) {
 function tick() {
   const ctx = state.ctx, seq = state.current;
   if (!ctx || !seq || state.paused) return;
+  if (ctx.state !== 'running') {
+    // Keep the very first step scheduled (so a source exists from the
+    // unlocking tap) but wait for the clock before scheduling more.
+    if (seq.step > 0) { seq.nextTime = ctx.currentTime + 0.05; return; }
+  }
   const horizon = ctx.currentTime + 0.15;
   while (seq.nextTime < horizon) {
     scheduleStep(ctx, seq, seq.step, seq.nextTime, seq.stepDur);
@@ -295,8 +300,11 @@ export const music = {
     if (state.current && state.current.name === name) return;
     const ctx = getCtx();
     if (!ctx) return;
-    if (ctx.state === 'running' || state.current) startInternal(name);
-    else if (ctx.state === 'suspended') ctx.resume().then(() => { if (ctx.state === 'running' && state.wanted === name && !state.current) startInternal(name); }).catch(() => {});
+    // Start straight away, even if the context is still suspended: the
+    // sources are created now (which is what iOS needs to happen inside a
+    // tap) and simply begin sounding when the context runs.
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    startInternal(name);
   },
   /** A one-shot jingle; the previous tune resumes afterwards. */
   jingle(name) {
@@ -310,9 +318,9 @@ export const music = {
   unlock() {
     const ctx = getCtx();
     if (!ctx) return;
-    const go = () => { if (state.wanted && state.enabled && !state.current && ctx.state === 'running') startInternal(state.wanted); };
-    if (ctx.state === 'suspended') ctx.resume().then(go).catch(() => {});
-    go();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    if (state.wanted && state.enabled && !state.current) startInternal(state.wanted);
+    else if (state.current && state.ctx) state.current.nextTime = Math.max(state.current.nextTime, state.ctx.currentTime + 0.05);
   },
   state() { return state.ctx ? state.ctx.state : 'not created'; },
   configure({ enabled, volume } = {}) {

@@ -154,6 +154,22 @@ and binarisation made no measurable difference; rotation did. A text box on the 
 accepts pasted text (for iOS Live Text) and goes through the same tiles.
 Nothing is uploaded anywhere.
 
+Capture square (default mode after a photo): a draggable square (tap to
+jump, drag to move, slider for size) isolates one kanji. "Capture the kanji
+in the square" runs `scan.recognizeSingle`: the crop is shrunk to 48, 72 and
+104 px (Tesseract's models expect text of roughly that height; a large crop
+reads as junk) and read in single-character, single-line and block modes,
+normal and inverted. `visual.js` gives a second opinion: every jōyō kanji is
+rendered once in Noto Sans JP and Noto Serif JP to 28×28 ink-density
+templates (Otsu ink, bounding-box crop, blur, mean-centred, unit length) and
+ranked by cosine similarity, with an ink-transition "complexity" measure.
+Candidates are scored 0.7·reader + 0.45·shape + 0.25·complexity match
+(reader weight halved when its stroke complexity is implausible) and the
+top six are shown as tiles with meanings; tapping one catches it. "Read the
+whole photo" keeps the multi-kanji pipeline. Music: `music.play` now creates
+its sound sources inside the unlocking tap (iOS needs a source started
+within a gesture), so the overworld theme begins on the intro tap.
+
 Phone ergonomics: in reviews, tapping the kanji card acts as Enter (continue
 after feedback, submit when text is typed) and a sticky continue bar sits
 above the tab bar during feedback on narrow screens. Lesson cards can be

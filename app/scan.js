@@ -238,3 +238,49 @@ export async function recognizeKanji(file, known, onProgress, { crop = null } = 
   const merged = mergeSymbols(passes, known);
   return Object.assign(merged, { text: horiz.text, angle: bestAngle, vertical });
 }
+
+/**
+ * Capture one kanji from a square region. Runs several Tesseract passes on
+ * the crop (single character, single line, block; normal and inverted) and
+ * returns candidate characters ranked by confidence, filtered to `known`.
+ * The caller merges these with the visual matcher's candidates.
+ */
+export async function recognizeSingle(file, crop, known, onProgress) {
+  const bitmap = await loadBitmap(file);
+  const worker = await getWorker(onProgress);
+  const say = (label, ratio) => { if (onProgress) onProgress(label, ratio); };
+  // Tesseract's models were trained on text about 30-60 px tall, so a big
+  // crop of one character must be shrunk, not enlarged. Try a few sizes.
+  const base = renderCanvas(bitmap, { crop, maxSide: 320, deg: 0 });
+  const variants = [];
+  for (const px of [48, 72, 104]) {
+    const pad = Math.round(px * 0.3);
+    const c = document.createElement('canvas');
+    c.width = px + pad * 2; c.height = px + pad * 2;
+    const x = c.getContext('2d');
+    x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+    x.imageSmoothingEnabled = true; x.imageSmoothingQuality = 'high';
+    x.drawImage(base, pad, pad, px, px);
+    variants.push(c);
+  }
+  const inverted = document.createElement('canvas');
+  inverted.width = variants[1].width; inverted.height = variants[1].height;
+  const ictx = inverted.getContext('2d');
+  ictx.drawImage(variants[1], 0, 0);
+  const id = ictx.getImageData(0, 0, inverted.width, inverted.height);
+  for (let i = 0; i < id.data.length; i += 4) { id.data[i] = 255 - id.data[i]; id.data[i + 1] = 255 - id.data[i + 1]; id.data[i + 2] = 255 - id.data[i + 2]; }
+  ictx.putImageData(id, 0, 0);
+  const plan = [[variants[0], 10], [variants[1], 10], [variants[2], 10], [variants[1], 7], [variants[2], 7], [inverted, 10], [variants[1], 6]];
+  const passes = [];
+  for (let i = 0; i < plan.length; i++) {
+    say('Reading the capture', i / plan.length);
+    try {
+      const r = await recognizeCanvas(worker, plan[i][0], 'jpn', plan[i][1]);
+      passes.push(r.syms);
+    } catch (_) { /* skip this pass */ }
+  }
+  say('Reading the capture', 1);
+  if (bitmap.close) bitmap.close();
+  const merged = mergeSymbols(passes, known, 10);
+  return { candidates: merged.kanji, canvas: base, debug: { passes: passes.map((syms) => syms.map((x) => `${x.t}(${Math.round(x.c)})`).join(' ')) } };
+}
