@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="description" content="Kanjr — spaced-repetition flash cards for the meanings of Japanese kanji.">
-  <meta name="theme-color" content="#ec4899">
+  <meta name="theme-color" content="#d7262a">
   <meta name="color-scheme" content="light dark">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +19,7 @@
   <!-- Fonts are optional; system fallbacks are declared in style.css. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500&family=Noto+Serif+JP:wght@500&family=Klee+One:wght@600&family=Zen+Kurenaido&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@700;900&family=Noto+Sans+JP:wght@400;500&family=Noto+Serif+JP:wght@500&family=Klee+One:wght@600&family=Zen+Kurenaido&display=swap">
   <link rel="stylesheet" href="style.css">
 
   <!-- Apply the saved theme before first paint to avoid a flash. -->
@@ -39,7 +39,7 @@
 
   <header class="topbar" id="topbar">
     <a class="logo" href="#/" aria-label="Kanjr home">
-      <span class="logo-mark" aria-hidden="true">字</span>
+      <span class="logo-mark jp" aria-hidden="true">字</span>
       <span class="logo-text">Kanjr</span>
     </a>
     <nav class="nav" id="nav" aria-label="Main">
@@ -47,13 +47,13 @@
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
         <span>Home</span>
       </a>
-      <a href="#/levels" data-route="levels">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>
-        <span>Levels</span>
-      </a>
       <a href="#/grid" data-route="grid">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h4v4H3zM10 3h4v4h-4zM17 3h4v4h-4zM3 10h4v4H3zM10 10h4v4h-4zM17 10h4v4h-4zM3 17h4v4H3zM10 17h4v4h-4zM17 17h4v4h-4z"/></svg>
-        <span>Grid</span>
+        <span>Dex</span>
+      </a>
+      <a href="#/scan" data-route="scan">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h3M17 4h3v3M20 17v3h-3M7 20H4v-3M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        <span>Catch</span>
       </a>
       <a href="#/stats" data-route="stats">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h16v-2H4zM6 16h3V9H6zm5 0h3V4h-3zm5 0h3v-5h-3z"/></svg>
@@ -64,7 +64,7 @@
         <span>Settings</span>
       </a>
     </nav>
-    <a class="level-badge" id="level-badge" href="#/levels" title="Current level">Lv –</a>
+    <a class="level-badge" id="level-badge" href="#/levels" title="Trainer level">Lv –</a>
   </header>
 
   <div class="banner" id="banner" role="status" hidden></div>

@@ -19,7 +19,7 @@ APP = ROOT / "app"
 DIST = ROOT / "dist"
 
 # Load order matters: dependencies first.
-MODULES = ["srs.js", "match.js", "store.js", "engine.js", "sync.js", "sfx.js", "scan.js", "app.js"]
+MODULES = ["srs.js", "match.js", "store.js", "engine.js", "sync.js", "sfx.js", "scan.js", "game.js", "app.js"]
 
 
 IMPORT_RE = re.compile(r"^\s*import\s+(.+?)\s+from\s+['\"]\./([\w.]+)['\"];?\s*$", re.M)

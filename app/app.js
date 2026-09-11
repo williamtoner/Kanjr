@@ -21,6 +21,7 @@ import * as store from './store.js';
 import * as sync from './sync.js';
 import { sfx, configure as configureSfx, unlock as unlockAudio } from './sfx.js';
 import * as scan from './scan.js';
+import * as game from './game.js';
 
 // ===========================================================================
 // 1. State and utilities
@@ -117,6 +118,28 @@ function greeting() {
   return 'Good evening';
 }
 
+function dexNumberOf(id) {
+  if (!app.dex) app.dex = game.dexNumbers(app.data);
+  return app.dex[id] || 0;
+}
+
+function rarityBadge(item) {
+  const r = game.rarityOf(item);
+  return `<span class="rarity r-${r.key}" title="${r.key === 'part' ? 'A building block, not a kanji' : `Rarity by how often it appears in real text`}">${r.stars ? `<span class="stars">${'★'.repeat(r.stars)}</span>` : ''}${esc(r.label)}</span>`;
+}
+
+function caughtCount() {
+  let n = 0;
+  for (const id in app.progress.items) if (app.progress.items[id].stage > 0 && app.data.items[id] && app.data.items[id].type === 'kanji') n++;
+  return n;
+}
+
+function shinyCount() {
+  let n = 0;
+  for (const id in app.progress.items) if (app.progress.items[id].shiny) n++;
+  return n;
+}
+
 function itemOf(id) {
   return app.data && app.data.items ? app.data.items[id] : null;
 }
@@ -131,10 +154,11 @@ function itemHref(id) {
 
 /** Nudge screen readers and keep the level badge current. */
 function updateLevelBadge() {
+  // (label set below)
   const badge = $('#level-badge');
   if (!badge || !app.data) return;
   const level = engine.currentLevel(app.data, app.progress);
-  badge.textContent = `Lv ${level}`;
+  badge.textContent = `Trainer Lv ${level}`;
   badge.href = `#/levels/${level}`;
 }
 
@@ -190,6 +214,16 @@ function floatText(el, text, cls = '') {
   f.textContent = text;
   el.appendChild(f);
   setTimeout(() => f.remove(), 1100);
+}
+
+/** A red seal stamp thumps onto an element: the "caught" mark. */
+function stampHit(el, text = 'Caught', gold = false) {
+  if (!el || reducedMotion() || app.progress.settings.celebrations === false) return;
+  const st = document.createElement('div');
+  st.className = `stamp-hit${gold ? ' gold' : ''}`;
+  st.textContent = text;
+  el.appendChild(st);
+  setTimeout(() => st.remove(), 800);
 }
 
 /** Confetti across the whole screen for a finished session. */
@@ -491,6 +525,7 @@ function mountQuiz(root, opts) {
     const item = itemOf(id);
     const wrongSoFar = view.phase === 'ask' ? (session.wrong[id] || 0) : 0;
     const stateCls = view.phase === 'feedback' ? `is-${view.result === 'wrong' ? 'wrong' : view.result === 'typo' ? 'typo' : 'correct'}` : '';
+    const shinyNow = item.type === 'kanji' && game.isShinyEncounter(id, session.startedAt);
     const progressPct = stats.total ? (stats.done / stats.total) * 100 : 0;
     const note = app.progress.notes[id];
 
@@ -499,7 +534,7 @@ function mountQuiz(root, opts) {
         <div class="review-top">
           <span class="counter" aria-live="polite">${view.counter} / ${stats.total}</span>
           <span class="accuracy" title="Accuracy so far">${stats.done ? pct(stats.accuracy) : '—'}</span>
-          ${view.streak >= 2 ? `<span class="streak ${view.streak >= 5 ? 'is-hot' : ''}" title="Correct answers in a row">×${view.streak}</span>` : ''}
+          ${view.streak >= 2 ? `<span class="streak ${view.streak >= 5 ? 'is-hot' : ''}" title="Caught in a row: combo">×${view.streak}</span>` : ''}
           <span class="spacer"></span>
           <button class="btn btn-ghost btn-sm btn-icon" data-act="mute" title="${app.progress.settings.sounds === false ? 'Sounds off — click to turn on' : 'Sounds on — click to mute'}" aria-label="Toggle sounds">${app.progress.settings.sounds === false ? '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9zm13.5 3 3 3-1.4 1.4-3-3-3 3L10.7 15l3-3-3-3 1.4-1.4 3 3 3-3L19.5 9z"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M3 9v6h4l5 5V4L7 9zm13.5 3a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z"/></svg>'}</button>
           ${opts.onWrapUp ? `<button class="btn btn-ghost btn-sm" data-act="wrap" title="Finish the items in progress and stop (Esc)">
@@ -507,8 +542,9 @@ function mountQuiz(root, opts) {
         </div>
         <div class="review-progress"><div style="width:${progressPct}%"></div></div>
 
-        <div class="card glyph-card type-${esc(item.type)} ${stateCls} ${view.phase === 'feedback' && view.result === 'wrong' ? 'shake' : ''}" data-role="card">
+        <div class="card glyph-card type-${esc(item.type)} ${stateCls} ${shinyNow ? 'is-shiny' : ''} ${view.phase === 'feedback' && view.result === 'wrong' ? 'shake' : ''}" data-role="card">
           <div class="glyph-type">${typeBadge(item)}</div>
+          ${shinyNow ? `<span class="shiny-badge shiny-tag">✦ Shiny</span><span class="sparkle" style="left:12%;top:30%">✦</span><span class="sparkle" style="right:14%;top:58%;animation-delay:.5s">✦</span><span class="sparkle" style="left:22%;bottom:18%;animation-delay:1s">✦</span>` : ''}
           <div class="glyph ${esc(glyphFont(item, session))}">${esc(item.char)}</div>
           <div class="glyph-prompt">${typeLabel(item)} <strong>meaning</strong>${wrongSoFar ? ` · <span class="muted">missed ${wrongSoFar}×</span>` : ''}${view.phase === 'feedback' ? ' · <span class="muted">tap to continue</span>' : ''}</div>
         </div>
@@ -523,7 +559,7 @@ function mountQuiz(root, opts) {
         </form>
 
         ${view.phase === 'feedback' ? feedbackHtml(item, note) : ''}
-        ${view.phase === 'feedback' ? `<div class="continue-bar"><span class="muted small">${view.result === 'wrong' ? 'Not quite' : 'Correct'} · tap the kanji or</span><button class="btn btn-primary btn-sm" data-act="next">Continue</button></div>` : ''}
+        ${view.phase === 'feedback' ? `<div class="continue-bar"><span class="muted small">${view.result === 'wrong' ? 'Slipped away' : 'Caught!'} · tap the kanji or</span><button class="btn btn-primary btn-sm" data-act="next">Continue</button></div>` : ''}
       </div>`;
 
     const input = $('#answer', root);
@@ -565,8 +601,8 @@ function mountQuiz(root, opts) {
       return `<kbd>Enter</kbd> to check${opts.onWrapUp ? ' · <kbd>Esc</kbd> to wrap up' : ''}`;
     }
     if (view.result === 'typo') return 'Close enough — check the spelling. <kbd>Enter</kbd> to continue';
-    if (view.result === 'wrong') return `Not quite. <kbd>Enter</kbd> to continue${opts.affectsSrs === false ? ' (you will see it again)' : ''}`;
-    return `Correct! <kbd>Enter</kbd> to continue · <kbd>?</kbd> for details`;
+    if (view.result === 'wrong') return `It slipped away. <kbd>Enter</kbd> to continue${opts.affectsSrs === false ? ' (you will meet it again)' : ''}`;
+    return `Caught! <kbd>Enter</kbd> to continue · <kbd>?</kbd> for details`;
   }
 
   function feedbackHtml(item, note) {
@@ -613,6 +649,8 @@ function mountQuiz(root, opts) {
       }
     }
 
+    const shiny = item.type === 'kanji' && game.isShinyEncounter(id, session.startedAt);
+    const wrongBefore = session.wrong[id] || 0;
     view.lastInput = raw;
     view.collision = null;
     view.phase = 'feedback';
@@ -636,7 +674,13 @@ function mountQuiz(root, opts) {
     const card = $('[data-role="card"]', root);
     if (verdict !== 'wrong') {
       burst(card, { count: view.streak >= 5 ? 22 : 14, colour: view.streak >= 5 ? 'var(--accent)' : 'var(--ok)' });
-      floatText(card, view.streak >= 5 && view.streak % 5 === 0 ? `×${view.streak} streak!` : view.streak >= 2 ? `×${view.streak}` : 'Correct', view.streak >= 5 ? 'is-hot' : '');
+      floatText(card, view.streak >= 5 && view.streak % 5 === 0 ? `×${view.streak} combo!` : view.streak >= 2 ? `×${view.streak}` : 'Caught!', view.streak >= 5 ? 'is-hot' : '');
+      stampHit(card, shiny ? 'Shiny!' : 'Caught', shiny);
+      if (shiny && opts.affectsSrs !== false && !wrongBefore) {
+        const entry = Object.assign({}, app.progress.items[id], { shiny: true });
+        setProgress(Object.assign({}, app.progress, { items: Object.assign({}, app.progress.items, { [id]: entry }) }), { immediate: true });
+        setTimeout(() => { sfx.burned(); toast(`✦ Shiny ${itemOf(id).char} caught!`, 'ok'); }, 350);
+      }
     }
   }
 
@@ -737,6 +781,7 @@ function renderHome() {
   const groups = engine.groupCounts(p, data);
   const mistakes = engine.recentMistakes(p, 12);
   const leechList = engine.leeches(p);
+  const kanjiTotal = Object.values(data.items).filter((i) => i.type === 'kanji').length;
   const blockReason = lessons.length ? null : engine.lessonBlockReason(data, p, t);
   const hasSession = !!(app.session && app.session.queue.length);
 
@@ -747,12 +792,12 @@ function renderHome() {
   const upcoming = fc.hours.reduce((a, b) => a + b, 0);
 
   const lessonSub = lessons.length
-    ? `${plural(lessons.length, 'item')} ready`
+    ? `${plural(lessons.length, 'kanji', 'kanji')} to sight`
     : blockReason === 'apprentice-cap' ? 'Apprentice cap reached'
       : blockReason === 'daily-cap' ? 'Done for today'
         : blockReason === 'nothing-unlocked' ? 'Nothing unlocked yet' : 'None right now';
   const reviewSub = dueNow
-    ? (hasSession ? 'Session in progress' : `${plural(dueNow, 'item')} due`)
+    ? (hasSession ? 'Encounter in progress' : `${plural(dueNow, 'wild kanji', 'wild kanji')} waiting`)
     : (nextAt ? `Next ${whenPhrase(nextAt, t)}` : 'Nothing scheduled');
 
   main.innerHTML = `
@@ -760,8 +805,8 @@ function renderHome() {
       <div class="card home-hero">
         ${ring(lp.ratio, `Lv ${level}`, pct(lp.ratio))}
         <div class="hero-text">
-          <h1>${greeting()}</h1>
-          <p class="muted">Level ${level} · ${lp.guru} of ${lp.total} at Guru or above · ${lp.started - lp.guru} in progress</p>
+          <h1>${greeting()}, trainer</h1>
+          <p class="muted"><strong>${caughtCount()}</strong> of ${kanjiTotal} kanji caught${shinyCount() ? ` · <span class="shiny-badge">✦ ${shinyCount()} shiny</span>` : ''} · Level ${level}: ${lp.guru} of ${lp.total} at Guru</p>
           <div class="btn-row">
             <span class="streak" title="Days in a row with lessons or reviews"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2s.7 3.2-1.2 5.3C10.6 9.2 8 10.4 8 14a4.5 4.5 0 0 0 9 0c0-1.6-.7-2.8-1.4-3.7-.2 1.2-.9 1.9-1.6 2.2.5-2.6-.3-5.5-.5-10.5zM12 22a7 7 0 0 1-7-7c0-3.3 1.8-5.1 3.4-6.6-.2 1.5.1 2.7.9 3.4A5.5 5.5 0 0 0 11 4.2c3 1.2 8 4.5 8 10.8a7 7 0 0 1-7 7z"/></svg> ${plural(streak, 'day')} streak</span>
             <a class="btn btn-sm btn-ghost" href="#/levels/${level}">See level ${level} →</a>
@@ -770,17 +815,17 @@ function renderHome() {
       </div>
 
       <div class="big-buttons">
-        <a class="big-btn big-btn-lessons ${lessons.length ? '' : 'is-empty'}" href="#/lessons">
-          <span class="big-btn-label">Lessons</span>
-          <span class="big-btn-count">${lessons.length}</span>
-          <span class="big-btn-sub">${esc(lessonSub)}</span>
-          <span class="big-btn-glyph" aria-hidden="true">学</span>
-        </a>
         <a class="big-btn big-btn-reviews ${dueNow ? '' : 'is-empty'}" href="#/reviews">
-          <span class="big-btn-label">Reviews</span>
+          <span class="big-btn-label">Encounters</span>
           <span class="big-btn-count">${dueNow}</span>
           <span class="big-btn-sub">${esc(reviewSub)}</span>
-          <span class="big-btn-glyph" aria-hidden="true">復</span>
+          <span class="big-btn-glyph" aria-hidden="true">遭</span>
+        </a>
+        <a class="big-btn big-btn-lessons ${lessons.length ? '' : 'is-empty'}" href="#/lessons">
+          <span class="big-btn-label">New sightings</span>
+          <span class="big-btn-count">${lessons.length}</span>
+          <span class="big-btn-sub">${esc(lessonSub)}</span>
+          <span class="big-btn-glyph" aria-hidden="true">発</span>
         </a>
       </div>
 
@@ -788,15 +833,15 @@ function renderHome() {
         <div class="card">
           <h2>Today <span class="muted">${esc(fmtDate(t))}</span></h2>
           <div class="stat-row">
-            <div class="stat"><div class="stat-value">${today.reviews}</div><div class="stat-label">Reviews</div></div>
+            <div class="stat"><div class="stat-value">${today.reviews}</div><div class="stat-label">Encounters</div></div>
             <div class="stat"><div class="stat-value">${today.reviews ? pct(today.correct / today.reviews) : '—'}</div><div class="stat-label">Accuracy</div></div>
-            <div class="stat"><div class="stat-value">${today.lessons}<span class="muted" style="font-size:.9rem">/${p.settings.dailyLessons}</span></div><div class="stat-label">Lessons</div></div>
+            <div class="stat"><div class="stat-value">${today.lessons}<span class="muted" style="font-size:.9rem">/${p.settings.dailyLessons}</span></div><div class="stat-label">Sightings</div></div>
           </div>
-          <p class="small muted" style="margin:12px 0 0">${nextAt ? `Next review ${esc(whenPhrase(nextAt, t))} (${relPhrase(nextAt, t)}).` : (dueNow ? 'Reviews are waiting for you.' : 'No reviews scheduled — do some lessons to get started.')}</p>
-          <p class="small muted" style="margin:6px 0 0">Pace: <strong>${esc(p.settings.dailyLessons)}</strong> new items a day · <a href="#/settings">change</a> · <a href="#/scan">add from a photo</a></p>
+          <p class="small muted" style="margin:12px 0 0">${nextAt ? `Next encounter ${esc(whenPhrase(nextAt, t))} (${relPhrase(nextAt, t)}).` : (dueNow ? 'Wild kanji are waiting for you.' : 'Nothing due — go sight some new kanji.')}</p>
+          <p class="small muted" style="margin:6px 0 0">Pace: <strong>${esc(p.settings.dailyLessons)}</strong> new sightings a day · <a href="#/settings">change</a> · <a href="#/scan">catch from a photo</a></p>
         </div>
         <div class="card">
-          <h2>Next 24 hours <span class="muted">${plural(upcoming, 'review')}</span></h2>
+          <h2>Next 24 hours <span class="muted">${plural(upcoming, 'encounter')}</span></h2>
           ${bars(fc.hours, hourLabels)}
         </div>
       </div>
@@ -811,14 +856,14 @@ function renderHome() {
       ${leechList.length ? `<div class="card"><h2>Leeches <span class="muted">${plural(leechList.length, 'item')} you keep missing</span></h2>
         <div style="margin-bottom:12px">${chipList(leechList.map((l) => l.id))}</div>
         <div class="btn-row"><a class="btn btn-sm btn-primary" href="#/drill/leeches">Drill leeches</a><a class="btn btn-sm btn-ghost" href="#/stats">Details</a></div></div>` : ''}
-      ${mistakes.length ? `<div class="card"><h2>Recent mistakes</h2>${chipList(mistakes)}</div>` : ''}
+      ${mistakes.length ? `<div class="card"><h2>Got away recently</h2>${chipList(mistakes)}</div>` : ''}
 
       ${!Object.keys(p.items).length ? `
         <div class="card about">
-          <h2>Welcome to Kanjr</h2>
-          <p>Kanjr teaches you the <strong>meaning</strong> of every jōyō kanji using spaced repetition. Start with a few lessons; reviews come back at growing intervals (4 h, 8 h, a day, two days, a week…) until each kanji is burned into memory.</p>
-          <p>Answers are typed in English. Small typos are forgiven; a completely different kanji's meaning is not.</p>
-          <div class="btn-row"><a class="btn btn-primary" href="#/lessons">Start your first lessons</a><a class="btn" href="#/settings">Adjust the pace</a></div>
+          <h2>Welcome, trainer</h2>
+          <p>There are <strong>2,136 kanji</strong> out there and your dex is empty. Sight new ones in lessons, meet them again in encounters at growing intervals (4 h, 8 h, a day, two days, a week…) until each one is burned into memory, and catch the ones you spot in the wild with the camera.</p>
+          <p>Answers are typed in English. Small typos are forgiven; a completely different kanji's meaning is not. Keep an eye out: one encounter in sixty-four is <span class="shiny-badge">✦ shiny</span>.</p>
+          <div class="btn-row"><a class="btn btn-primary" href="#/lessons">First sightings</a><a class="btn" href="#/settings">Adjust the pace</a></div>
         </div>` : ''}
     </section>`;
   animateRings(main);
@@ -899,7 +944,7 @@ function renderLessonCard(L) {
           ${item.strokes ? `<span class="pill">${plural(item.strokes, 'stroke')}</span>` : ''}
           ${item.grade ? `<span class="pill">Grade ${esc(item.grade)}</span>` : ''}
           ${item.jlpt ? `<span class="pill">JLPT N${esc(item.jlpt)}</span>` : ''}
-          ${item.freq ? `<span class="pill">Frequency #${esc(item.freq)}</span>` : ''}
+          ${item.freq ? `${rarityBadge(item)} <span class="pill">Frequency #${esc(item.freq)}</span>` : ''}
           <span class="pill">Level ${esc(item.level)}</span>
         </div>
 
@@ -994,8 +1039,8 @@ function finishLessonBatch(L) {
     <section class="screen lesson">
       <div class="card session-summary fade-in">
         <div class="big-number">${L.ids.length}</div>
-        <h2>${L.ids.length === 1 ? 'item learned' : 'items learned'}</h2>
-        <p class="muted">They enter the SRS at Apprentice 1 and come back for review ${esc(whenPhrase(firstDue, t) || 'in about 4 hours')}.</p>
+        <h2>${L.ids.length === 1 ? 'new kanji sighted' : 'new kanji sighted'}</h2>
+        <p class="muted">They are in your dex at Apprentice 1; the first encounter is ${esc(whenPhrase(firstDue, t) || 'in about 4 hours')}.${L.ids.some((id) => ['epic', 'legendary'].includes(game.rarityOf(itemOf(id)).key)) ? ' A rare one among them!' : ''}</p>
         <div style="margin:16px 0">${chipList(L.ids)}</div>
         <div class="btn-row" style="justify-content:center">
           ${more ? `<button class="btn btn-primary" data-act="more">Next batch (${Math.min(more, app.progress.settings.lessonBatch)})</button>` : ''}
@@ -1044,7 +1089,7 @@ function renderReviews() {
       const before = engine.stageOf(app.progress, id);
       setProgress(engine.applyReview(app.progress, id, wrong, now()));
       const after = engine.stageOf(app.progress, id);
-      if (after >= 9 && before < 9) { setTimeout(() => sfx.burned(), 260); setTimeout(() => toast(`${itemOf(id).char} burned!`, 'ok'), 300); }
+      if (after >= 9 && before < 9) { setTimeout(() => sfx.burned(), 260); setTimeout(() => toast(`${itemOf(id).char} burned — a gold stamp in your dex`, 'ok'), 300); }
       else if (srs.groupOf(after) !== srs.groupOf(before) && after > before) { setTimeout(() => sfx.stageUp(), 260); setTimeout(() => toast(`${itemOf(id).char} reached ${srs.stageName(after)}`, 'ok'), 300); }
     },
     onWrapUp() { /* session already saved via onSession */ },
@@ -1071,9 +1116,9 @@ function finishReviewSession(s) {
     <section class="screen review">
       <div class="card session-summary fade-in">
         <div class="big-number">${stats.done ? pct(stats.accuracy) : '—'}</div>
-        <h2>${stats.done ? `${stats.firstTry} of ${plural(stats.done, 'review')} right first time` : 'Session ended'}</h2>
+        <h2>${stats.done ? `${stats.firstTry} of ${plural(stats.done, 'encounter')} caught first time` : 'Session ended'}</h2>
         <p class="muted">${nextAt ? `Next review ${esc(whenPhrase(nextAt, t))}.` : 'Nothing else is scheduled right now.'}</p>
-        ${missed.length ? `<div class="section-label" style="text-align:left">Missed this session</div><div style="text-align:left">${chipList(missed)}</div>` : ''}
+        ${missed.length ? `<div class="section-label" style="text-align:left">Got away this session</div><div style="text-align:left">${chipList(missed)}</div>` : ''}
         <div class="btn-row" style="justify-content:center;margin-top:16px">
           ${lessons ? `<a class="btn btn-primary" href="#/lessons">Lessons (${lessons})</a>` : ''}
           <a class="btn ${lessons ? '' : 'btn-primary'}" href="#/">Home</a>
@@ -1110,17 +1155,17 @@ function renderItem(id) {
         <div class="item-head">
           <div class="glyph">${esc(item.char)}</div>
           <div class="item-title">
-            <div class="btn-row" style="margin-bottom:6px">${typeBadge(item)} ${stageBadge(stage)} ${!entry && !unlocked ? '<span class="badge stage-locked">Locked</span>' : ''}${isLeech ? '<span class="badge leech" title="Missed repeatedly — try rewriting the mnemonic in your own words">Leech</span>' : ''}</div>
+            <div class="btn-row" style="margin-bottom:6px"><span class="dexno">${esc(game.dexNo(dexNumberOf(id)))}</span> ${typeBadge(item)} ${rarityBadge(item)} ${stageBadge(stage)} ${entry && entry.shiny ? '<span class="shiny-badge">✦ Shiny</span>' : ''}${!entry && !unlocked ? '<span class="badge stage-locked">Unseen</span>' : ''}${isLeech ? '<span class="badge leech" title="Missed repeatedly — try rewriting the mnemonic in your own words">Leech</span>' : ''}</div>
             <h1>${esc(item.name)}</h1>
             ${alt.length ? `<p class="muted">also: ${esc(alt.join(', '))}</p>` : ''}
             <div class="item-facts">
               <a class="pill" href="#/levels/${esc(item.level)}">Level ${esc(item.level)}</a>
-              ${item.strokes ? `<span class="pill">${plural(item.strokes, 'stroke')}</span>` : ''}
+              ${item.strokes ? `<span class="pill" title="Stroke count">Power ${esc(item.strokes)}</span>` : ''}
               ${item.grade ? `<span class="pill">Grade ${esc(item.grade)}</span>` : ''}
               ${item.jlpt ? `<span class="pill">JLPT N${esc(item.jlpt)}</span>` : ''}
-              ${item.freq ? `<span class="pill">Frequency #${esc(item.freq)}</span>` : ''}
+              ${item.freq ? `${rarityBadge(item)} <span class="pill">Frequency #${esc(item.freq)}</span>` : ''}
             </div>
-            ${!entry ? `<div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="start-now">Seen before — add to circulation</button></div>` : ''}
+            ${!entry ? `<div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="start-now">Already know it — mark caught</button></div>` : ''}
           </div>
         </div>
       </div>
@@ -1210,7 +1255,7 @@ function wireStartNow(id) {
   if (!btn) return;
   btn.addEventListener('click', () => {
     setProgress(engine.startManually(app.progress, [id], now()), { immediate: true });
-    toast('Added to circulation — it is in your reviews now', 'ok');
+    toast('Caught — it is in your encounters now', 'ok');
     renderItem(id);
   });
 }
@@ -1318,8 +1363,8 @@ function renderLevel(n) {
 const GRID_PREFS_KEY = 'kanjr.gridPrefs';
 
 function gridPrefs() {
-  try { return Object.assign({ kanjiOnly: true, byLevel: false }, JSON.parse(localStorage.getItem(GRID_PREFS_KEY) || '{}')); }
-  catch (_) { return { kanjiOnly: true, byLevel: false }; }
+  try { return Object.assign({ kanjiOnly: true, byLevel: false, reveal: false }, JSON.parse(localStorage.getItem(GRID_PREFS_KEY) || '{}')); }
+  catch (_) { return { kanjiOnly: true, byLevel: false, reveal: false }; }
 }
 
 function saveGridPrefs(prefs) {
@@ -1353,27 +1398,30 @@ function renderGrid() {
       const due = entry && entry.due && stage > 0 && stage < 9 && srs.toMillis(entry.due) <= t;
       const selectable = selecting && stage === 0;
       const selected = selectable && gridSelect.ids.has(id);
-      cells.push(`<a class="kcell stage-${group} st-${stage}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}"
+      const hidden = stage === 0 && !prefs.reveal && !selecting;
+      const entry2 = p.items[id];
+      cells.push(`<a class="kcell stage-${group} st-${stage}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}${hidden ? ' is-unseen' : ''}${entry2 && entry2.shiny ? ' is-shiny' : ''}"
         href="${itemHref(id)}" data-id="${esc(id)}" ${selectable ? 'role="checkbox" aria-checked="' + selected + '"' : ''}
-        title="${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${due ? ' · due now' : ''} · Lv ${lv.level}">${esc(it.char)}</a>`);
+        title="${hidden ? `Unseen · ${game.dexNo(dexNumberOf(id))} · Lv ${lv.level}` : `${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${entry2 && entry2.shiny ? ' · shiny' : ''}${due ? ' · due now' : ''} · Lv ${lv.level}`}">${hidden ? '' : esc(it.char)}</a>`);
     }
   }
   const learned = total - counts.locked;
   const SUBSTAGES = { apprentice: [1, 2, 3, 4], guru: [5, 6], master: [7], enlightened: [8], burned: [9], locked: [0] };
   const legend = ['locked', 'apprentice', 'guru', 'master', 'enlightened', 'burned'].map((g) =>
-    `<span class="kgrid-key" title="${SUBSTAGES[g].map((n) => srs.stageName(n)).join(' → ')}">${SUBSTAGES[g].map((n) => `<i class="dot stage-${g} st-${n}"></i>`).join('')}${g[0].toUpperCase() + g.slice(1)} <b>${counts[g]}</b></span>`).join('');
+    `<span class="kgrid-key" title="${SUBSTAGES[g].map((n) => srs.stageName(n)).join(' → ')}">${SUBSTAGES[g].map((n) => `<i class="dot stage-${g} st-${n}"></i>`).join('')}${g === 'locked' ? 'Unseen' : g[0].toUpperCase() + g.slice(1)} <b>${counts[g]}</b></span>`).join('');
 
   main.innerHTML = `
     <section class="screen stack">
       <div class="screen-head">
-        <h1>Grid</h1>
-        <span class="muted small">${learned} of ${total} ${prefs.kanjiOnly ? 'kanji' : 'items'} started · ${pct(total ? learned / total : 0)}</span>
+        <h1>Kanjidex</h1>
+        <span class="muted small">${learned} of ${total} ${prefs.kanjiOnly ? 'kanji' : 'items'} caught · ${pct(total ? learned / total : 0)}${shinyCount() ? ` · ✦ ${shinyCount()} shiny` : ''} · <a href="#/levels">levels</a></span>
       </div>
       <div class="card kgrid-controls">
         <div class="legend">${legend}</div>
         <div class="kgrid-toggles">
           <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="kanjiOnly" ${prefs.kanjiOnly ? 'checked' : ''}><span class="track"></span></span>Kanji only</label>
           <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="byLevel" ${prefs.byLevel ? 'checked' : ''}><span class="track"></span></span>Level numbers</label>
+          <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="reveal" ${prefs.reveal ? 'checked' : ''}><span class="track"></span></span>Reveal unseen</label>
         </div>
       </div>
       <div class="kgrid-bar" aria-hidden="true">
@@ -1383,7 +1431,7 @@ function renderGrid() {
       <div class="card kgrid-select fade-in">
         <div class="kgrid-select-head">
           <div>
-            <h2>Mark kanji as seen before</h2>
+            <h2>Mark kanji you already know as caught</h2>
             <p class="muted small">Click boxes, drag across them, shift-click a range, click a level number to take the whole level, or type the kanji below. Right-click any box for a quick menu. Marked kanji go straight into your reviews at Apprentice 1, do not use today's lesson allowance, and do not count against the apprentice cap. Lessons carry on from the remaining kanji in order.</p>
           </div>
           <button class="btn btn-ghost btn-sm" type="button" data-act="cancel-select">Cancel</button>
@@ -1395,8 +1443,8 @@ function renderGrid() {
         </div>
       </div>` : `
       <div class="btn-row">
-        <button class="btn btn-sm" type="button" data-act="start-select">Mark kanji as seen before</button>
-        <a class="btn btn-sm" href="#/scan">Add from a photo</a>
+        <button class="btn btn-sm" type="button" data-act="start-select">Already know some? Mark them caught</button>
+        <a class="btn btn-sm btn-primary" href="#/scan">Catch from a photo</a>
       </div>`}
       <div class="kgrid${prefs.byLevel ? ' is-by-level' : ''}${selecting ? ' is-selecting' : ''}">${cells.join('')}</div>
       ${selecting ? `
@@ -1535,7 +1583,7 @@ function renderGrid() {
     setProgress(engine.startManually(app.progress, ids, now()), { immediate: true });
     backupIfNeeded(true);
     gridSelect.active = false; gridSelect.ids.clear();
-    toast(`${plural(ids.length, 'kanji', 'kanji')} added — they are in your reviews now`, 'ok');
+    toast(`${plural(ids.length, 'kanji', 'kanji')} caught — they are in your encounters now`, 'ok');
     renderGrid();
   });
   app.keyHandler = (e) => { if (e.key === 'Escape') { gridSelect.active = false; gridSelect.ids.clear(); renderGrid(); } };
@@ -1554,7 +1602,7 @@ function gridContextMenu(cell, x, y) {
   menu.setAttribute('role', 'menu');
   menu.innerHTML = `
     <div class="ctx-title"><span class="jp">${esc(item.char)}</span> ${esc(item.name)} <span class="muted">· ${esc(srs.stageName(stage))}</span></div>
-    ${stage === 0 ? `<button type="button" role="menuitem" data-act="add">Seen before — add to circulation</button>
+    ${stage === 0 ? `<button type="button" role="menuitem" data-act="add">Already know it — mark caught</button>
     <button type="button" role="menuitem" data-act="select">Select this and more…</button>` : ''}
     <button type="button" role="menuitem" data-act="open">Open item page</button>`;
   document.body.appendChild(menu);
@@ -1568,7 +1616,7 @@ function gridContextMenu(cell, x, y) {
     if (act.dataset.act === 'add') {
       setProgress(engine.startManually(app.progress, [id], now()), { immediate: true });
       sfx.tap();
-      toast(`${item.char} added — it is in your reviews now`, 'ok');
+      toast(`${item.char} caught — it is in your encounters now`, 'ok');
       renderGrid();
     } else if (act.dataset.act === 'select') {
       gridSelect.active = true; gridSelect.ids.clear(); gridSelect.ids.add(id); renderGrid();
@@ -1601,6 +1649,76 @@ document.addEventListener('pointerdown', (e) => {
 });
 ['pointerup', 'pointercancel', 'pointermove'].forEach((ev) => document.addEventListener(ev, () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }));
 
+/* ---------- Intro: the Kanjiland title screen ---------- */
+
+function introScene() {
+  const kan = (x, y, ch, size = 26, delay = 0) => `<g class="kan" style="animation-delay:${delay}s"><rect x="${x - size * 0.7}" y="${y - size * 0.7}" width="${size * 1.4}" height="${size * 1.4}" rx="${size * 0.32}" fill="#f7f2e8" stroke="#17130f" stroke-width="2.5"/><text x="${x}" y="${y + size * 0.36}" text-anchor="middle" font-family="'Noto Sans JP','Zen Kaku Gothic New',sans-serif" font-weight="700" font-size="${size}" fill="#d7262a">${ch}</text></g>`;
+  return `<svg viewBox="0 0 400 720" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fb4ea"/><stop offset="1" stop-color="#cdeaf9"/></linearGradient>
+      <linearGradient id="hill1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#7fce5c"/><stop offset="1" stop-color="#4f9e3c"/></linearGradient>
+      <linearGradient id="hill2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9ddc74"/><stop offset="1" stop-color="#5fb04a"/></linearGradient>
+      <linearGradient id="hill3" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b6e58f"/><stop offset="1" stop-color="#78c25a"/></linearGradient>
+    </defs>
+    <rect width="400" height="720" fill="url(#sky)"/>
+    <circle cx="322" cy="118" r="42" fill="#fff4b3" stroke="#17130f" stroke-width="3"/>
+    <g fill="#fff" stroke="#17130f" stroke-width="3" stroke-linejoin="round">
+      <path d="M52 150a22 22 0 0 1 30-22 26 26 0 0 1 48-4 20 20 0 0 1 24 26z"/>
+      <path d="M212 96a18 18 0 0 1 26-16 22 22 0 0 1 40-2 16 16 0 0 1 18 18z"/>
+    </g>
+    <path d="M0 356 L150 246 L190 268 L226 236 L400 356z" fill="#6e7f9a" stroke="#17130f" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M124 264 L150 246 L190 268 L226 236 L252 256 L236 262 L212 250 L192 280 L150 256 L130 270z" fill="#fff" stroke="#17130f" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M0 380 C 80 330, 170 340, 240 372 S 360 400, 400 372 V720 H0z" fill="url(#hill3)" stroke="#17130f" stroke-width="3"/>
+    <path d="M0 450 C 90 400, 190 420, 260 452 S 350 480, 400 440 V720 H0z" fill="url(#hill2)" stroke="#17130f" stroke-width="3"/>
+    <path d="M0 540 C 70 490, 160 500, 230 540 S 340 580, 400 530 V720 H0z" fill="url(#hill1)" stroke="#17130f" stroke-width="3"/>
+    <path d="M150 720 C 170 640, 200 600, 230 560 C 260 520, 300 500, 340 480" fill="none" stroke="#e9d8a6" stroke-width="26" stroke-linecap="round"/>
+    <path d="M150 720 C 170 640, 200 600, 230 560 C 260 520, 300 500, 340 480" fill="none" stroke="#17130f" stroke-width="3" stroke-dasharray="8 10" stroke-linecap="round"/>
+    <g stroke="#17130f" stroke-width="3" stroke-linejoin="round">
+      <rect x="300" y="430" width="10" height="52" fill="#d7262a"/><rect x="346" y="430" width="10" height="52" fill="#d7262a"/>
+      <rect x="290" y="426" width="76" height="9" rx="2" fill="#17130f"/><rect x="298" y="444" width="60" height="7" fill="#d7262a"/>
+    </g>
+    ${kan(70, 470, '木', 24, 0)}${kan(330, 390, '山', 22, 0.8)}${kan(110, 585, '日', 26, 1.4)}${kan(300, 640, '花', 24, 0.4)}${kan(48, 660, '川', 22, 1.9)}${kan(356, 560, '月', 22, 1.1)}
+    <g transform="translate(214 500)" >
+      <ellipse cx="0" cy="58" rx="30" ry="7" fill="#00000022"/>
+      <path d="M-16 8 h32 l8 44 h-48z" fill="#d7262a" stroke="#17130f" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="-12" y="14" width="24" height="28" rx="6" fill="#f7f2e8" stroke="#17130f" stroke-width="3"/>
+      <path d="M-20 52 h14 l-2 12 h-14z M6 52 h14 l2 12 h-14z" fill="#17130f"/>
+      <path d="M-24 14 l-10 24 M24 14 l10 24" stroke="#f0c9a6" stroke-width="8" stroke-linecap="round"/>
+      <circle cx="0" cy="-8" r="17" fill="#f0c9a6" stroke="#17130f" stroke-width="3"/>
+      <path d="M-18 -10 a18 18 0 0 1 36 0 v6 h-36z" fill="#d7262a" stroke="#17130f" stroke-width="3"/>
+      <rect x="-20" y="-6" width="40" height="7" rx="3" fill="#f7f2e8" stroke="#17130f" stroke-width="3"/>
+    </g>
+  </svg>`;
+}
+
+function maybeIntro() {
+  let seen = false;
+  try { seen = sessionStorage.getItem('kanjr.introSeen') === '1'; } catch (_) { /* fine */ }
+  if (seen || app.progress.settings.intro === false) return;
+  const el = document.createElement('div');
+  el.className = 'intro';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', 'Kanjr title screen');
+  el.innerHTML = `${introScene()}
+    <div class="intro-text">
+      <h1><span class="stamp-logo jp">字</span>Kanjr</h1>
+      <p>2,136 kanji are out there.<br>Go catch them all.</p>
+    </div>
+    <div class="intro-cta"><button class="btn btn-primary" type="button">Tap to set off</button></div>`;
+  document.body.appendChild(el);
+  const leave = () => {
+    if (el.classList.contains('is-leaving')) return;
+    try { sessionStorage.setItem('kanjr.introSeen', '1'); } catch (_) { /* fine */ }
+    unlockAudio();
+    sfx.lessonDone();
+    el.classList.add('is-leaving');
+    setTimeout(() => el.remove(), 500);
+  };
+  el.addEventListener('click', leave);
+  el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') leave(); });
+  el.querySelector('button').focus();
+}
+
 /* ---------- Scan: photograph a kanji and add it ---------- */
 
 const scanState = { file: null, result: null, selected: new Set(), busy: false, error: '', progress: null, crop: null, usedCrop: false };
@@ -1619,7 +1737,7 @@ function renderScan() {
     return `<button type="button" class="scan-tile ${inCirc ? 'is-known' : ''} ${sel ? 'is-selected' : ''} ${conf < scan.SURE_CONF ? 'is-unsure' : ''}" data-id="${esc(id)}" ${inCirc ? 'disabled' : ''} aria-pressed="${sel}" title="Confidence ${esc(conf)}%">
       <span class="scan-char jp">${esc(char)}</span>
       <span class="scan-name">${esc(it.name)}</span>
-      <span class="scan-meta">${inCirc ? esc(srs.stageName(stage)) : `Level ${esc(it.level)}`}${count > 1 ? ` · ${count}×` : ''}</span>
+      <span class="scan-meta">${inCirc ? `caught · ${esc(srs.stageName(stage))}` : `${esc(game.rarityOf(it).label)} · Lv ${esc(it.level)}`}${count > 1 ? ` · ${count}×` : ''}</span>
     </button>`;
   };
   const sure = r ? r.kanji.filter((k) => k.conf >= scan.SURE_CONF) : [];
@@ -1629,11 +1747,11 @@ function renderScan() {
 
   main.innerHTML = `
     <section class="screen stack scan">
-      <div class="screen-head"><h1>Add from a photo</h1><a class="btn btn-sm btn-ghost" href="#/grid">Grid</a></div>
+      <div class="screen-head"><h1>Catch a kanji</h1><a class="btn btn-sm btn-ghost" href="#/grid">Dex</a></div>
       <div class="card">
-        <p class="small muted">Take a photo of a sign, a menu or a package. The kanji are recognised on your phone (nothing is uploaded) and shown below; tap the ones you already know to add them to your reviews. For best results fill the frame with the text, hold the phone level, and avoid glare; a tilt of up to about 9° is straightened automatically, and vertical signs are read too. Printed text works well; handwriting and fancy logos less so.</p>
+        <p class="small muted">Snap a sign, a menu or a package. The kanji are recognised on your phone (nothing is uploaded) and shown below as wild kanji; tap the ones you know and catch them into your encounters. For best results fill the frame with the text, hold the phone level, and avoid glare; a tilt of up to about 9° is straightened automatically, and vertical signs are read too. Printed text works well; handwriting and fancy logos less so.</p>
         <div class="btn-row" style="margin-top:8px">
-          <label class="btn btn-primary" for="scan-file">${scanState.file ? 'Take another photo' : 'Take a photo'}</label>
+          <label class="btn btn-primary" for="scan-file">${scanState.file ? 'Snap another' : 'Snap a photo'}</label>
           <input type="file" id="scan-file" accept="image/*" capture="environment" class="sr-only" tabindex="-1">
           <label class="btn" for="scan-pick">Choose from library</label>
           <input type="file" id="scan-pick" accept="image/*" class="sr-only" tabindex="-1">
@@ -1649,12 +1767,12 @@ function renderScan() {
       </div>
       ${r ? `
       <div class="card">
-        <h2>Found ${plural(r.kanji.length, 'kanji', 'kanji')} <span class="muted">${r.unknown ? `· ${r.unknown} not in the jōyō set` : ''}</span></h2>
+        <h2>${r.kanji.length ? `${plural(r.kanji.length, 'wild kanji', 'wild kanji')} spotted` : 'Nothing spotted'} <span class="muted">${r.unknown ? `· ${r.unknown} not in the jōyō set` : ''}</span></h2>
         ${r.kanji.length ? `<div class="scan-tiles">${tiles}</div>` : '<p class="muted" data-role="scan-empty">No kanji recognised. Try a closer, straighter, better-lit photo, or type what you see below.</p>'}
         ${selectable ? `<div class="btn-row" style="margin-top:12px">
           <button class="btn btn-sm btn-ghost" type="button" data-act="scan-all">Select all new</button>
-          <button class="btn btn-primary" type="button" data-act="scan-add" ${scanState.selected.size ? '' : 'disabled'}>Add ${scanState.selected.size || ''} to circulation</button>
-        </div>` : (r.kanji.length ? '<p class="small muted" style="margin-top:8px">Everything found is already in circulation.</p>' : '')}
+          <button class="btn btn-primary" type="button" data-act="scan-add" ${scanState.selected.size ? '' : 'disabled'}>Catch ${scanState.selected.size || ''}</button>
+        </div>` : (r.kanji.length ? '<p class="small muted" style="margin-top:8px">Everything spotted is already in your dex.</p>' : '')}
       </div>` : ''}
       <div class="card">
         <h2>Or type what you see</h2>
@@ -1745,7 +1863,7 @@ function renderScan() {
     if (!ids.length) return;
     setProgress(engine.startManually(app.progress, ids, now()), { immediate: true });
     sfx.lessonDone();
-    toast(`${plural(ids.length, 'kanji', 'kanji')} added — in your reviews now`, 'ok');
+    toast(`${plural(ids.length, 'kanji', 'kanji')} caught — in your encounters now`, 'ok');
     scanState.selected.clear();
     renderScan();
   });
@@ -1917,6 +2035,7 @@ function renderStats() {
         <div class="stat card"><div class="stat-value">${totalReviews}</div><div class="stat-label">Reviews (30 days)</div></div>
         <div class="stat card"><div class="stat-value">${engine.streak(p.days, t)}</div><div class="stat-label">Day streak</div></div>
         <div class="stat card"><div class="stat-value">${groups.burned}</div><div class="stat-label">Burned</div></div>
+        <div class="stat card"><div class="stat-value">✦ ${shinyCount()}</div><div class="stat-label">Shiny</div></div>
       </div>
 
       <div class="grid-2">
@@ -2062,7 +2181,8 @@ function renderSettings() {
         ${toggle('sounds', 'Sounds', 'A ding for a correct answer that climbs with your streak, a soft double-note for a miss, clicks on buttons, and a chime when an item reaches a new stage.')}
         ${num('volume', 'Volume', '0 to 100.', 0, 100)}
         ${toggle('haptics', 'Vibration', 'A tiny buzz on answers and taps, on phones that support it (Android; iPhones do not vibrate for websites).')}
-        ${toggle('celebrations', 'Celebrations', 'Bursts on correct answers, streak counters and confetti at the end of a session.')}
+        ${toggle('celebrations', 'Celebrations', 'Stamps and bursts on catches, combo counters and confetti at the end of a session.')}
+        ${toggle('intro', 'Intro screen', 'Show the Kanjiland title screen when the app opens.')}
         <div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="sound-test">Play the ding</button></div>
       </div>
 
@@ -2316,7 +2436,7 @@ function route() {
   app.keyHandler = null;
   const parts = parseRoute();
   const head = parts[0] || 'home';
-  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'levels', grid: 'grid', scan: 'grid', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
+  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'grid', item: 'grid', grid: 'grid', scan: 'scan', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
   $$('#nav a').forEach((a) => {
     if (a.dataset.route === routeName) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
@@ -2348,7 +2468,7 @@ function route() {
     main.innerHTML = `<section class="screen">${emptyState('誤', 'Something went wrong', `<span class="small muted">${esc(err && err.message)}</span>`, '<a class="btn btn-primary" href="#/">Home</a>')}</section>`;
   }
   window.scrollTo({ top: 0 });
-  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Grid · Kanjr', drill: 'Leech drill · Kanjr', scan: 'Add from a photo · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
+  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Kanjidex · Kanjr', drill: 'Leech drill · Kanjr', scan: 'Catch · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
 }
 
 function showBanner(html, { kind = '', dismiss = null } = {}) {
@@ -2450,6 +2570,7 @@ async function boot() {
   route();
   registerServiceWorker();
   applySfxSettings();
+  maybeIntro();
   const unlockOnce = () => { unlockAudio(); };
   document.addEventListener('pointerdown', unlockOnce, { passive: true });
   document.addEventListener('keydown', unlockOnce);

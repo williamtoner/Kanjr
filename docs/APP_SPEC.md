@@ -286,6 +286,33 @@ Keyboard: Enter submits/continues; in reviews `Esc` = wrap up; `?` toggles
 the info panel; in lessons ←/→ move between cards. Everything reachable by
 tab; focus rings visible.
 
+## Kanjidex theme and game layer
+
+Visual identity (see docs/redesign-concept.html): ink `#17130f`, vermilion
+`#d7262a`, paper `#f7f2e8`, gold `#c9a227` for burned only. Cards and
+buttons have 2 px ink outlines with a hard offset shadow; headings and big
+numbers use Zen Kaku Gothic New black; interface text is Manrope. The stage
+ramp `--st-1…9` runs pale pink → reds → ink, then gold. Dark theme swaps
+paper for a deep ink brown and keeps vermilion.
+
+Vocabulary: reviews are encounters, lessons are new sightings, the Grid is
+the Kanjidex, the scanner is Catch, the level badge is Trainer Lv. A correct
+answer stamps "Caught" on the card (`stampHit`); a miss "slipped away".
+Nav tabs: Home, Dex, Catch, Stats, Settings (Levels via the badge and Dex).
+
+`game.js` (pure): rarity tiers from frequency rank (Common ≤300, Uncommon
+≤800, Rare ≤1400, Epic ≤1900, Legendary), dex numbers in learning order,
+"Power" = stroke count, and shiny encounters: one in 64, decided by a hash of
+item id + session start so a card stays shiny while shown. A shiny card
+shimmers gold with sparkles; catching it first try sets `shiny: true` on the
+progress entry (kept by the store and the sync merge), shows ✦ on the dex
+tile and item page, and counts on Home and Stats. Unseen kanji hide behind
+"?" in the dex (toggle "Reveal unseen"; selection mode always reveals).
+
+Intro: a Kanjiland title screen (inline SVG: sky, hills, torii, floating
+kanji, a trainer on the path) shown once per app open; tap anywhere to set
+off. Setting `intro` turns it off. App icon: red seal stamp with 字.
+
 ## Visual design
 
 - Type colours: radical `#0ea5e9` (blue), kanji `#ec4899` (pink). Stage

@@ -33,6 +33,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   volume: 70,
   haptics: true,
   celebrations: true,
+  intro: true,
 });
 
 /** Allowed ranges for numeric settings (used by import validation and the UI). */
@@ -120,6 +121,7 @@ export function validateProgress(raw) {
       incorrect: Math.max(0, Math.trunc(Number(e.incorrect) || 0)),
     };
     if (e.manual) out.items[id].manual = true;   // marked "seen before": exempt from the apprentice cap
+    if (e.shiny) out.items[id].shiny = true;     // caught during a shiny encounter
   }
   const synonyms = isObject(raw.synonyms) ? raw.synonyms : {};
   for (const id in synonyms) {
@@ -167,6 +169,7 @@ export function normaliseSettings(raw) {
   s.sounds = s.sounds !== false;
   s.haptics = s.haptics !== false;
   s.celebrations = s.celebrations !== false;
+  s.intro = s.intro !== false;
   const vol = Number(s.volume);
   s.volume = Number.isFinite(vol) ? Math.max(0, Math.min(100, Math.round(vol))) : 70;
   s.theme = ['auto', 'light', 'dark'].includes(s.theme) ? s.theme : 'auto';
@@ -202,6 +205,9 @@ export function load() {
 
 /** Write progress now (synchronously). Returns true on success. */
 export function writeNow(progress) {
+  // An immediate write supersedes any debounced one still waiting.
+  if (state.timer) { clearTimeout(state.timer); state.timer = null; }
+  state.pending = null;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
     state.localStorageOk = true;

@@ -75,6 +75,7 @@ export function mergeProgress(a, b) {
     }
     const entry = Object.assign({}, pick);
     if ((x && x.manual) || (y && y.manual)) entry.manual = true;
+    if ((x && x.shiny) || (y && y.shiny)) entry.shiny = true;
     if (x && y) {
       if (x.startedAt && y.startedAt) entry.startedAt = x.startedAt < y.startedAt ? x.startedAt : y.startedAt;
       entry.guruAt = entry.guruAt || x.guruAt || y.guruAt || null;
