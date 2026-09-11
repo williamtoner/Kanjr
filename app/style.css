@@ -987,7 +987,7 @@ h1 { font-size: 1.9rem; }
 .rarity.r-part { color: var(--muted); border-color: var(--line); }
 .dexno { font-family: var(--font-display); font-weight: 900; color: var(--muted); letter-spacing: 0.02em; }
 .shiny-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 8px; background: linear-gradient(120deg, #f4e7b6, #c9a227 45%, #fff2b8 70%, #c9a227); color: var(--text); border: 1.5px solid var(--border); font-size: 0.6875rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
-.kcell.is-shiny::after { content: "✦"; position: absolute; top: -4px; right: -3px; font-size: 0.7rem; color: var(--gold); text-shadow: 0 0 2px var(--bg); }
+
 .glyph-card.is-shiny { background: linear-gradient(120deg, var(--surface) 0%, var(--gold-soft) 45%, var(--surface) 60%); background-size: 240% 100%; animation: shimmer 2.4s linear infinite; border-color: var(--gold); box-shadow: 4px 4px 0 var(--gold); }
 .glyph-card.is-shiny .glyph { background: linear-gradient(120deg, var(--text), var(--gold) 40%, var(--text) 60%, var(--gold)); background-size: 240% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 2.4s linear infinite; }
 .shiny-tag { position: absolute; top: 12px; right: 12px; }
@@ -1048,3 +1048,33 @@ h1 { font-size: 1.9rem; }
 @keyframes evoPop { 0% { transform: scale(0.6); filter: brightness(3) saturate(0); } 60% { transform: scale(1.12); filter: brightness(1.2); } 100% { transform: scale(1); filter: brightness(1); } }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .evo-glyph, .evo-glyph.is-evolved { animation: none; } }
+
+/* --- Shiny stamps: a gold light sweeps across, the glyph glints ------- */
+.kcell.is-shiny, .tile.is-shiny {
+  position: relative; overflow: hidden; isolation: isolate;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 10px color-mix(in srgb, var(--gold) 55%, transparent);
+  color: #fff6d6; text-shadow: 0 0 6px var(--gold), 0 0 1px #000;
+}
+.kcell.is-shiny::before, .tile.is-shiny::before {
+  content: ""; position: absolute; inset: -60% -40%; z-index: 1; pointer-events: none;
+  background: linear-gradient(115deg, transparent 38%, rgba(255, 244, 190, 0.15) 44%, rgba(255, 250, 220, 0.85) 50%, rgba(255, 244, 190, 0.15) 56%, transparent 62%);
+  transform: translateX(-70%);
+  animation: shineSweep 3.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-delay: var(--d, 0s);
+}
+.kcell.is-shiny::after, .tile.is-shiny::after {
+  content: "✦"; position: absolute; top: -3px; right: -1px; z-index: 2; font-size: 0.75rem; line-height: 1; color: #fff3b0;
+  text-shadow: 0 0 4px var(--gold), 0 0 1px #000; animation: twinkle 2.2s ease-in-out infinite; animation-delay: calc(var(--d, 0s) + 0.7s);
+}
+.tile.is-shiny::after { font-size: 1rem; top: 2px; right: 4px; }
+@keyframes shineSweep { 0% { transform: translateX(-70%); } 45% { transform: translateX(70%); } 100% { transform: translateX(70%); } }
+.item-page .glyph.is-shiny, .glyph.is-shiny-static {
+  background: linear-gradient(120deg, var(--text) 30%, var(--gold) 48%, #fff3b0 52%, var(--gold) 56%, var(--text) 75%);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmer 3.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kcell.is-shiny::before, .tile.is-shiny::before { animation: none; transform: none; opacity: 0.35; }
+  .kcell.is-shiny::after, .tile.is-shiny::after, .item-page .glyph.is-shiny { animation: none; }
+}

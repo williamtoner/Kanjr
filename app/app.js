@@ -1162,7 +1162,7 @@ function renderItem(id) {
     <section class="screen stack item-page">
       <div class="card">
         <div class="item-head">
-          <div class="glyph">${esc(item.char)}</div>
+          <div class="glyph${entry && entry.shiny ? ' is-shiny' : ''}">${esc(item.char)}</div>
           <div class="item-title">
             <div class="btn-row" style="margin-bottom:6px"><span class="dexno">${esc(game.dexNo(dexNumberOf(id)))}</span> ${typeBadge(item)} ${rarityBadge(item)} ${stageBadge(stage)} ${entry && entry.shiny ? '<span class="shiny-badge">✦ Shiny</span>' : ''}${!entry && !unlocked ? '<span class="badge stage-locked">Unseen</span>' : ''}${isLeech ? '<span class="badge leech" title="Missed repeatedly — try rewriting the mnemonic in your own words">Leech</span>' : ''}</div>
             <h1>${esc(item.name)}</h1>
@@ -1331,7 +1331,7 @@ function renderLevel(n) {
     const stage = engine.stageOf(p, id);
     const entry = p.items[id];
     const dueSoon = entry && entry.due && stage < 9 && srs.toMillis(entry.due) <= t.getTime();
-    return `<a class="tile stage-${srs.groupOf(stage)} st-${stage} type-${esc(it.type)}" href="${itemHref(id)}"
+    return `<a class="tile stage-${srs.groupOf(stage)} st-${stage} type-${esc(it.type)}${entry && entry.shiny ? ' is-shiny' : ''}" href="${itemHref(id)}" ${entry && entry.shiny ? `style="--d:${(game.hash32(id) % 24) / 8}s"` : ''}
       title="${esc(it.name)} · ${esc(srs.stageName(stage))}${dueSoon ? ' · due now' : ''}">
       <span class="tile-mark" aria-hidden="true"></span>${esc(it.char)}<span class="tile-name">${esc(it.name)}</span></a>`;
   }).join('');
@@ -1410,7 +1410,7 @@ function renderGrid() {
       const hidden = stage === 0 && !prefs.reveal && !selecting;
       const entry2 = p.items[id];
       cells.push(`<a class="kcell stage-${group} st-${stage}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}${hidden ? ' is-unseen' : ''}${entry2 && entry2.shiny ? ' is-shiny' : ''}"
-        href="${itemHref(id)}" data-id="${esc(id)}" ${selectable ? 'role="checkbox" aria-checked="' + selected + '"' : ''}
+        href="${itemHref(id)}" data-id="${esc(id)}" ${entry2 && entry2.shiny ? `style="--d:${(game.hash32(id) % 24) / 8}s"` : ''} ${selectable ? 'role="checkbox" aria-checked="' + selected + '"' : ''}
         title="${hidden ? `Unseen · ${game.dexNo(dexNumberOf(id))} · Lv ${lv.level}` : `${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${entry2 && entry2.shiny ? ' · shiny' : ''}${due ? ' · due now' : ''} · Lv ${lv.level}`}">${hidden ? '' : esc(it.char)}</a>`);
     }
   }
