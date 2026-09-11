@@ -1,0 +1,184 @@
+<title>Kanjidex Concept</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Manrope:wght@500;700;800&family=Noto+Sans+JP:wght@500;700;900&display=swap">
+<style>
+  :root {
+    --ink: #17130f; --ink-2: #3a332c; --paper: #f7f2e8; --paper-2: #efe8db; --line: #d9d0c1;
+    --red: #d7262a; --red-deep: #9e1418; --red-soft: #f8d7d5; --gold: #c9a227; --gold-soft: #f4e7b6;
+    --st1: #f3b4b0; --st2: #ec8a86; --st3: #e35f5b; --st4: #d7262a; --st5: #b31e22; --st6: #8f161a; --st7: #5e1113; --st8: #2b1a1a; --st9: #c9a227;
+    --font-display: "Zen Kaku Gothic New", "Noto Sans JP", system-ui, sans-serif;
+    --font-ui: "Manrope", system-ui, sans-serif;
+    --font-jp: "Noto Sans JP", "Zen Kaku Gothic New", sans-serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --ink: #f4ede2; --ink-2: #cfc4b3; --paper: #14110e; --paper-2: #1e1915; --line: #332b24; --red-soft: #3a1516; --gold-soft: #3a3012; --st8: #d9c9c9; } }
+  :root[data-theme="dark"] { --ink: #f4ede2; --ink-2: #cfc4b3; --paper: #14110e; --paper-2: #1e1915; --line: #332b24; --red-soft: #3a1516; --gold-soft: #3a3012; --st8: #d9c9c9; }
+  body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); margin: 0; padding: 32px 20px 60px; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 900; letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
+  .wrap { max-width: 1120px; margin: 0 auto; }
+  .lede { max-width: 62ch; color: var(--ink-2); font-size: 1.0625rem; line-height: 1.55; margin: 10px 0 28px; }
+  .stamp { display: inline-flex; align-items: center; justify-content: center; width: 54px; height: 54px; border: 3px solid var(--red); border-radius: 12px; color: var(--red); font-family: var(--font-jp); font-weight: 900; font-size: 1.6rem; transform: rotate(-6deg); background: var(--paper); }
+  .head { display: flex; align-items: center; gap: 16px; }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 0 0 36px; }
+  .sw { border-radius: 12px; padding: 14px 12px 12px; border: 1px solid var(--line); font-size: 0.8125rem; font-weight: 700; }
+  .sw i { display: block; height: 44px; border-radius: 8px; margin-bottom: 10px; }
+  .sw small { display: block; font-weight: 500; color: var(--ink-2); font-family: ui-monospace, Menlo, monospace; font-size: 0.75rem; }
+  .ramp { display: flex; gap: 4px; margin: 6px 0 36px; }
+  .ramp i { flex: 1; height: 26px; border-radius: 6px; }
+  .ramp-labels { display: flex; gap: 4px; font-size: 0.6875rem; color: var(--ink-2); margin-top: -30px; margin-bottom: 36px; }
+  .ramp-labels span { flex: 1; text-align: center; }
+  .phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 28px; align-items: start; }
+  .phone { border: 10px solid var(--ink); border-radius: 44px; overflow: hidden; background: var(--paper); box-shadow: 0 30px 60px rgba(0,0,0,0.18); }
+  .phone .screen { padding: 22px 18px 18px; min-height: 620px; display: flex; flex-direction: column; gap: 14px; }
+  .caption { font-size: 0.9375rem; color: var(--ink-2); margin-top: 12px; line-height: 1.5; }
+  .caption b { color: var(--ink); }
+  /* --- shared app chrome --- */
+  .topbar { display: flex; align-items: center; justify-content: space-between; }
+  .logo { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 900; font-size: 1.25rem; }
+  .logo .stamp { width: 36px; height: 36px; font-size: 1.05rem; border-width: 2.5px; border-radius: 9px; }
+  .badge-lv { background: var(--ink); color: var(--paper); border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: 0.8125rem; }
+  .card { background: var(--paper); border: 2px solid var(--ink); border-radius: 18px; padding: 16px; box-shadow: 4px 4px 0 var(--ink); }
+  .card.red { background: var(--red); color: #fff; border-color: var(--red-deep); box-shadow: 4px 4px 0 var(--red-deep); }
+  .card h3 { font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 800; opacity: 0.85; font-family: var(--font-ui); }
+  .big { font-family: var(--font-display); font-weight: 900; font-size: 2.6rem; line-height: 1; }
+  .row { display: flex; gap: 12px; }
+  .row > * { flex: 1; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 18px; border-radius: 14px; border: 2px solid var(--ink); background: var(--paper); color: var(--ink); font-weight: 800; font-family: var(--font-ui); box-shadow: 3px 3px 0 var(--ink); font-size: 0.9375rem; }
+  .btn.red { background: var(--red); color: #fff; border-color: var(--red-deep); box-shadow: 3px 3px 0 var(--red-deep); }
+  .tabbar { margin-top: auto; display: grid; grid-template-columns: repeat(5, 1fr); border-top: 2px solid var(--ink); padding-top: 10px; font-size: 0.6875rem; font-weight: 800; text-align: center; color: var(--ink-2); }
+  .tabbar span.on { color: var(--red); }
+  .tabbar i { display: block; width: 22px; height: 22px; border: 2px solid currentColor; border-radius: 7px; margin: 0 auto 4px; }
+  /* --- home / trainer card --- */
+  .trainer { display: grid; grid-template-columns: 84px 1fr; gap: 14px; align-items: center; }
+  .ring { width: 84px; height: 84px; border-radius: 50%; background: conic-gradient(var(--red) 0 62%, var(--paper-2) 62% 100%); display: grid; place-items: center; border: 2px solid var(--ink); }
+  .ring b { width: 60px; height: 60px; border-radius: 50%; background: var(--paper); display: grid; place-items: center; font-family: var(--font-display); font-weight: 900; font-size: 1.1rem; }
+  .meta { font-size: 0.8125rem; color: var(--ink-2); line-height: 1.5; }
+  .meta b { color: var(--ink); }
+  .dexcount { font-family: var(--font-display); font-weight: 900; font-size: 1.5rem; }
+  /* --- encounter --- */
+  .encounter { text-align: center; padding: 26px 16px 18px; position: relative; overflow: hidden; }
+  .encounter .glyph { font-family: var(--font-jp); font-weight: 700; font-size: 6.5rem; line-height: 1; margin: 6px 0 4px; }
+  .encounter .tag { position: absolute; top: 12px; left: 12px; font-size: 0.6875rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; background: var(--ink); color: var(--paper); padding: 4px 8px; border-radius: 6px; }
+  .encounter .combo { position: absolute; top: 12px; right: 12px; font-family: var(--font-display); font-weight: 900; color: var(--red); font-size: 1rem; }
+  .input { border: 2px solid var(--ink); border-radius: 14px; padding: 14px; font-size: 1.125rem; font-weight: 700; text-align: center; background: var(--paper); box-shadow: inset 0 0 0 3px var(--red-soft); }
+  .hp { height: 10px; border-radius: 5px; background: var(--paper-2); border: 2px solid var(--ink); overflow: hidden; }
+  .hp i { display: block; height: 100%; width: 38%; background: var(--red); }
+  /* --- dex --- */
+  .dex { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+  .dex i { aspect-ratio: 1; border-radius: 6px; display: grid; place-items: center; font-family: var(--font-jp); font-weight: 700; font-size: 0.85rem; color: #fff; font-style: normal; }
+  .dex i.locked { background: var(--paper-2); color: var(--ink); border: 1px solid var(--line); position: relative; }
+  .dex i.locked::after { content: "?"; position: absolute; inset: 0; display: grid; place-items: center; color: var(--line); font-family: var(--font-ui); font-weight: 800; }
+  .dex i.locked span { visibility: hidden; }
+  .dex i.gold { background: var(--gold); color: var(--ink); }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 12px; font-size: 0.6875rem; font-weight: 700; color: var(--ink-2); }
+  .legend b { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+  /* --- catch --- */
+  .viewfinder { border: 2px solid var(--ink); border-radius: 14px; height: 150px; background: linear-gradient(135deg, var(--paper-2), var(--line)); position: relative; display: grid; place-items: center; font-family: var(--font-jp); font-weight: 900; font-size: 2.4rem; color: var(--ink-2); }
+  .viewfinder::before, .viewfinder::after { content: ""; position: absolute; width: 22px; height: 22px; border: 3px solid var(--red); }
+  .viewfinder::before { top: 8px; left: 8px; border-right: 0; border-bottom: 0; }
+  .viewfinder::after { bottom: 8px; right: 8px; border-left: 0; border-top: 0; }
+  .found { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .found div { border: 2px solid var(--ink); border-radius: 12px; padding: 8px 4px; text-align: center; font-size: 0.75rem; font-weight: 700; }
+  .found div span { display: block; font-family: var(--font-jp); font-size: 1.6rem; font-weight: 700; }
+  .found div.on { background: var(--red-soft); border-color: var(--red); }
+  .note { font-size: 0.75rem; color: var(--ink-2); }
+  section.rules { max-width: 70ch; margin: 44px 0 0; line-height: 1.55; }
+  section.rules h2 { font-size: 1.4rem; margin-bottom: 10px; }
+  section.rules ul { padding-left: 18px; margin: 8px 0 18px; }
+  section.rules li { margin-bottom: 6px; }
+</style>
+<div class="wrap">
+  <div class="head"><span class="stamp">字</span><h1>Kanjidex concept</h1></div>
+  <p class="lede">A redesign of Kanjr around one idea: you are out in the world catching kanji. Ink black, vermilion red and paper white, with gold reserved for burned kanji. The hanko seal stamp is the signature mark: every kanji you learn gets stamped into your dex. Below: palette, stage ramp, and four screens as they would look.</p>
+
+  <h2 style="font-size:1.1rem;margin-bottom:10px">Palette</h2>
+  <div class="swatches">
+    <div class="sw"><i style="background:#17130f"></i>Ink<small>#17130f</small></div>
+    <div class="sw"><i style="background:#d7262a"></i>Vermilion<small>#d7262a</small></div>
+    <div class="sw"><i style="background:#9e1418"></i>Deep red<small>#9e1418</small></div>
+    <div class="sw"><i style="background:#f7f2e8;border:1px solid #d9d0c1"></i>Paper<small>#f7f2e8</small></div>
+    <div class="sw"><i style="background:#efe8db;border:1px solid #d9d0c1"></i>Paper 2<small>#efe8db</small></div>
+    <div class="sw"><i style="background:#c9a227"></i>Gold (burned)<small>#c9a227</small></div>
+  </div>
+  <h2 style="font-size:1.1rem;margin-bottom:10px">Stage ramp: from a faint sighting to a gold stamp</h2>
+  <div class="ramp"><i style="background:var(--paper-2);border:1px solid var(--line)"></i><i style="background:var(--st1)"></i><i style="background:var(--st2)"></i><i style="background:var(--st3)"></i><i style="background:var(--st4)"></i><i style="background:var(--st5)"></i><i style="background:var(--st6)"></i><i style="background:var(--st7)"></i><i style="background:var(--st8)"></i><i style="background:var(--st9)"></i></div>
+  <div class="ramp-labels"><span>unseen</span><span>A1</span><span>A2</span><span>A3</span><span>A4</span><span>Guru 1</span><span>Guru 2</span><span>Master</span><span>Enlight.</span><span>Burned</span></div>
+
+  <div class="phones">
+    <div>
+      <div class="phone"><div class="screen">
+        <div class="topbar"><div class="logo"><span class="stamp">字</span>Kanjr</div><span class="badge-lv">Trainer Lv 7</span></div>
+        <div class="card"><div class="trainer"><div class="ring"><b>62%</b></div><div><h3>Dex progress</h3><div class="dexcount">213 <span style="font-size:1rem;color:var(--ink-2)">/ 2136 caught</span></div><div class="meta"><b>Streak 14 days</b> · 6 wild kanji nearby</div></div></div></div>
+        <div class="row">
+          <div class="card red"><h3>Encounters</h3><div class="big">38</div><div style="font-weight:700;font-size:0.8125rem">reviews waiting</div></div>
+          <div class="card"><h3>New sightings</h3><div class="big">10</div><div style="font-weight:700;font-size:0.8125rem;color:var(--ink-2)">lessons today</div></div>
+        </div>
+        <a class="btn red" style="width:100%;box-sizing:border-box">Start encounters</a>
+        <a class="btn" style="width:100%;box-sizing:border-box">Catch a kanji (camera)</a>
+        <div class="tabbar"><span class="on"><i></i>Home</span><span><i></i>Dex</span><span><i></i>Catch</span><span><i></i>Stats</span><span><i></i>You</span></div>
+      </div></div>
+      <p class="caption"><b>Home becomes a trainer card.</b> Dex count and a progress ring lead; "Encounters" is the red card because it is the daily job. Hard ink outlines with an offset shadow give the printed, sticker-sheet feel instead of soft gradients.</p>
+    </div>
+    <div>
+      <div class="phone"><div class="screen">
+        <div class="topbar"><span style="font-weight:800;font-size:0.8125rem">12 / 38</span><span class="badge-lv" style="background:var(--red)">×6 combo</span></div>
+        <div class="hp"><i></i></div>
+        <div class="card encounter"><span class="tag">Wild kanji</span><span class="combo">A3</span><div class="glyph">駅</div><div class="note">What does it mean?</div></div>
+        <div class="input">station</div>
+        <div class="card" style="text-align:center;border-color:var(--red);box-shadow:4px 4px 0 var(--red)"><div style="font-family:var(--font-display);font-weight:900;font-size:1.4rem;color:var(--red)">Caught! 駅 = station</div><div class="note" style="margin-top:4px">Guru 1 → next encounter in 1 week · tap the kanji to continue</div></div>
+        <div class="tabbar"><span><i></i>Home</span><span><i></i>Dex</span><span><i></i>Catch</span><span><i></i>Stats</span><span><i></i>You</span></div>
+      </div></div>
+      <p class="caption"><b>Reviews become encounters.</b> The session bar reads like a health bar, the combo counter sits where a level would, and a correct answer stamps "Caught!" in red. Wrong answers say "It slipped away" with the meaning shown, never a harsh red box.</p>
+    </div>
+    <div>
+      <div class="phone"><div class="screen">
+        <div class="topbar"><div class="logo"><span class="stamp">字</span>Kanjidex</div><span class="badge-lv">213 / 2136</span></div>
+        <div class="legend"><span><b style="background:var(--paper-2);border:1px solid var(--line)"></b>Unseen</span><span><b style="background:var(--st2)"></b>Apprentice</span><span><b style="background:var(--st5)"></b>Guru</span><span><b style="background:var(--st7)"></b>Master</span><span><b style="background:var(--st8)"></b>Enlightened</span><span><b style="background:var(--st9)"></b>Burned</span></div>
+        <div class="dex">
+          <i class="gold">一</i><i class="gold">人</i><i class="gold">大</i><i class="gold">日</i><i class="gold">月</i><i style="background:var(--st8)">上</i><i style="background:var(--st8)">口</i><i style="background:var(--st8)">中</i>
+          <i style="background:var(--st7)">木</i><i style="background:var(--st7)">本</i><i style="background:var(--st7)">山</i><i style="background:var(--st6)">出</i><i style="background:var(--st6)">子</i><i style="background:var(--st6)">年</i><i style="background:var(--st5)">手</i><i style="background:var(--st5)">生</i>
+          <i style="background:var(--st5)">入</i><i style="background:var(--st4)">下</i><i style="background:var(--st4)">分</i><i style="background:var(--st3)">行</i><i style="background:var(--st3)">会</i><i style="background:var(--st2)">学</i><i style="background:var(--st2)">見</i><i style="background:var(--st1)">立</i>
+          <i style="background:var(--st1)">女</i><i class="locked"><span>小</span></i><i class="locked"><span>目</span></i><i class="locked"><span>王</span></i><i class="locked"><span>国</span></i><i class="locked"><span>田</span></i><i class="locked"><span>土</span></i><i class="locked"><span>名</span></i>
+          <i class="locked"><span>社</span></i><i class="locked"><span>二</span></i><i class="locked"><span>三</span></i><i class="locked"><span>地</span></i><i class="locked"><span>向</span></i><i class="locked"><span>同</span></i><i class="locked"><span>川</span></i><i class="locked"><span>寺</span></i>
+          <i class="locked"><span>方</span></i><i class="locked"><span>時</span></i><i class="locked"><span>市</span></i><i class="locked"><span>後</span></i><i class="locked"><span>東</span></i><i class="locked"><span>今</span></i><i class="locked"><span>合</span></i><i class="locked"><span>長</span></i>
+        </div>
+        <div class="note">Unseen kanji stay hidden as ? until you meet them. Tap any stamp for its dex entry: meaning, parts, where you caught it.</div>
+        <div class="tabbar"><span><i></i>Home</span><span class="on"><i></i>Dex</span><span><i></i>Catch</span><span><i></i>Stats</span><span><i></i>You</span></div>
+      </div></div>
+      <p class="caption"><b>The Grid becomes the Kanjidex.</b> Unseen kanji are hidden behind "?" like unmet creatures (with a switch to reveal them). The ramp runs from a faint pink sighting through reds to ink, and burned kanji turn gold, so a full dex row reads like a page of seals.</p>
+    </div>
+    <div>
+      <div class="phone"><div class="screen">
+        <div class="topbar"><div class="logo"><span class="stamp">字</span>Catch</div><span class="badge-lv">Wild</span></div>
+        <div class="viewfinder">駐車場</div>
+        <div class="row"><a class="btn red">Snap</a><a class="btn">Library</a></div>
+        <div class="card"><h3>3 wild kanji spotted</h3>
+          <div class="found" style="margin-top:8px"><div class="on"><span>駐</span>stop-over</div><div class="on"><span>車</span>car</div><div><span>場</span>caught ✓</div></div>
+          <a class="btn red" style="width:100%;box-sizing:border-box;margin-top:10px">Catch 2</a>
+        </div>
+        <div class="note">Where you caught a kanji is remembered on its dex entry ("Shinjuku, 12 Sep"), so the dex becomes a diary of the trip.</div>
+        <div class="tabbar"><span><i></i>Home</span><span><i></i>Dex</span><span class="on"><i></i>Catch</span><span><i></i>Stats</span><span><i></i>You</span></div>
+      </div></div>
+      <p class="caption"><b>Scanning becomes catching.</b> Red viewfinder corners, "wild kanji spotted", and a Catch button. Kanji already in the dex show as caught. Whatever the recogniser is underneath, this is the frame it lives in.</p>
+    </div>
+  </div>
+
+  <section class="rules">
+    <h2>Design rules</h2>
+    <ul>
+      <li><b>Three colours do the work.</b> Ink for structure and text, vermilion for the one thing to do next, paper for everything else. Gold appears only on burned kanji, so it stays special.</li>
+      <li><b>Outlines, not shadows.</b> Cards have 2px ink borders with a hard offset shadow, like printed cards or stickers. No gradients, no glass.</li>
+      <li><b>The seal is the mark.</b> A tilted red square stamp with the kanji inside is the logo, the favicon, the app icon, and the "caught" animation (a stamp thumps down with the correct-answer ding).</li>
+      <li><b>Words carry the adventure.</b> Reviews are encounters, lessons are new sightings, the grid is the dex, the scanner is the catch screen, the level badge is trainer level. Wrong answers "slip away"; nothing is ever called a failure.</li>
+      <li><b>Typography.</b> Zen Kaku Gothic New (black weight) for headings and numbers: chunky, friendly, and it sets kanji and Latin in the same voice. Manrope for interface text. Noto Sans JP for the kanji themselves, with the typeface-variety setting still rotating faces in encounters.</li>
+      <li><b>Dark theme</b> flips paper to a deep ink brown and keeps vermilion; it reads like the same object at night, not a different app.</li>
+      <li><b>Nothing borrowed.</b> No creature art, no capture-ball shapes, no copied type. The stamp, the ? silhouettes and the trainer card carry the feeling without any trademarked element.</li>
+    </ul>
+    <h2>What changes in the code</h2>
+    <ul>
+      <li>Tokens in style.css: new palette, stage ramp, fonts, border-and-offset-shadow card style. Most screens pick this up automatically because they already use the tokens.</li>
+      <li>Copy pass in app.js: the adventure vocabulary on Home, Reviews, Lessons, Grid, Scan and the toasts.</li>
+      <li>Grid: "?" silhouettes for unseen kanji with a reveal toggle; dex entry gains "caught at" when a kanji came from a scan (place and date, if you allow location).</li>
+      <li>Icon, favicon, manifest colours; the stamp animation on correct answers; Home trainer card layout.</li>
+      <li>Estimated effort: about a day for tokens, copy and Grid; a second day for the stamp animation, icon and trainer card.</li>
+    </ul>
+  </section>
+</div>
