@@ -20,6 +20,7 @@ import { isCorrect, acceptedFor, findCollision, normalise } from './match.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
 import { sfx, configure as configureSfx, unlock as unlockAudio } from './sfx.js';
+import { music } from './music.js';
 import * as scan from './scan.js';
 import * as game from './game.js';
 
@@ -179,6 +180,12 @@ function applySfxSettings() {
   const st = app.progress && app.progress.settings;
   if (!st) return;
   configureSfx({ enabled: st.sounds !== false, volume: (Number(st.volume) || 0) / 100, haptics: st.haptics !== false });
+  music.configure({ enabled: st.music !== false, volume: (Number(st.musicVolume) || 0) / 100 });
+}
+
+/** Which tune belongs to which screen. */
+function sceneFor(head) {
+  return { reviews: 'encounter', drill: 'encounter', lessons: 'sighting', grid: 'dex', scan: 'dex', item: 'dex', levels: 'dex' }[head] || 'overworld';
 }
 
 /* ---------- Juice: little visual rewards ---------- */
@@ -1107,7 +1114,7 @@ function finishReviewSession(s) {
   store.flush();
   backupIfNeeded(true);
   const stats = engine.sessionStats(s);
-  if (stats.done) { sfx.complete(); if (stats.accuracy >= 0.8) confetti(); }
+  if (stats.done) { sfx.complete(); music.jingle('victory'); if (stats.accuracy >= 0.8) confetti(); }
   const missed = s.done.filter((d) => d.wrong > 0).map((d) => d.id);
   const t = now();
   const nextAt = engine.nextReviewAt(app.progress, t);
@@ -1710,6 +1717,8 @@ function maybeIntro() {
     if (el.classList.contains('is-leaving')) return;
     try { sessionStorage.setItem('kanjr.introSeen', '1'); } catch (_) { /* fine */ }
     unlockAudio();
+    music.play('overworld');
+    music.unlock();
     sfx.lessonDone();
     el.classList.add('is-leaving');
     setTimeout(() => el.remove(), 500);
@@ -2183,6 +2192,8 @@ function renderSettings() {
         ${toggle('haptics', 'Vibration', 'A tiny buzz on answers and taps, on phones that support it (Android; iPhones do not vibrate for websites).')}
         ${toggle('celebrations', 'Celebrations', 'Stamps and bursts on catches, combo counters and confetti at the end of a session.')}
         ${toggle('intro', 'Intro screen', 'Show the Kanjiland title screen when the app opens.')}
+        ${toggle('music', 'Music', 'Original 8-bit tunes: a whimsical overworld theme on the home screen, an encounter theme in reviews, a gentle one for new sightings, a dreamy one in the dex, and a victory fanfare.')}
+        ${num('musicVolume', 'Music volume', '0 to 100. Sound effects have their own volume above.', 0, 100)}
         <div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="sound-test">Play the ding</button></div>
       </div>
 
@@ -2436,6 +2447,7 @@ function route() {
   app.keyHandler = null;
   const parts = parseRoute();
   const head = parts[0] || 'home';
+  music.play(sceneFor(head));
   const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'grid', item: 'grid', grid: 'grid', scan: 'scan', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
   $$('#nav a').forEach((a) => {
     if (a.dataset.route === routeName) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
@@ -2571,7 +2583,8 @@ async function boot() {
   registerServiceWorker();
   applySfxSettings();
   maybeIntro();
-  const unlockOnce = () => { unlockAudio(); };
+  const unlockOnce = () => { unlockAudio(); music.unlock(); };
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') music.pause(); else music.resume(); });
   document.addEventListener('pointerdown', unlockOnce, { passive: true });
   document.addEventListener('keydown', unlockOnce);
   // Every button and nav tap gives a tiny click, so the interface feels physical.

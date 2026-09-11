@@ -159,6 +159,20 @@ after feedback, submit when text is typed) and a sticky continue bar sits
 above the tab bar during feedback on narrow screens. Lesson cards can be
 swiped left/right on touch screens and the progress dots are tappable.
 
+## Music (music.js)
+
+A four-channel Game Boy-style chip in Web Audio: two pulse channels (25 % /
+50 % duty via periodic waves) for lead and harmony, a triangle bass, and a
+noise channel for kick/snare/hat. Tunes are note patterns ("c5:4 -:2", in
+sixteenths) scheduled 150 ms ahead on the audio clock; every channel of a
+tune must have the same length (tested). Five original tunes: overworld
+(C major, 112 bpm; intro, Home, Stats, Settings), encounter (A minor, 140;
+reviews and leech drills), sighting (F major, 96; lessons), dex (D
+pentatonic, 84; Dex, Catch, item and level pages), victory (one-shot fanfare
+at the end of a review session, then the scene tune resumes). Music starts
+on the first user gesture (intro tap), pauses when the tab is hidden, and
+has its own `music` toggle and `musicVolume` setting.
+
 ## Sounds and feedback (sfx.js)
 
 All sounds are synthesised with the Web Audio API (no files): a two-note

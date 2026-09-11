@@ -34,6 +34,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   haptics: true,
   celebrations: true,
   intro: true,
+  music: true,
+  musicVolume: 40,
 });
 
 /** Allowed ranges for numeric settings (used by import validation and the UI). */
@@ -43,6 +45,7 @@ export const SETTING_RANGES = Object.freeze({
   unlockStage: [1, 9],
   lessonBatch: [1, 20],
   volume: [0, 100],
+  musicVolume: [0, 100],
 });
 
 const state = {
@@ -170,6 +173,9 @@ export function normaliseSettings(raw) {
   s.haptics = s.haptics !== false;
   s.celebrations = s.celebrations !== false;
   s.intro = s.intro !== false;
+  s.music = s.music !== false;
+  const mv = Number(s.musicVolume);
+  s.musicVolume = Number.isFinite(mv) ? Math.max(0, Math.min(100, Math.round(mv))) : 40;
   const vol = Number(s.volume);
   s.volume = Number.isFinite(vol) ? Math.max(0, Math.min(100, Math.round(vol))) : 70;
   s.theme = ['auto', 'light', 'dark'].includes(s.theme) ? s.theme : 'auto';
