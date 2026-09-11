@@ -135,12 +135,22 @@ if storage is unavailable.
 camera via `<input capture="environment">`; "Choose from library" picks an
 existing image). Recognition runs on the device with tesseract.js (loaded on
 first use from cdnjs) and the fast Japanese model (about 1.5 MB from
-tessdata.projectnaptha.com, cached in IndexedDB), page-segmentation mode 11
-(sparse text). The photo is downscaled to 1600 px, converted to grayscale and
-contrast-stretched first. Recognised CJK characters are filtered to the jōyō
-set (`extractKanji`, pure, tested) and shown as tiles with meaning and level;
-those already in circulation are dimmed; the rest are pre-selected and one
-button adds them via `engine.startManually`. A text box on the same screen
+tessdata.projectnaptha.com, cached in IndexedDB). Pipeline: (1) deskew
+search, a low-resolution block-mode pass at 0, ±3, ±6, ±9 degrees, keeping the
+angle whose pass reads the most CJK symbols most confidently (`passScore`);
+(2) a full-resolution block-mode (PSM 6) pass at that angle on a grayscale,
+contrast-stretched 1600 px render; (3) if fewer than four confident symbols,
+a vertical-text pass with the `jpn_vert` model (PSM 5), which replaces the
+horizontal result when it scores higher; (4) symbols merged by best
+confidence, below 30 dropped, filtered to the jōyō set (`mergeSymbols`, pure,
+tested). Tiles show meaning and level; confidence under 60 goes into a
+"less sure" group that is not pre-selected; items in circulation are dimmed;
+one button adds the selection via `engine.startManually`. The preview
+supports dragging a box (mouse or touch) and "Read selected area" re-runs the
+pipeline on that crop. On the synthetic benchmark (horizontal, vertical,
+white-on-dark, cluttered tilted, mincho menu) this scores 40 TP / 2 FP / 3 FN
+against 29 / 8 / 14 for the first version. Model choice (fast vs standard)
+and binarisation made no measurable difference; rotation did. A text box on the same screen
 accepts pasted text (for iOS Live Text) and goes through the same tiles.
 Nothing is uploaded anywhere.
 

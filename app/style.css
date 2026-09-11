@@ -914,3 +914,8 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 .scan-tile.is-selected .scan-char { color: var(--accent); }
 .scan-tile.is-known { opacity: 0.55; cursor: default; }
 .scan-tile:not(:disabled):hover { transform: translateY(-1px); }
+.scan-stage { position: relative; display: inline-block; max-width: 100%; touch-action: none; user-select: none; -webkit-user-select: none; cursor: crosshair; }
+.scan-stage img { display: block; max-height: 320px; width: auto; max-width: 100%; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+.scan-box { position: absolute; border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 18%, transparent); border-radius: 3px; pointer-events: none; box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25); }
+.scan-unsure-label { grid-column: 1 / -1; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-top: 6px; }
+.scan-tile.is-unsure { border-style: dashed; }

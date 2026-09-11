@@ -1603,32 +1603,35 @@ document.addEventListener('pointerdown', (e) => {
 
 /* ---------- Scan: photograph a kanji and add it ---------- */
 
-const scanState = { file: null, result: null, selected: new Set(), busy: false, error: '', progress: null };
+const scanState = { file: null, result: null, selected: new Set(), busy: false, error: '', progress: null, crop: null, usedCrop: false };
 
 function renderScan() {
   const data = app.data;
   const p = app.progress;
   const known = scanKnownSet();
   const r = scanState.result;
-  const tiles = r ? r.kanji.map(({ char, count }) => {
+  const tile = ({ char, count, conf }) => {
     const id = `k:${char}`;
     const it = data.items[id];
     const stage = engine.stageOf(p, id);
     const inCirc = stage > 0;
     const sel = scanState.selected.has(id);
-    return `<button type="button" class="scan-tile ${inCirc ? 'is-known' : ''} ${sel ? 'is-selected' : ''}" data-id="${esc(id)}" ${inCirc ? 'disabled' : ''} aria-pressed="${sel}">
+    return `<button type="button" class="scan-tile ${inCirc ? 'is-known' : ''} ${sel ? 'is-selected' : ''} ${conf < scan.SURE_CONF ? 'is-unsure' : ''}" data-id="${esc(id)}" ${inCirc ? 'disabled' : ''} aria-pressed="${sel}" title="Confidence ${esc(conf)}%">
       <span class="scan-char jp">${esc(char)}</span>
       <span class="scan-name">${esc(it.name)}</span>
-      <span class="scan-meta">${inCirc ? esc(srs.stageName(stage)) : `Level ${esc(it.level)}`}${count > 1 ? ` · seen ${count}×` : ''}</span>
+      <span class="scan-meta">${inCirc ? esc(srs.stageName(stage)) : `Level ${esc(it.level)}`}${count > 1 ? ` · ${count}×` : ''}</span>
     </button>`;
-  }).join('') : '';
+  };
+  const sure = r ? r.kanji.filter((k) => k.conf >= scan.SURE_CONF) : [];
+  const unsure = r ? r.kanji.filter((k) => k.conf < scan.SURE_CONF) : [];
+  const tiles = sure.map(tile).join('') + (unsure.length ? `<div class="scan-unsure-label">Less sure — check these against the photo</div>${unsure.map(tile).join('')}` : '');
   const selectable = r ? r.kanji.filter(({ char }) => engine.stageOf(p, `k:${char}`) === 0).length : 0;
 
   main.innerHTML = `
     <section class="screen stack scan">
       <div class="screen-head"><h1>Add from a photo</h1><a class="btn btn-sm btn-ghost" href="#/grid">Grid</a></div>
       <div class="card">
-        <p class="small muted">Take a photo of a sign, a menu or a package. The kanji are recognised on your phone (nothing is uploaded) and shown below; tap the ones you already know to add them to your reviews. Printed text works well; handwriting and fancy logos less so.</p>
+        <p class="small muted">Take a photo of a sign, a menu or a package. The kanji are recognised on your phone (nothing is uploaded) and shown below; tap the ones you already know to add them to your reviews. For best results fill the frame with the text, hold the phone level, and avoid glare; a tilt of up to about 9° is straightened automatically, and vertical signs are read too. Printed text works well; handwriting and fancy logos less so.</p>
         <div class="btn-row" style="margin-top:8px">
           <label class="btn btn-primary" for="scan-file">${scanState.file ? 'Take another photo' : 'Take a photo'}</label>
           <input type="file" id="scan-file" accept="image/*" capture="environment" class="sr-only" tabindex="-1">
@@ -1638,6 +1641,11 @@ function renderScan() {
         ${scanState.busy ? `<div class="scan-progress"><div class="muted small" data-role="scan-label">${esc(scanState.progress ? scanState.progress.label : 'Preparing…')}</div><div class="level-bar"><div data-role="scan-bar" style="width:${scanState.progress ? Math.round(scanState.progress.ratio * 100) : 0}%"></div></div></div>` : ''}
         ${scanState.error ? `<p class="small" style="color:var(--bad);margin-top:10px">${esc(scanState.error)}</p>` : ''}
         <div data-role="scan-preview" class="scan-preview" ${scanState.file ? '' : 'hidden'}></div>
+        ${scanState.file && !scanState.busy ? `<p class="small muted" style="margin-top:8px">Busy photo? Drag a box over the text on the picture, then press “Read selected area”.${r && r.angle ? ` Straightened by ${esc(Math.abs(r.angle))}°.` : ''}${r && r.vertical ? ' Read as vertical text.' : ''}</p>
+        <div class="btn-row" data-role="crop-actions" ${scanState.crop ? '' : 'hidden'}>
+          <button class="btn btn-primary btn-sm" type="button" data-act="scan-crop">Read selected area</button>
+          <button class="btn btn-ghost btn-sm" type="button" data-act="scan-uncrop">Clear box</button>
+        </div>` : ''}
       </div>
       ${r ? `
       <div class="card">
@@ -1658,13 +1666,44 @@ function renderScan() {
   const preview = $('[data-role="scan-preview"]', main);
   if (scanState.file) {
     const url = URL.createObjectURL(scanState.file);
-    preview.innerHTML = `<img src="${url}" alt="Your photo">`;
-    preview.querySelector('img').addEventListener('load', () => URL.revokeObjectURL(url));
+    preview.innerHTML = `<div class="scan-stage"><img src="${url}" alt="Your photo" draggable="false"><div class="scan-box" data-role="crop-box" hidden></div></div>`;
+    const img = preview.querySelector('img');
+    img.addEventListener('load', () => { URL.revokeObjectURL(url); drawCropBox(); });
+    const stage = preview.querySelector('.scan-stage');
+    const box = preview.querySelector('[data-role="crop-box"]');
+    const drawCropBox = () => {
+      const c = scanState.crop;
+      if (!c || !img.naturalWidth) { box.hidden = true; return; }
+      const kx = img.clientWidth / img.naturalWidth, ky = img.clientHeight / img.naturalHeight;
+      box.hidden = false;
+      box.style.left = `${c.x * kx}px`; box.style.top = `${c.y * ky}px`; box.style.width = `${c.w * kx}px`; box.style.height = `${c.h * ky}px`;
+    };
+    // Drag a rectangle over the text (mouse or finger).
+    let drag = null;
+    const pt = (e) => { const rct = img.getBoundingClientRect(); return { x: Math.max(0, Math.min(rct.width, e.clientX - rct.left)), y: Math.max(0, Math.min(rct.height, e.clientY - rct.top)) }; };
+    stage.addEventListener('pointerdown', (e) => { if (scanState.busy) return; e.preventDefault(); drag = pt(e); stage.setPointerCapture(e.pointerId); });
+    stage.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const q = pt(e);
+      const kx = img.naturalWidth / img.clientWidth, ky = img.naturalHeight / img.clientHeight;
+      const x = Math.min(drag.x, q.x), y = Math.min(drag.y, q.y), w = Math.abs(q.x - drag.x), h = Math.abs(q.y - drag.y);
+      scanState.crop = { x: Math.round(x * kx), y: Math.round(y * ky), w: Math.round(w * kx), h: Math.round(h * ky) };
+      drawCropBox();
+    });
+    const endDrag = () => {
+      if (!drag) return;
+      drag = null;
+      if (scanState.crop && (scanState.crop.w < 24 || scanState.crop.h < 24)) scanState.crop = null;
+      drawCropBox();
+      const acts = $('[data-role="crop-actions"]', main);
+      if (acts) acts.hidden = !scanState.crop;
+    };
+    stage.addEventListener('pointerup', endDrag);
+    stage.addEventListener('pointercancel', endDrag);
+    if (scanState.crop) drawCropBox();
   }
-  const onFile = async (input) => {
-    const f = input.files && input.files[0];
-    if (!f) return;
-    scanState.file = f; scanState.result = null; scanState.selected.clear(); scanState.error = ''; scanState.busy = true; scanState.progress = null;
+  const recognise = async (f, crop) => {
+    scanState.result = null; scanState.selected.clear(); scanState.error = ''; scanState.busy = true; scanState.progress = null; scanState.usedCrop = !!crop;
     renderScan();
     try {
       const res = await scan.recognizeKanji(f, known, (label, ratio) => {
@@ -1672,9 +1711,9 @@ function renderScan() {
         const lbl = $('[data-role="scan-label"]', main), bar = $('[data-role="scan-bar"]', main);
         if (lbl) lbl.textContent = label;
         if (bar) bar.style.width = `${Math.round(ratio * 100)}%`;
-      });
+      }, { crop });
       scanState.result = res;
-      for (const { char } of res.kanji) if (engine.stageOf(app.progress, `k:${char}`) === 0) scanState.selected.add(`k:${char}`);
+      for (const { char, conf } of res.kanji) if (conf >= scan.SURE_CONF && engine.stageOf(app.progress, `k:${char}`) === 0) scanState.selected.add(`k:${char}`);
       sfx.tap();
     } catch (err) {
       scanState.error = err && err.message ? err.message : String(err);
@@ -1683,8 +1722,18 @@ function renderScan() {
       renderScan();
     }
   };
+  const onFile = (input) => {
+    const f = input.files && input.files[0];
+    if (!f) return;
+    scanState.file = f; scanState.crop = null;
+    recognise(f, null);
+  };
   $('#scan-file', main).addEventListener('change', (e) => onFile(e.target));
   $('#scan-pick', main).addEventListener('change', (e) => onFile(e.target));
+  const cropBtn = $('[data-act="scan-crop"]', main);
+  if (cropBtn) cropBtn.addEventListener('click', () => { if (scanState.crop) recognise(scanState.file, scanState.crop); });
+  const uncropBtn = $('[data-act="scan-uncrop"]', main);
+  if (uncropBtn) uncropBtn.addEventListener('click', () => { scanState.crop = null; renderScan(); });
   $$('.scan-tile', main).forEach((t) => t.addEventListener('click', () => {
     const id = t.dataset.id;
     if (scanState.selected.has(id)) scanState.selected.delete(id); else scanState.selected.add(id);
@@ -1715,7 +1764,7 @@ function renderScan() {
   };
   $('[data-act="scan-typed"]', main).addEventListener('click', showTyped);
   typed.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); showTyped(); } });
-  app.cleanup = () => { scanState.file = null; scanState.result = null; scanState.selected.clear(); scanState.error = ''; };
+  app.cleanup = () => { scanState.file = null; scanState.result = null; scanState.selected.clear(); scanState.error = ''; scanState.crop = null; };
 }
 
 function scanKnownSet() {
