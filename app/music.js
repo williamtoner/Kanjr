@@ -296,6 +296,7 @@ export const music = {
     const ctx = getCtx();
     if (!ctx) return;
     if (ctx.state === 'running' || state.current) startInternal(name);
+    else if (ctx.state === 'suspended') ctx.resume().then(() => { if (ctx.state === 'running' && state.wanted === name && !state.current) startInternal(name); }).catch(() => {});
   },
   /** A one-shot jingle; the previous tune resumes afterwards. */
   jingle(name) {
@@ -309,9 +310,11 @@ export const music = {
   unlock() {
     const ctx = getCtx();
     if (!ctx) return;
-    const go = () => { if (state.wanted && state.enabled && !state.current) startInternal(state.wanted); };
-    if (ctx.state === 'suspended') ctx.resume().then(go).catch(() => {}); else go();
+    const go = () => { if (state.wanted && state.enabled && !state.current && ctx.state === 'running') startInternal(state.wanted); };
+    if (ctx.state === 'suspended') ctx.resume().then(go).catch(() => {});
+    go();
   },
+  state() { return state.ctx ? state.ctx.state : 'not created'; },
   configure({ enabled, volume } = {}) {
     if (typeof enabled === 'boolean') {
       state.enabled = enabled;

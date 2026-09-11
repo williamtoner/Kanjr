@@ -19,7 +19,7 @@ import * as engine from './engine.js';
 import { isCorrect, acceptedFor, findCollision, normalise } from './match.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
-import { sfx, configure as configureSfx, unlock as unlockAudio } from './sfx.js';
+import { sfx, configure as configureSfx, unlock as unlockAudio, audioState } from './sfx.js';
 import { music } from './music.js';
 import * as scan from './scan.js';
 import * as game from './game.js';
@@ -1717,8 +1717,8 @@ function maybeIntro() {
     if (el.classList.contains('is-leaving')) return;
     try { sessionStorage.setItem('kanjr.introSeen', '1'); } catch (_) { /* fine */ }
     unlockAudio();
-    music.play('overworld');
     music.unlock();
+    music.play('overworld');
     sfx.lessonDone();
     el.classList.add('is-leaving');
     setTimeout(() => el.remove(), 500);
@@ -2194,7 +2194,9 @@ function renderSettings() {
         ${toggle('intro', 'Intro screen', 'Show the Kanjiland title screen when the app opens.')}
         ${toggle('music', 'Music', 'Original 8-bit tunes: a whimsical overworld theme on the home screen, an encounter theme in reviews, a gentle one for new sightings, a dreamy one in the dex, and a victory fanfare.')}
         ${num('musicVolume', 'Music volume', '0 to 100. Sound effects have their own volume above.', 0, 100)}
-        <div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="sound-test">Play the ding</button></div>
+        <div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="sound-test">Play the ding</button><button class="btn btn-sm" type="button" data-act="music-test">Start the music</button></div>
+        <p class="small muted" data-role="audio-state" style="margin-top:8px"></p>
+        <p class="small muted">No sound on an iPhone? Flip the ringer switch on the side of the phone away from silent, turn the volume up, and tap "Start the music". Sound can only begin after a tap, never on its own.</p>
       </div>
 
       <div class="card" data-role="sync-card">
@@ -2265,7 +2267,11 @@ function renderSettings() {
     });
   });
 
-  $('[data-act="sound-test"]', main).addEventListener('click', (e) => { unlockAudio(); sfx.correct(3); burst(e.currentTarget.closest('.card')); });
+  const audioStateEl = $('[data-role="audio-state"]', main);
+  const showAudioState = () => { const a = audioState(); audioStateEl.textContent = `Sound engine: ${a.context} · music: ${music.state()} · playing: ${music.playing() || 'nothing'} · silent-mode workaround: ${a.unlocked ? 'active' : 'not yet (tap a button)'}`; };
+  showAudioState();
+  $('[data-act="sound-test"]', main).addEventListener('click', (e) => { unlockAudio(); sfx.correct(3); burst(e.currentTarget.closest('.card')); setTimeout(showAudioState, 300); });
+  $('[data-act="music-test"]', main).addEventListener('click', () => { unlockAudio(); music.unlock(); updateSettings({ music: true }); music.play('overworld'); setTimeout(showAudioState, 300); });
 
   // Export / import
   $('[data-act="export"]', main).addEventListener('click', () => {
@@ -2583,10 +2589,13 @@ async function boot() {
   registerServiceWorker();
   applySfxSettings();
   maybeIntro();
+  // iOS only unlocks audio from click, touchend or a key press (not
+  // touchstart/pointerdown), so listen to those.
   const unlockOnce = () => { unlockAudio(); music.unlock(); };
+  document.addEventListener('click', unlockOnce, true);
+  document.addEventListener('touchend', unlockOnce, { passive: true, capture: true });
+  document.addEventListener('keydown', unlockOnce, true);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') music.pause(); else music.resume(); });
-  document.addEventListener('pointerdown', unlockOnce, { passive: true });
-  document.addEventListener('keydown', unlockOnce);
   // Every button and nav tap gives a tiny click, so the interface feels physical.
   document.addEventListener('click', (e) => {
     const t = e.target.closest('.btn, .nav a, .kgrid-toggle, .switch, .ctx-menu button');
