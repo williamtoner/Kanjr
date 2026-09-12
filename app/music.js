@@ -54,37 +54,43 @@ export function patternLength(events) {
 // Chords: I V vi IV | I V IV I in C. Whimsical overworld: bright pulse lead,
 // bouncing bass, light hat. 112 bpm.
 const OVERWORLD = {
-  bpm: 112,
+  // "Morning Road": skipping dotted hook over a bouncing octave bass. C major.
+  bpm: 118,
   lead: { duty: 0.5, gain: 0.16, pattern: `
-    e5:4 g5:4 a5:4 g5:2 e5:2   d5:4 e5:4 c5:8   e5:4 g5:4 a5:4 c6:4   b5:6 a5:2 g5:8
-    a5:4 g5:2 e5:2 d5:4 e5:4   g5:6 e5:2 d5:8   c5:4 d5:4 e5:4 g5:4   a5:2 g5:2 e5:4 d5:2 c5:6
-    e5:2 e5:2 g5:4 a5:4 c6:4   b5:4 g5:4 e5:8   f5:4 a5:4 g5:4 e5:4   d5:6 e5:2 c5:8
-    a5:4 c6:4 b5:2 a5:2 g5:4   e5:4 g5:4 a5:8   g5:4 e5:4 d5:4 e5:4   c5:12 -:4` },
+    g4:3 a4:1 c5:4 e5:3 d5:1 c5:4   d5:3 e5:1 g5:4 e5:6 -:2
+    f5:3 e5:1 d5:4 c5:3 d5:1 e5:4   d5:8 g4:2 a4:2 b4:4
+    c5:3 d5:1 e5:4 g5:3 a5:1 g5:4   e5:3 d5:1 c5:4 d5:6 -:2
+    e5:3 f5:1 g5:4 a5:3 g5:1 e5:4   c5:12 g4:2 a4:2` },
   harmony: { duty: 0.25, gain: 0.07, pattern: `
-    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   b3:2 d4:2 g4:2 d4:2 b3:2 d4:2 g4:2 d4:2   a3:2 c4:2 e4:2 c4:2 a3:2 c4:2 e4:2 c4:2   f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2
-    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   b3:2 d4:2 g4:2 d4:2 b3:2 d4:2 g4:2 d4:2   f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2   c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2
-    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   e3:2 g3:2 b3:2 g3:2 e3:2 g3:2 b3:2 g3:2   f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2   g3:2 b3:2 d4:2 b3:2 g3:2 b3:2 d4:2 b3:2
-    a3:2 c4:2 e4:2 c4:2 a3:2 c4:2 e4:2 c4:2   f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2   g3:2 b3:2 d4:2 b3:2 g3:2 b3:2 d4:2 b3:2   c4:2 e4:2 g4:2 e4:2 c4:4 -:4` },
+    e4:8 g4:8   f4:8 g4:8   a4:8 g4:8   f4:8 e4:8
+    e4:8 c5:8   g4:8 f4:8   g4:8 c5:8   e4:12 d4:4` },
   bass: { gain: 0.22, pattern: `
-    c3:4 g2:4 c3:4 g2:4   g2:4 d3:4 g2:4 d3:4   a2:4 e3:4 a2:4 e3:4   f2:4 c3:4 f2:4 c3:4
-    c3:4 g2:4 c3:4 g2:4   g2:4 d3:4 g2:4 d3:4   f2:4 c3:4 f2:4 c3:4   c3:4 g2:4 c3:4 g2:4
-    c3:4 g2:4 c3:4 g2:4   e2:4 b2:4 e2:4 b2:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4
-    a2:4 e3:4 a2:4 e3:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:8 c3:4 -:4` },
-  drums: { gain: 0.12, pattern: ('k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 '.repeat(16)).trim() },
+    c2:2 c3:2 c2:2 c3:2 g2:2 g3:2 g2:2 g3:2   f2:2 f3:2 f2:2 f3:2 g2:2 g3:2 g2:2 g3:2
+    a2:2 a3:2 a2:2 a3:2 f2:2 f3:2 f2:2 f3:2   d2:2 d3:2 d2:2 d3:2 g2:2 g3:2 g2:2 g3:2
+    c2:2 c3:2 c2:2 c3:2 a2:2 a3:2 a2:2 a3:2   f2:2 f3:2 f2:2 f3:2 g2:2 g3:2 g2:2 g3:2
+    c2:2 c3:2 c2:2 c3:2 f2:2 f3:2 f2:2 f3:2   g2:2 g3:2 g2:2 g3:2 c2:4 c3:4` },
+  drums: { gain: 0.11, pattern: ('k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 '.repeat(8)).trim() },
 };
 
 // Encounter: A minor, driving eighth-note bass, staccato lead. 140 bpm.
 const ENCOUNTER = {
-  bpm: 140,
+  // "Wild Kanji": syncopated minor hook over a chromatic bass walk. A minor.
+  bpm: 148,
   lead: { duty: 0.25, gain: 0.15, pattern: `
-    a4:2 c5:2 e5:2 a5:2 g5:2 e5:2 d5:2 c5:2   b4:2 d5:2 g5:2 b5:2 a5:2 g5:2 e5:2 d5:2   c5:2 e5:2 g5:2 c6:2 b5:2 g5:2 e5:2 c5:2   b4:2 d5:2 f5:2 g5:4 e5:2 d5:4
-    a4:2 c5:2 e5:2 a5:2 g5:2 e5:2 d5:2 c5:2   f5:2 a5:2 c6:2 a5:2 g5:2 e5:2 d5:2 c5:2   e5:2 g#5:2 b5:2 e6:2 d6:2 b5:2 g#5:2 e5:2   a5:4 e5:2 c5:2 a4:8` },
+    a5:3 a5:1 e5:2 a5:2 c6:4 b5:4   a5:3 g5:1 e5:2 d5:2 e5:8
+    g5:3 g5:1 d5:2 g5:2 b5:4 a5:4   g5:3 f5:1 d5:2 c5:2 d5:8
+    a5:3 a5:1 e5:2 a5:2 c6:4 e6:4   d6:3 c6:1 b5:2 a5:2 b5:8
+    f5:4 g5:4 a5:4 c6:4   b5:4 a5:4 e5:8` },
   harmony: { duty: 0.5, gain: 0.06, pattern: `
-    a3:4 e4:4 a3:4 e4:4   f3:4 c4:4 f3:4 c4:4   c4:4 g4:4 c4:4 g4:4   g3:4 d4:4 g3:4 d4:4
-    a3:4 e4:4 a3:4 e4:4   f3:4 c4:4 f3:4 c4:4   e3:4 b3:4 e3:4 b3:4   a3:4 e4:4 a3:8` },
+    a4:4 c5:4 e5:4 c5:4   a4:4 b4:4 e5:8
+    g4:4 b4:4 d5:4 b4:4   g4:4 a4:4 d5:8
+    a4:4 c5:4 e5:4 a5:4   f5:4 e5:4 g5:8
+    f4:4 a4:4 c5:4 e5:4   d5:4 c5:4 b4:8` },
   bass: { gain: 0.24, pattern: `
-    a2:2 a2:2 a2:2 a2:2 a2:2 a2:2 a2:2 a2:2   f2:2 f2:2 f2:2 f2:2 f2:2 f2:2 f2:2 f2:2   c3:2 c3:2 c3:2 c3:2 c3:2 c3:2 c3:2 c3:2   g2:2 g2:2 g2:2 g2:2 g2:2 g2:2 g2:2 g2:2
-    a2:2 a2:2 a2:2 a2:2 a2:2 a2:2 a2:2 a2:2   f2:2 f2:2 f2:2 f2:2 f2:2 f2:2 f2:2 f2:2   e2:2 e2:2 e2:2 e2:2 e2:2 e2:2 e2:2 e2:2   a2:2 a2:2 e3:2 e3:2 a2:8` },
+    a2:2 a2:2 a2:2 e3:2 a2:2 a2:2 g#2:2 g2:2   f#2:2 f#2:2 f2:2 f2:2 e2:2 e2:2 e2:2 e2:2
+    g2:2 g2:2 g2:2 d3:2 g2:2 g2:2 f#2:2 f2:2   e2:2 e2:2 eb2:2 d2:2 d2:2 d2:2 d2:2 d2:2
+    a2:2 a2:2 a2:2 e3:2 a2:2 a2:2 c3:2 e3:2   f2:2 f2:2 f2:2 c3:2 g2:2 g2:2 g2:2 g2:2
+    f2:2 f2:2 f2:2 c3:2 f2:2 f2:2 f2:2 f2:2   e2:2 e2:2 e2:2 b2:2 a2:4 a2:4` },
   drums: { gain: 0.14, pattern: ('k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 '.repeat(8)).trim() },
 };
 
@@ -105,20 +111,68 @@ const SIGHTING = {
 
 // Dex: D pentatonic, slow, sparse, dreamy. 84 bpm.
 const DEX = {
-  bpm: 84,
-  lead: { duty: 0.5, gain: 0.11, pattern: `
-    d5:6 e5:2 f#5:8   a5:6 f#5:2 e5:8   d5:4 e5:4 a4:8   b4:12 -:4
-    f#5:6 e5:2 d5:8   b4:6 d5:2 e5:8   a4:4 b4:4 d5:8   d5:12 -:4` },
-  harmony: { duty: 0.25, gain: 0.05, pattern: `
-    d4:4 f#4:4 a4:4 f#4:4   d4:4 f#4:4 a4:4 f#4:4   b3:4 d4:4 f#4:4 d4:4   g3:4 b3:4 d4:4 b3:4
-    d4:4 f#4:4 a4:4 f#4:4   b3:4 d4:4 f#4:4 d4:4   g3:4 b3:4 d4:4 b3:4   d4:4 f#4:4 a4:4 -:4` },
-  bass: { gain: 0.18, pattern: `
-    d2:16   d2:16   b1:16   g1:16
-    d2:16   b1:16   g1:16   d2:12 -:4` },
-  drums: { gain: 0.05, pattern: ('h:8 h:8 '.repeat(8)).trim() },
+  // "Collector": a broad, proud melody over sustained chords. D major.
+  bpm: 92,
+  lead: { duty: 0.5, gain: 0.13, pattern: `
+    d5:6 f#5:2 a5:8   b5:6 a5:2 f#5:8
+    e5:6 g5:2 b5:8   a5:12 -:4
+    d6:6 c#6:2 b5:8   a5:6 f#5:2 e5:8
+    g5:4 f#5:4 e5:4 d5:4   d5:12 -:4` },
+  harmony: { duty: 0.25, gain: 0.06, pattern: `
+    d4:16   b3:16   e4:16   a3:16
+    d4:16   f#4:16   g4:16   d4:16` },
+  bass: { gain: 0.2, pattern: `
+    d2:8 a2:8   b1:8 f#2:8   e2:8 b2:8   a1:8 e2:8
+    d2:8 a2:8   d2:8 f#2:8   g1:8 d2:8   d2:12 -:4` },
+  drums: { gain: 0.05, pattern: ('h:8 -:4 h:4 '.repeat(8)).trim() },
 };
 
 // Victory: a short fanfare, played once.
+const QUIZ = {
+  // "Steady Hand": rolling bass, sparse lead with gaps to think in. A minor.
+  bpm: 120,
+  lead: { duty: 0.5, gain: 0.11, pattern: `
+    a4:4 c5:4 -:8   b4:4 d5:4 -:8
+    c5:4 e5:4 -:8   d5:6 c5:2 -:8
+    e5:4 d5:4 c5:4 a4:4   b4:4 c5:4 -:8
+    a4:4 g4:4 e4:4 g4:4   a4:8 -:8` },
+  harmony: { duty: 0.25, gain: 0.05, pattern: `
+    e4:16   d4:16   g4:16   f4:16
+    e4:16   e4:16   c4:16   a3:16` },
+  bass: { gain: 0.22, pattern: `
+    a2:4 e3:4 a2:4 e3:4   g2:4 d3:4 g2:4 d3:4
+    c3:4 g3:4 c3:4 g3:4   f2:4 c3:4 f2:4 c3:4
+    a2:4 e3:4 a2:4 e3:4   e2:4 b2:4 e2:4 b2:4
+    f2:4 c3:4 f2:4 c3:4   a2:8 e2:8` },
+  drums: { gain: 0.06, pattern: ('h:4 h:4 h:4 h:4 '.repeat(8)).trim() },
+};
+
+const EVOLUTION = {
+  // "Becoming": a chromatic climb, a stall, then a major burst. One-shot.
+  bpm: 128, once: true,
+  lead: { duty: 0.25, gain: 0.16, pattern: `
+    c5:2 c#5:2 d5:2 d#5:2 e5:2 f5:2 f#5:2 g5:2
+    g#5:2 a5:2 a#5:2 b5:2 c6:4 -:4
+    g5:2 c6:2 e6:4 d6:2 c6:6   g6:8 e6:4 c6:4` },
+  harmony: { duty: 0.5, gain: 0.08, pattern: `
+    -:16   -:12 g5:4   e5:2 g5:2 c6:4 b5:2 g5:6   e6:8 c6:4 g5:4` },
+  bass: { gain: 0.24, pattern: `
+    c2:2 c2:2 c2:2 c2:2 c2:2 c2:2 c2:2 c2:2   g2:2 g2:2 g2:2 g2:2 g2:4 -:4
+    c3:4 g2:4 c3:8   c3:8 c2:8` },
+  drums: { gain: 0.13, pattern: `
+    h:2 h:2 h:2 h:2 s:2 s:2 s:2 s:2   s:1 s:1 s:1 s:1 s:1 s:1 s:1 s:1 k:8
+    k:2 h:2 s:2 h:2 k:2 s:2 k:2 h:2   k:4 s:4 k:4 k:4` },
+};
+
+const SHINY = {
+  // "Glint": a quick upward glitter and a held sparkle. One-shot.
+  bpm: 150, once: true,
+  lead: { duty: 0.5, gain: 0.15, pattern: `c6:1 e6:1 g6:1 c7:1 -:2 g6:2 c7:8` },
+  harmony: { duty: 0.25, gain: 0.08, pattern: `e5:1 g5:1 c6:1 e6:1 -:2 c6:2 e6:8` },
+  bass: { gain: 0.16, pattern: `c4:4 -:2 g3:2 c4:8` },
+  drums: { gain: 0.09, pattern: `h:1 h:1 h:1 h:1 -:4 h:8` },
+};
+
 const VICTORY = {
   bpm: 132,
   lead: { duty: 0.5, gain: 0.18, pattern: `c5:2 e5:2 g5:2 c6:4 b5:2 c6:6 -:2 e6:4 c6:4 g5:4 c6:4` },
@@ -155,7 +209,8 @@ const CELEBRATION = {
   drums: { gain: 0.13, pattern: `k:2 h:2 s:2 h:2 k:2 s:2 k:2 h:2 k:2 h:2 s:2 h:2 k:2 s:2 k:2 h:2 k:2 h:2 ` + ('k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 '.repeat(16)).trim() },
 };
 
-export const TUNES = { overworld: OVERWORLD, encounter: ENCOUNTER, sighting: SIGHTING, dex: DEX, victory: VICTORY, celebration: CELEBRATION };
+export const TUNES = { overworld: OVERWORLD, encounter: ENCOUNTER, sighting: SIGHTING, dex: DEX,
+  quiz: QUIZ, evolution: EVOLUTION, shiny: SHINY, victory: VICTORY, celebration: CELEBRATION };
 
 /** Validate a tune: every channel must have the same length in 16ths. */
 export function tuneLength(tune) {

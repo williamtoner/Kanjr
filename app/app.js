@@ -508,7 +508,7 @@ function mountQuiz(root, opts) {
   let session = opts.session;
   // `answeredId` and `counter` freeze what the feedback phase shows: the
   // session has already moved on to the next item by then.
-  const view = { phase: 'ask', result: null, retried: false, info: false, collision: null, timer: null, answeredId: null, counter: 1, streak: 0, best: 0 };
+  const view = { phase: 'ask', result: null, retried: false, info: false, collision: null, timer: null, answeredId: null, counter: 1, streak: 0, best: 0, shinySeen: new Set() };
   const typo = app.progress.settings.typoTolerance !== false;
 
   function current() { return engine.currentId(session); }
@@ -534,6 +534,8 @@ function mountQuiz(root, opts) {
     const wrongSoFar = view.phase === 'ask' ? (session.wrong[id] || 0) : 0;
     const stateCls = view.phase === 'feedback' ? `is-${view.result === 'wrong' ? 'wrong' : view.result === 'typo' ? 'typo' : 'correct'}` : '';
     const shinyNow = item.type === 'kanji' && game.isShinyEncounter(id, session.startedAt);
+    // A glitter the first time a shiny one turns up in this session.
+    if (shinyNow && view.phase === 'ask' && !view.shinySeen.has(id)) { view.shinySeen.add(id); music.jingle('shiny'); }
     const progressPct = stats.total ? (stats.done / stats.total) * 100 : 0;
     const note = app.progress.notes[id];
 
@@ -933,6 +935,7 @@ function attachSwipe(el, cb) {
 }
 
 function renderLessonCard(L) {
+  music.play('sighting');
   const id = L.ids[L.index];
   const item = itemOf(id);
   const isLast = L.index === L.ids.length - 1;
@@ -1010,6 +1013,7 @@ function startLessonQuiz(L) {
 }
 
 function renderLessonQuiz(L) {
+  music.play('quiz');
   main.innerHTML = `
     <section class="screen lesson">
       <div class="screen-head"><h1>Quiz</h1><span class="muted small">Answer every item once to finish the batch</span></div>
@@ -2028,6 +2032,7 @@ function showEvolution(id, fromStage, toStage) {
   document.body.appendChild(el);
   const glyph = el.querySelector('.evo-glyph');
   const result = el.querySelector('.evo-result');
+  music.jingle('evolution');
   sfx.stageUp();
   let done = false;
   const finish = () => {

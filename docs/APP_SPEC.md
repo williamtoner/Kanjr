@@ -181,11 +181,15 @@ A four-channel Game Boy-style chip in Web Audio: two pulse channels (25 % /
 50 % duty via periodic waves) for lead and harmony, a triangle bass, and a
 noise channel for kick/snare/hat. Tunes are note patterns ("c5:4 -:2", in
 sixteenths) scheduled 150 ms ahead on the audio clock; every channel of a
-tune must have the same length (tested). Five original tunes: overworld
-(C major, 112 bpm; intro, Home, Stats, Settings), encounter (A minor, 140;
-reviews and leech drills), sighting (F major, 96; lessons), dex (D
-pentatonic, 84; Dex, Catch, item and level pages), victory (one-shot fanfare
-at the end of a review session, then the scene tune resumes). Music starts
+tune must have the same length (tested). Nine original tunes: overworld
+("Morning Road", C major, 118 bpm; intro, Home, Stats, Settings), encounter
+("Wild Kanji", A minor, 148; reviews and leech drills), sighting (F major,
+96; lesson cards), quiz ("Steady Hand", A minor, 120; the lesson quiz),
+dex ("Collector", D major, 92; Dex, Catch, item and level pages), and three
+one-shot cues that hand the scene tune back when they end: evolution
+("Becoming", 7.5 s, under the evolution overlay), shiny ("Glint", 1.6 s, the
+first time a shiny card appears in a session) and victory. Candidates that
+were written but not installed live in `docs/tunes/`. Music starts
 on the first user gesture (intro tap), pauses when the tab is hidden, and
 has its own `music` toggle and `musicVolume` setting.
 
