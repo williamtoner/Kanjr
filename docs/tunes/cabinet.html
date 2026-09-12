@@ -1,0 +1,289 @@
+<title>Kanjr Tune Cabinet</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@700;900&family=Manrope:wght@500;700;800&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #efe8dc; --surface: #f6f1e6; --surface-2: #e8e0d1; --line: #d3c8b6;
+    --text: #211b16; --text-2: #423a32; --muted: #75695d;
+    --border: #2a231d; --accent: #d7262a; --accent-deep: #9e1418; --accent-soft: #f8d7d5;
+    --gold: #c9a227; --gold-soft: #f4e7b6;
+    --ch1: #d7262a; --ch2: #e0813b; --ch3: #2f7d9e; --ch4: #7a6a58;
+    --shadow: 4px 4px 0 var(--border);
+    --font-display: "Zen Kaku Gothic New", system-ui, sans-serif;
+    --font-ui: "Manrope", system-ui, -apple-system, sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #2a241f; --surface: #332c26; --surface-2: #3d352e; --line: #55493f;
+    --text: #f3ebde; --text-2: #ddd2c3; --muted: #b0a394;
+    --border: #ebe1d2; --accent-soft: #4a2325; --gold-soft: #3a3012;
+    --ch2: #e8a05e; --ch3: #6bb6d4;
+    --shadow: 4px 4px 0 #15110e;
+  } }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #2a241f; --surface: #332c26; --surface-2: #3d352e; --line: #55493f;
+    --text: #f3ebde; --text-2: #ddd2c3; --muted: #b0a394;
+    --border: #ebe1d2; --accent-soft: #4a2325; --gold-soft: #3a3012;
+    --ch2: #e8a05e; --ch3: #6bb6d4;
+    --shadow: 4px 4px 0 #15110e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; padding-bottom: 96px; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 18px 0; }
+  h1, h2, h3 { font-family: var(--font-display); font-weight: 900; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+  h1 { font-size: clamp(1.9rem, 5vw, 2.6rem); }
+  .lede { color: var(--text-2); max-width: 64ch; margin: 12px 0 0; }
+  .lede b { color: var(--text); }
+  .head { display: flex; align-items: center; gap: 14px; }
+  .stamp { display: grid; place-items: center; width: 54px; height: 54px; flex: none; border: 3px solid var(--accent); border-radius: 13px; color: var(--accent); font-family: var(--font-display); font-weight: 900; font-size: 1.7rem; background: var(--surface); transform: rotate(-7deg); }
+
+  .scene { margin-top: 40px; }
+  .scene-head { border-bottom: 2px solid var(--border); padding-bottom: 8px; margin-bottom: 6px; }
+  .scene-head h2 { font-size: 1.35rem; }
+  .scene-note { color: var(--muted); font-size: 0.9375rem; margin: 8px 0 16px; max-width: 70ch; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+
+  .tune { display: flex; flex-direction: column; gap: 10px; padding: 16px; background: var(--surface); border: 2px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); }
+  .tune.is-current { background: var(--surface-2); border-style: dashed; box-shadow: none; }
+  .tune.is-playing { border-color: var(--accent); box-shadow: 4px 4px 0 var(--accent-deep); }
+  .tune-top { display: flex; align-items: flex-start; gap: 12px; }
+  .play { flex: none; width: 52px; height: 52px; border-radius: 14px; border: 2px solid var(--border); background: var(--accent); color: #fff; cursor: pointer; display: grid; place-items: center; box-shadow: 3px 3px 0 var(--accent-deep); transition: transform 120ms ease, box-shadow 120ms ease; }
+  .play:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--accent-deep); }
+  .tune.is-current .play { background: var(--surface); color: var(--text); box-shadow: 3px 3px 0 var(--border); }
+  .play svg { width: 22px; height: 22px; fill: currentColor; }
+  .tune-name { font-family: var(--font-display); font-weight: 900; font-size: 1.0625rem; line-height: 1.25; }
+  .tag { display: inline-block; margin-left: 6px; vertical-align: 2px; font-size: 0.625rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 7px; border-radius: 6px; border: 1.5px solid var(--border); background: var(--gold-soft); color: var(--text); }
+  .tag.once { background: var(--accent-soft); }
+  .blurb { color: var(--text-2); font-size: 0.9375rem; margin: 0; }
+  .facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 4px; }
+  .fact { font-size: 0.75rem; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; border: 1.5px solid var(--line); border-radius: 7px; padding: 2px 8px; }
+
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); border-top: 2px solid var(--border); padding: 10px max(18px, env(safe-area-inset-left)) calc(10px + env(safe-area-inset-bottom)); }
+  .bar-inner { max-width: 1080px; margin: 0 auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .np { font-weight: 800; min-width: 0; flex: 1 1 200px; }
+  .np small { display: block; font-weight: 600; color: var(--muted); font-size: 0.75rem; }
+  .chans { display: flex; gap: 5px; }
+  .chan { width: 30px; height: 30px; border-radius: 8px; border: 2px solid var(--border); background: var(--surface-2); display: grid; place-items: center; font-size: 0.5625rem; font-weight: 800; color: var(--muted); transition: background 90ms linear, color 90ms linear; }
+  .chan.lit { color: #fff; }
+  .chan.lit[data-c="1"] { background: var(--ch1); } .chan.lit[data-c="2"] { background: var(--ch2); }
+  .chan.lit[data-c="3"] { background: var(--ch3); } .chan.lit[data-c="4"] { background: var(--ch4); }
+  .stop { border: 2px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; font-weight: 800; padding: 8px 16px; cursor: pointer; box-shadow: 2px 2px 0 var(--border); }
+  .stop:active { transform: translate(2px, 2px); box-shadow: none; }
+  .vol { display: flex; align-items: center; gap: 8px; font-size: 0.8125rem; font-weight: 700; color: var(--muted); }
+  .vol input { width: 110px; accent-color: var(--accent); }
+
+  .note { margin-top: 40px; padding: 18px; border: 2px dashed var(--line); border-radius: 16px; color: var(--text-2); }
+  .note h3 { font-size: 1rem; margin-bottom: 6px; }
+  .note ul { margin: 8px 0 0; padding-left: 20px; }
+  .note li { margin-bottom: 5px; }
+  code { font-family: var(--font-mono); font-size: 0.85em; background: var(--surface-2); padding: 1px 5px; border-radius: 5px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <div class="head">
+    <span class="stamp">&#38899;</span>
+    <div>
+      <h1>Kanjr Tune Cabinet</h1>
+    </div>
+  </div>
+  <p class="lede">Candidate music for the app, on the same four-channel Game Boy chip as before: two pulse waves, a triangle bass and a noise channel. <b>Nothing here is installed yet.</b> Play them, and tell me which ones to keep, which to rework and what is still missing. The current tunes are included in each section, dashed, so you can compare directly.</p>
+  <div id="scenes"></div>
+
+  <div class="note">
+    <h3>What I changed about how they are written</h3>
+    <ul>
+      <li>Every candidate leads with a <b>hook</b> in the first two bars, the way the celebration fanfare does, instead of wandering up and down a scale.</li>
+      <li>The harmony channel plays a <b>countermelody</b> or held chords rather than endless broken chords, so there is something to follow underneath.</li>
+      <li>The bass has a shape of its own: bouncing octaves, a walking line, or a chromatic climb.</li>
+      <li>Each one commits to a <b>character</b>, named on the card. If a name sounds wrong for its screen, that is useful to know too.</li>
+    </ul>
+  </div>
+</div>
+
+<div class="bar">
+  <div class="bar-inner">
+    <div class="np" id="np">Nothing playing<small>Pick a tune above</small></div>
+    <div class="chans" aria-hidden="true">
+      <div class="chan" data-c="1" id="c1">P1</div><div class="chan" data-c="2" id="c2">P2</div>
+      <div class="chan" data-c="3" id="c3">TRI</div><div class="chan" data-c="4" id="c4">NSE</div>
+    </div>
+    <label class="vol">Vol <input type="range" id="vol" min="0" max="100" value="55"></label>
+    <button class="stop" id="stopBtn">Stop</button>
+  </div>
+</div>
+
+<script>
+const TUNES = {"home-a": {"id": "home-a", "scene": "Home", "name": "Morning Road", "blurb": "Skipping dotted rhythm, a hook that answers itself, bouncing octave bass. The \"setting out on a bright day\" one.", "key": "C major", "bpm": 118, "once": false, "current": false, "bars": 8, "secs": 16.3, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.16, "pattern": "\n    g4:3 a4:1 c5:4 e5:3 d5:1 c5:4   d5:3 e5:1 g5:4 e5:6 -:2\n    f5:3 e5:1 d5:4 c5:3 d5:1 e5:4   d5:8 g4:2 a4:2 b4:4\n    c5:3 d5:1 e5:4 g5:3 a5:1 g5:4   e5:3 d5:1 c5:4 d5:6 -:2\n    e5:3 f5:1 g5:4 a5:3 g5:1 e5:4   c5:12 g4:2 a4:2"}, "harmony": {"duty": 0.25, "gain": 0.07, "pattern": "\n    e4:8 g4:8   f4:8 g4:8   a4:8 g4:8   f4:8 e4:8\n    e4:8 c5:8   g4:8 f4:8   g4:8 c5:8   e4:12 d4:4"}, "bass": {"gain": 0.22, "pattern": "\n    c2:2 c3:2 c2:2 c3:2 g2:2 g3:2 g2:2 g3:2   f2:2 f3:2 f2:2 f3:2 g2:2 g3:2 g2:2 g3:2\n    a2:2 a3:2 a2:2 a3:2 f2:2 f3:2 f2:2 f3:2   d2:2 d3:2 d2:2 d3:2 g2:2 g3:2 g2:2 g3:2\n    c2:2 c3:2 c2:2 c3:2 a2:2 a3:2 a2:2 a3:2   f2:2 f3:2 f2:2 f3:2 g2:2 g3:2 g2:2 g3:2\n    c2:2 c3:2 c2:2 c3:2 f2:2 f3:2 f2:2 f3:2   g2:2 g3:2 g2:2 g3:2 c2:4 c3:4"}, "drums": {"gain": 0.11, "pattern": "k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2"}}, "home-b": {"id": "home-b", "scene": "Home", "name": "Paper Lanterns", "blurb": "Japanese pentatonic (yo scale), swaying and unhurried, with a music-box lead over a soft heartbeat bass. The most \"relaxing\" option.", "key": "G major (yo scale)", "bpm": 96, "once": false, "current": false, "bars": 8, "secs": 20, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.15, "pattern": "\n    d5:4 e5:2 g5:2 a5:6 g5:2   e5:4 d5:4 b4:8\n    d5:2 e5:2 g5:4 a5:4 b5:4   a5:6 g5:2 e5:8\n    g5:4 a5:2 b5:2 d6:6 b5:2   a5:4 g5:4 e5:8\n    d5:2 e5:2 g5:4 e5:4 d5:4   b4:8 d5:4 e5:4"}, "harmony": {"duty": 0.25, "gain": 0.065, "pattern": "\n    g4:8 b4:8   a4:8 g4:8   b4:8 d5:8   e5:8 d5:8\n    b4:8 d5:8   a4:8 g4:8   g4:8 a4:8   b4:8 b4:8"}, "bass": {"gain": 0.2, "pattern": "\n    g2:6 g2:2 d3:8   e2:6 e2:2 b2:8   g2:6 g2:2 d3:8   a2:6 a2:2 e3:8\n    b2:6 b2:2 f#3:8   e2:6 e2:2 b2:8   g2:6 g2:2 a2:8   b2:8 b2:8"}, "drums": {"gain": 0.07, "pattern": "h:4 -:4 h:4 h:4 h:4 -:4 h:4 h:4 h:4 -:4 h:4 h:4 h:4 -:4 h:4 h:4 h:4 -:4 h:4 h:4 h:4 -:4 h:4 h:4 h:4 -:4 h:4 h:4 h:4 -:4 h:4 h:4"}}, "home-c": {"id": "home-c", "scene": "Home", "name": "The Long Way Round", "blurb": "Brisker and more wistful: a descending hook, a countermelody that argues with it, and a walking bass. Feels like travelling somewhere.", "key": "C major", "bpm": 132, "once": false, "current": false, "bars": 8, "secs": 14.5, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.16, "pattern": "\n    c6:4 b5:2 a5:2 g5:4 e5:4   f5:4 e5:2 d5:2 c5:8\n    a5:4 g5:2 f5:2 e5:4 c5:4   d5:4 e5:4 g5:8\n    c6:4 b5:2 a5:2 g5:4 a5:4   f5:4 g5:2 a5:2 c6:8\n    b5:4 a5:2 g5:2 e5:4 d5:4   c5:12 -:4"}, "harmony": {"duty": 0.25, "gain": 0.075, "pattern": "\n    e5:4 g5:4 c5:8   a4:4 c5:4 e5:8   c5:4 e5:4 g4:8   b4:4 c5:4 e5:8\n    e5:4 d5:4 e5:8   c5:4 e5:4 f5:8   d5:4 f5:4 e5:8   e5:12 -:4"}, "bass": {"gain": 0.23, "pattern": "\n    c3:4 g2:4 a2:4 e2:4   f2:4 c3:4 g2:4 g2:4\n    a2:4 e3:4 f2:4 c3:4   g2:4 d3:4 g2:4 b2:4\n    c3:4 g2:4 a2:4 e3:4   f2:4 a2:4 c3:4 c3:4\n    g2:4 b2:4 d3:4 g2:4   c3:8 g2:4 c3:4"}, "drums": {"gain": 0.12, "pattern": "k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2"}}, "encounter-a": {"id": "encounter-a", "scene": "Encounters", "name": "Wild Kanji", "blurb": "Syncopated minor hook with a chromatic bass walk. Urgent without being stressful; the closest in spirit to a battle theme.", "key": "A minor", "bpm": 148, "once": false, "current": false, "bars": 8, "secs": 13, "loopStart": 0, "lead": {"duty": 0.25, "gain": 0.15, "pattern": "\n    a5:3 a5:1 e5:2 a5:2 c6:4 b5:4   a5:3 g5:1 e5:2 d5:2 e5:8\n    g5:3 g5:1 d5:2 g5:2 b5:4 a5:4   g5:3 f5:1 d5:2 c5:2 d5:8\n    a5:3 a5:1 e5:2 a5:2 c6:4 e6:4   d6:3 c6:1 b5:2 a5:2 b5:8\n    f5:4 g5:4 a5:4 c6:4   b5:4 a5:4 e5:8"}, "harmony": {"duty": 0.5, "gain": 0.06, "pattern": "\n    a4:4 c5:4 e5:4 c5:4   a4:4 b4:4 e5:8\n    g4:4 b4:4 d5:4 b4:4   g4:4 a4:4 d5:8\n    a4:4 c5:4 e5:4 a5:4   f5:4 e5:4 g5:8\n    f4:4 a4:4 c5:4 e5:4   d5:4 c5:4 b4:8"}, "bass": {"gain": 0.24, "pattern": "\n    a2:2 a2:2 a2:2 e3:2 a2:2 a2:2 g#2:2 g2:2   f#2:2 f#2:2 f2:2 f2:2 e2:2 e2:2 e2:2 e2:2\n    g2:2 g2:2 g2:2 d3:2 g2:2 g2:2 f#2:2 f2:2   e2:2 e2:2 eb2:2 d2:2 d2:2 d2:2 d2:2 d2:2\n    a2:2 a2:2 a2:2 e3:2 a2:2 a2:2 c3:2 e3:2   f2:2 f2:2 f2:2 c3:2 g2:2 g2:2 g2:2 g2:2\n    f2:2 f2:2 f2:2 c3:2 f2:2 f2:2 f2:2 f2:2   e2:2 e2:2 e2:2 b2:2 a2:4 a2:4"}, "drums": {"gain": 0.14, "pattern": "k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2"}}, "encounter-b": {"id": "encounter-b", "scene": "Encounters", "name": "Face to Face", "blurb": "Call and response: the lead asks a phrase, the harmony answers it. Marching, confident, a bit playful. Less frantic than Wild Kanji.", "key": "A minor", "bpm": 134, "once": false, "current": false, "bars": 8, "secs": 14.3, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.15, "pattern": "\n    e5:2 e5:2 g5:4 e5:4 -:4   -:8 a5:2 a5:2 c6:4\n    d5:2 d5:2 f5:4 d5:4 -:4   -:8 g5:2 g5:2 b5:4\n    e5:2 e5:2 g5:4 c6:4 b5:4   a5:4 g5:4 e5:4 d5:4\n    c5:2 d5:2 e5:4 g5:4 a5:4   g5:6 e5:2 a4:8"}, "harmony": {"duty": 0.25, "gain": 0.09, "pattern": "\n    -:8 a4:2 a4:2 c5:4   e5:2 e5:2 c5:4 a4:8\n    -:8 g4:2 g4:2 b4:4   d5:2 d5:2 b4:4 g4:8\n    c5:4 c5:4 e5:4 e5:4   f5:4 e5:4 c5:4 b4:4\n    a4:4 b4:4 c5:4 e5:4   d5:6 c5:2 a4:8"}, "bass": {"gain": 0.23, "pattern": "\n    a2:4 a2:4 e3:4 a2:4   f2:4 f2:4 c3:4 f2:4\n    g2:4 g2:4 d3:4 g2:4   e2:4 e2:4 b2:4 e2:4\n    a2:4 e3:4 a2:4 e3:4   f2:4 c3:4 f2:4 c3:4\n    a2:4 e3:4 f2:4 c3:4   g2:4 d3:4 a2:8"}, "drums": {"gain": 0.13, "pattern": "k:4 h:2 h:2 s:4 h:2 k:2 k:4 h:2 h:2 s:4 h:2 k:2 k:4 h:2 h:2 s:4 h:2 k:2 k:4 h:2 h:2 s:4 h:2 k:2 k:4 h:2 h:2 s:4 h:2 k:2 k:4 h:2 h:2 s:4 h:2 k:2 k:4 h:2 h:2 s:4 h:2 k:2 k:4 h:2 h:2 s:4 h:2 k:2"}}, "sighting-a": {"id": "sighting-a", "scene": "New sightings", "name": "First Light", "blurb": "Curious and open: rising phrases that keep discovering something, warm sustained harmony. Calm but not sleepy.", "key": "F major", "bpm": 104, "once": false, "current": false, "bars": 8, "secs": 18.5, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.14, "pattern": "\n    f4:4 a4:4 c5:4 f5:4   e5:6 c5:2 a4:8\n    g4:4 bb4:4 d5:4 g5:4   f5:6 d5:2 bb4:8\n    a4:4 c5:4 f5:4 a5:4   g5:4 f5:4 e5:8\n    d5:4 c5:4 bb4:4 a4:4   f4:12 -:4"}, "harmony": {"duty": 0.25, "gain": 0.07, "pattern": "\n    c4:8 f4:8   g4:8 a4:8   bb3:8 d4:8   a3:8 c4:8\n    f4:8 a4:8   c5:8 bb4:8   a4:8 g4:8   f4:12 -:4"}, "bass": {"gain": 0.2, "pattern": "\n    f2:8 c3:8   a2:8 f2:8   bb1:8 f2:8   c2:8 g2:8\n    f2:8 c3:8   d2:8 a2:8   bb1:8 c2:8   f2:12 -:4"}, "drums": {"gain": 0.06, "pattern": "h:8 h:4 h:4 h:8 h:4 h:4 h:8 h:4 h:4 h:8 h:4 h:4 h:8 h:4 h:4 h:8 h:4 h:4 h:8 h:4 h:4 h:8 h:4 h:4"}}, "sighting-b": {"id": "sighting-b", "scene": "New sightings", "name": "Field Notes", "blurb": "A light waltz in three. Music-box lead, plucked bass. Distinctly different in feel from everything else in the app.", "key": "C major, 3/4", "bpm": 112, "once": false, "current": false, "bars": 9, "secs": 19.3, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.14, "pattern": "\n    c5:6 e5:3 g5:3 e5:6   d5:6 f5:3 a5:3 f5:6\n    e5:6 g5:3 c6:3 g5:6   a5:9 g5:3 e5:6\n    c5:6 e5:3 g5:3 c6:6   b5:6 a5:3 g5:3 e5:6\n    f5:6 e5:3 d5:3 c5:6   c5:12 -:6"}, "harmony": {"duty": 0.25, "gain": 0.06, "pattern": "\n    e4:18 f4:18   g4:18 a4:18\n    e4:18 g4:18   a4:18 g4:18"}, "bass": {"gain": 0.21, "pattern": "\n    c3:6 g3:6 e3:6   d3:6 a3:6 f3:6   c3:6 g3:6 e3:6   f3:6 c3:6 a2:6\n    c3:6 g3:6 e3:6   e3:6 b3:6 g3:6   f3:6 c3:6 a2:6   c3:12 g2:6"}, "drums": {"gain": 0.07, "pattern": "k:6 h:6 h:6 k:6 h:6 h:6 k:6 h:6 h:6 k:6 h:6 h:6 k:6 h:6 h:6 k:6 h:6 h:6 k:6 h:6 h:6 k:6 h:6 h:6"}}, "quiz-a": {"id": "quiz-a", "scene": "Quiz", "name": "Think Fast", "blurb": "A ticking pulse under a short, nagging two-bar hook that loops tightly. Keeps you moving without being a battle theme.", "key": "A minor", "bpm": 150, "once": false, "current": false, "bars": 8, "secs": 12.8, "loopStart": 0, "lead": {"duty": 0.25, "gain": 0.14, "pattern": "\n    e5:2 -:2 e5:2 g5:2 a5:4 g5:4   e5:2 -:2 d5:2 e5:2 g5:8\n    d5:2 -:2 d5:2 f5:2 g5:4 f5:4   d5:2 -:2 c5:2 d5:2 e5:8\n    e5:2 -:2 g5:2 a5:2 c6:4 b5:4   a5:2 -:2 g5:2 e5:2 d5:8\n    c5:2 d5:2 e5:2 g5:2 a5:4 g5:4   e5:8 -:8"}, "harmony": {"duty": 0.5, "gain": 0.055, "pattern": "\n    a4:4 c5:4 a4:4 c5:4   b4:4 d5:4 b4:4 d5:4\n    g4:4 b4:4 g4:4 b4:4   a4:4 c5:4 a4:4 c5:4\n    c5:4 e5:4 c5:4 e5:4   d5:4 b4:4 g4:4 b4:4\n    a4:4 c5:4 e5:4 c5:4   a4:8 -:8"}, "bass": {"gain": 0.22, "pattern": "\n    a2:2 -:2 a2:2 -:2 a2:2 -:2 e3:2 -:2   g2:2 -:2 g2:2 -:2 g2:2 -:2 d3:2 -:2\n    e2:2 -:2 e2:2 -:2 e2:2 -:2 b2:2 -:2   f2:2 -:2 f2:2 -:2 f2:2 -:2 c3:2 -:2\n    a2:2 -:2 a2:2 -:2 c3:2 -:2 e3:2 -:2   g2:2 -:2 g2:2 -:2 b2:2 -:2 d3:2 -:2\n    f2:2 -:2 f2:2 -:2 c3:2 -:2 c3:2 -:2   a2:8 -:8"}, "drums": {"gain": 0.1, "pattern": "h:2 h:2 h:2 h:2 h:2 h:2 s:2 h:2 h:2 h:2 h:2 h:2 h:2 h:2 s:2 h:2 h:2 h:2 h:2 h:2 h:2 h:2 s:2 h:2 h:2 h:2 h:2 h:2 h:2 h:2 s:2 h:2 h:2 h:2 h:2 h:2 h:2 h:2 s:2 h:2 h:2 h:2 h:2 h:2 h:2 h:2 s:2 h:2 h:2 h:2 h:2 h:2 h:2 h:2 s:2 h:2 h:2 h:2 h:2 h:2 h:2 h:2 s:2 h:2"}}, "quiz-b": {"id": "quiz-b", "scene": "Quiz", "name": "Steady Hand", "blurb": "Quieter and more focused: a low, rolling bass with a sparse lead that leaves gaps to think in. Background music that stays out of the way.", "key": "A minor", "bpm": 120, "once": false, "current": false, "bars": 8, "secs": 16, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.11, "pattern": "\n    a4:4 c5:4 -:8   b4:4 d5:4 -:8\n    c5:4 e5:4 -:8   d5:6 c5:2 -:8\n    e5:4 d5:4 c5:4 a4:4   b4:4 c5:4 -:8\n    a4:4 g4:4 e4:4 g4:4   a4:8 -:8"}, "harmony": {"duty": 0.25, "gain": 0.05, "pattern": "\n    e4:16   d4:16   g4:16   f4:16\n    e4:16   e4:16   c4:16   a3:16"}, "bass": {"gain": 0.22, "pattern": "\n    a2:4 e3:4 a2:4 e3:4   g2:4 d3:4 g2:4 d3:4\n    c3:4 g3:4 c3:4 g3:4   f2:4 c3:4 f2:4 c3:4\n    a2:4 e3:4 a2:4 e3:4   e2:4 b2:4 e2:4 b2:4\n    f2:4 c3:4 f2:4 c3:4   a2:8 e2:8"}, "drums": {"gain": 0.06, "pattern": "h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4"}}, "dex-a": {"id": "dex-a", "scene": "Kanjidex", "name": "Collector", "blurb": "Slow and proud: a broad melody over big sustained chords, like leafing through something you have built. Has an actual tune, unlike the current one.", "key": "D major", "bpm": 92, "once": false, "current": false, "bars": 8, "secs": 20.9, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.13, "pattern": "\n    d5:6 f#5:2 a5:8   b5:6 a5:2 f#5:8\n    e5:6 g5:2 b5:8   a5:12 -:4\n    d6:6 c#6:2 b5:8   a5:6 f#5:2 e5:8\n    g5:4 f#5:4 e5:4 d5:4   d5:12 -:4"}, "harmony": {"duty": 0.25, "gain": 0.06, "pattern": "\n    d4:16   b3:16   e4:16   a3:16\n    d4:16   f#4:16   g4:16   d4:16"}, "bass": {"gain": 0.2, "pattern": "\n    d2:8 a2:8   b1:8 f#2:8   e2:8 b2:8   a1:8 e2:8\n    d2:8 a2:8   d2:8 f#2:8   g1:8 d2:8   d2:12 -:4"}, "drums": {"gain": 0.05, "pattern": "h:8 -:4 h:4 h:8 -:4 h:4 h:8 -:4 h:4 h:8 -:4 h:4 h:8 -:4 h:4 h:8 -:4 h:4 h:8 -:4 h:4 h:8 -:4 h:4"}}, "dex-b": {"id": "dex-b", "scene": "Kanjidex", "name": "Quiet Shelf", "blurb": "Barely there: two voices drifting, almost no percussion. For browsing without being sung at.", "key": "A minor", "bpm": 76, "once": false, "current": false, "bars": 8, "secs": 25.3, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.1, "pattern": "\n    a4:8 c5:8   d5:8 e5:8   g5:6 e5:2 d5:8   c5:16\n    e5:8 d5:8   c5:8 a4:8   g4:6 a4:2 c5:8   a4:16"}, "harmony": {"duty": 0.25, "gain": 0.05, "pattern": "\n    -:16   a4:8 g4:8   -:16   e4:16\n    -:16   g4:8 e4:8   -:16   a4:16"}, "bass": {"gain": 0.17, "pattern": "\n    a2:16   f2:16   c3:16   e2:16\n    a2:16   f2:16   g2:16   a2:16"}, "drums": {"gain": 0.04, "pattern": "h:16 h:16 h:16 h:16 h:16 h:16 h:16 h:16"}}, "evolution-a": {"id": "evolution-a", "scene": "Evolution", "name": "Becoming", "blurb": "Tension then release: a rising chromatic climb that stalls, then bursts into a major fanfare. Built to sit under the flashing glyph.", "key": "C chromatic \u2192 C major", "bpm": 128, "once": true, "current": false, "bars": 4, "secs": 7.5, "loopStart": 0, "lead": {"duty": 0.25, "gain": 0.16, "pattern": "\n    c5:2 c#5:2 d5:2 d#5:2 e5:2 f5:2 f#5:2 g5:2\n    g#5:2 a5:2 a#5:2 b5:2 c6:4 -:4\n    g5:2 c6:2 e6:4 d6:2 c6:6   g6:8 e6:4 c6:4"}, "harmony": {"duty": 0.5, "gain": 0.08, "pattern": "\n    -:16   -:12 g5:4   e5:2 g5:2 c6:4 b5:2 g5:6   e6:8 c6:4 g5:4"}, "bass": {"gain": 0.24, "pattern": "\n    c2:2 c2:2 c2:2 c2:2 c2:2 c2:2 c2:2 c2:2   g2:2 g2:2 g2:2 g2:2 g2:4 -:4\n    c3:4 g2:4 c3:8   c3:8 c2:8"}, "drums": {"gain": 0.13, "pattern": "\n    h:2 h:2 h:2 h:2 s:2 s:2 s:2 s:2   s:1 s:1 s:1 s:1 s:1 s:1 s:1 s:1 k:8\n    k:2 h:2 s:2 h:2 k:2 s:2 k:2 h:2   k:4 s:4 k:4 k:4"}}, "evolution-b": {"id": "evolution-b", "scene": "Evolution", "name": "Seal of Guru", "blurb": "Shorter and grander: three hammer-blow chords then a bright resolve. Less build-up, more arrival.", "key": "C major", "bpm": 116, "once": true, "current": false, "bars": 4, "secs": 8.3, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.17, "pattern": "\n    -:4 g5:2 -:2 g5:2 -:2 g5:4   c6:6 b5:2 c6:8\n    e6:4 d6:4 c6:4 g5:4   c6:12 -:4"}, "harmony": {"duty": 0.25, "gain": 0.08, "pattern": "\n    -:4 e5:2 -:2 e5:2 -:2 e5:4   e5:6 d5:2 e5:8\n    g5:4 f5:4 e5:4 c5:4   e5:12 -:4"}, "bass": {"gain": 0.24, "pattern": "\n    -:4 c3:2 -:2 c3:2 -:2 c3:4   c3:8 g2:8\n    c3:4 g2:4 c3:4 e3:4   c3:12 -:4"}, "drums": {"gain": 0.14, "pattern": "\n    -:4 k:2 -:2 k:2 -:2 k:4   k:4 s:4 k:4 s:4\n    k:2 h:2 s:2 h:2 k:2 s:2 k:2 h:2   k:4 s:4 k:8"}}, "shiny-a": {"id": "shiny-a", "scene": "Shiny", "name": "Glint", "blurb": "A quick upward glitter and a held sparkle. Short enough to fire the moment a shiny card appears.", "key": "C major", "bpm": 150, "once": true, "current": false, "bars": 1, "secs": 1.6, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.15, "pattern": "c6:1 e6:1 g6:1 c7:1 -:2 g6:2 c7:8"}, "harmony": {"duty": 0.25, "gain": 0.08, "pattern": "e5:1 g5:1 c6:1 e6:1 -:2 c6:2 e6:8"}, "bass": {"gain": 0.16, "pattern": "c4:4 -:2 g3:2 c4:8"}, "drums": {"gain": 0.09, "pattern": "h:1 h:1 h:1 h:1 -:4 h:8"}}, "shiny-b": {"id": "shiny-b", "scene": "Shiny", "name": "Treasure", "blurb": "Longer: a glitter, a pause, then a little four-note \"you found something\" motif. More of a moment.", "key": "G major", "bpm": 132, "once": true, "current": false, "bars": 1.63, "secs": 3, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.15, "pattern": "g5:1 b5:1 d6:1 g6:1 -:4 b6:2 -:2 g6:2 e6:2 d6:2 g6:6 -:2"}, "harmony": {"duty": 0.25, "gain": 0.08, "pattern": "d5:1 g5:1 b5:1 d6:1 -:4 g6:2 -:2 d6:2 b5:2 g5:2 b5:6 -:2"}, "bass": {"gain": 0.18, "pattern": "g3:4 -:4 g3:2 -:2 e3:4 g3:8 -:2"}, "drums": {"gain": 0.1, "pattern": "h:1 h:1 h:1 h:1 -:4 s:2 -:2 h:2 h:2 h:2 k:6 -:2"}}, "overworld": {"id": "overworld", "scene": "Home", "name": "Overworld (current)", "blurb": "What plays on Home today. Wandering scale-wise melody over an alternating bass.", "key": "C major", "bpm": 112, "once": false, "current": true, "bars": 16, "secs": 34.3, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.16, "pattern": "\n    e5:4 g5:4 a5:4 g5:2 e5:2   d5:4 e5:4 c5:8   e5:4 g5:4 a5:4 c6:4   b5:6 a5:2 g5:8\n    a5:4 g5:2 e5:2 d5:4 e5:4   g5:6 e5:2 d5:8   c5:4 d5:4 e5:4 g5:4   a5:2 g5:2 e5:4 d5:2 c5:6\n    e5:2 e5:2 g5:4 a5:4 c6:4   b5:4 g5:4 e5:8   f5:4 a5:4 g5:4 e5:4   d5:6 e5:2 c5:8\n    a5:4 c6:4 b5:2 a5:2 g5:4   e5:4 g5:4 a5:8   g5:4 e5:4 d5:4 e5:4   c5:12 -:4"}, "harmony": {"duty": 0.25, "gain": 0.07, "pattern": "\n    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   b3:2 d4:2 g4:2 d4:2 b3:2 d4:2 g4:2 d4:2   a3:2 c4:2 e4:2 c4:2 a3:2 c4:2 e4:2 c4:2   f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2\n    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   b3:2 d4:2 g4:2 d4:2 b3:2 d4:2 g4:2 d4:2   f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2   c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2\n    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   e3:2 g3:2 b3:2 g3:2 e3:2 g3:2 b3:2 g3:2   f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2   g3:2 b3:2 d4:2 b3:2 g3:2 b3:2 d4:2 b3:2\n    a3:2 c4:2 e4:2 c4:2 a3:2 c4:2 e4:2 c4:2   f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2   g3:2 b3:2 d4:2 b3:2 g3:2 b3:2 d4:2 b3:2   c4:2 e4:2 g4:2 e4:2 c4:4 -:4"}, "bass": {"gain": 0.22, "pattern": "\n    c3:4 g2:4 c3:4 g2:4   g2:4 d3:4 g2:4 d3:4   a2:4 e3:4 a2:4 e3:4   f2:4 c3:4 f2:4 c3:4\n    c3:4 g2:4 c3:4 g2:4   g2:4 d3:4 g2:4 d3:4   f2:4 c3:4 f2:4 c3:4   c3:4 g2:4 c3:4 g2:4\n    c3:4 g2:4 c3:4 g2:4   e2:4 b2:4 e2:4 b2:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4\n    a2:4 e3:4 a2:4 e3:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:8 c3:4 -:4"}, "drums": {"gain": 0.12, "pattern": "k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2"}}, "encounter": {"id": "encounter", "scene": "Encounters", "name": "Encounter (current)", "blurb": "Today\u2019s review theme: mostly arpeggio runs over a driving eighth-note bass.", "key": "A minor", "bpm": 140, "once": false, "current": true, "bars": 8, "secs": 13.7, "loopStart": 0, "lead": {"duty": 0.25, "gain": 0.15, "pattern": "\n    a4:2 c5:2 e5:2 a5:2 g5:2 e5:2 d5:2 c5:2   b4:2 d5:2 g5:2 b5:2 a5:2 g5:2 e5:2 d5:2   c5:2 e5:2 g5:2 c6:2 b5:2 g5:2 e5:2 c5:2   b4:2 d5:2 f5:2 g5:4 e5:2 d5:4\n    a4:2 c5:2 e5:2 a5:2 g5:2 e5:2 d5:2 c5:2   f5:2 a5:2 c6:2 a5:2 g5:2 e5:2 d5:2 c5:2   e5:2 g#5:2 b5:2 e6:2 d6:2 b5:2 g#5:2 e5:2   a5:4 e5:2 c5:2 a4:8"}, "harmony": {"duty": 0.5, "gain": 0.06, "pattern": "\n    a3:4 e4:4 a3:4 e4:4   f3:4 c4:4 f3:4 c4:4   c4:4 g4:4 c4:4 g4:4   g3:4 d4:4 g3:4 d4:4\n    a3:4 e4:4 a3:4 e4:4   f3:4 c4:4 f3:4 c4:4   e3:4 b3:4 e3:4 b3:4   a3:4 e4:4 a3:8"}, "bass": {"gain": 0.24, "pattern": "\n    a2:2 a2:2 a2:2 a2:2 a2:2 a2:2 a2:2 a2:2   f2:2 f2:2 f2:2 f2:2 f2:2 f2:2 f2:2 f2:2   c3:2 c3:2 c3:2 c3:2 c3:2 c3:2 c3:2 c3:2   g2:2 g2:2 g2:2 g2:2 g2:2 g2:2 g2:2 g2:2\n    a2:2 a2:2 a2:2 a2:2 a2:2 a2:2 a2:2 a2:2   f2:2 f2:2 f2:2 f2:2 f2:2 f2:2 f2:2 f2:2   e2:2 e2:2 e2:2 e2:2 e2:2 e2:2 e2:2 e2:2   a2:2 a2:2 e3:2 e3:2 a2:8"}, "drums": {"gain": 0.14, "pattern": "k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 k:2 s:2 h:2"}}, "sighting": {"id": "sighting", "scene": "New sightings", "name": "Sighting (current)", "blurb": "Today\u2019s lesson theme: gentle broken chords.", "key": "F major", "bpm": 96, "once": false, "current": true, "bars": 8, "secs": 20, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.13, "pattern": "\n    a4:4 c5:4 f5:4 e5:4   d5:4 c5:4 a4:8   g4:4 bb4:4 d5:4 f5:4   e5:4 c5:4 a4:8\n    a4:4 c5:4 f5:4 a5:4   g5:4 f5:4 e5:8   d5:4 f5:4 e5:4 c5:4   f5:12 -:4"}, "harmony": {"duty": 0.25, "gain": 0.06, "pattern": "\n    f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2   d3:2 f3:2 a3:2 f3:2 d3:2 f3:2 a3:2 f3:2   bb2:2 d3:2 f3:2 d3:2 bb2:2 d3:2 f3:2 d3:2   c3:2 e3:2 g3:2 e3:2 c3:2 e3:2 g3:2 e3:2\n    f3:2 a3:2 c4:2 a3:2 f3:2 a3:2 c4:2 a3:2   c3:2 e3:2 g3:2 e3:2 c3:2 e3:2 g3:2 e3:2   bb2:2 d3:2 f3:2 d3:2 c3:2 e3:2 g3:2 e3:2   f3:2 a3:2 c4:2 a3:2 f3:4 -:4"}, "bass": {"gain": 0.2, "pattern": "\n    f2:8 c3:8   d2:8 a2:8   bb1:8 f2:8   c2:8 g2:8\n    f2:8 c3:8   c2:8 g2:8   bb1:8 c2:8   f2:12 -:4"}, "drums": {"gain": 0.07, "pattern": "h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4 h:4"}}, "dex": {"id": "dex", "scene": "Kanjidex", "name": "Dex (current)", "blurb": "Today\u2019s dex theme: sparse and slow.", "key": "D pentatonic", "bpm": 84, "once": false, "current": true, "bars": 8, "secs": 22.9, "loopStart": 0, "lead": {"duty": 0.5, "gain": 0.11, "pattern": "\n    d5:6 e5:2 f#5:8   a5:6 f#5:2 e5:8   d5:4 e5:4 a4:8   b4:12 -:4\n    f#5:6 e5:2 d5:8   b4:6 d5:2 e5:8   a4:4 b4:4 d5:8   d5:12 -:4"}, "harmony": {"duty": 0.25, "gain": 0.05, "pattern": "\n    d4:4 f#4:4 a4:4 f#4:4   d4:4 f#4:4 a4:4 f#4:4   b3:4 d4:4 f#4:4 d4:4   g3:4 b3:4 d4:4 b3:4\n    d4:4 f#4:4 a4:4 f#4:4   b3:4 d4:4 f#4:4 d4:4   g3:4 b3:4 d4:4 b3:4   d4:4 f#4:4 a4:4 -:4"}, "bass": {"gain": 0.18, "pattern": "\n    d2:16   d2:16   b1:16   g1:16\n    d2:16   b1:16   g1:16   d2:12 -:4"}, "drums": {"gain": 0.05, "pattern": "h:8 h:8 h:8 h:8 h:8 h:8 h:8 h:8 h:8 h:8 h:8 h:8 h:8 h:8 h:8 h:8"}}, "celebration": {"id": "celebration", "scene": "The one that works", "name": "Celebration (current)", "blurb": "The fanfare you liked, plus its looping body. Here as the yardstick: this is the level of character the others need.", "key": "C major", "bpm": 132, "once": false, "current": true, "bars": 18.25, "secs": 33.2, "loopStart": 36, "lead": {"duty": 0.5, "gain": 0.17, "pattern": "\n    c5:2 e5:2 g5:2 c6:4 b5:2 c6:6 -:2 e6:4 c6:4 g5:4 c6:4\n    e5:2 g5:2 c6:4 g5:2 e5:2 g5:4   f5:2 a5:2 c6:4 a5:2 f5:2 a5:4   g5:2 b5:2 d6:4 b5:2 g5:2 b5:4   c6:4 e6:2 d6:2 c6:8\n    e5:2 g5:2 c6:4 g5:2 e5:2 g5:4   f5:2 a5:2 c6:4 a5:2 f5:2 d6:4   g5:2 b5:2 d6:4 e6:2 d6:2 b5:4   c6:12 -:4\n    a5:2 c6:2 e6:4 c6:2 a5:2 c6:4   f5:2 a5:2 c6:4 a5:2 f5:2 a5:4   g5:2 b5:2 d6:4 g6:2 f6:2 d6:4   e6:4 c6:2 d6:2 e6:8\n    a5:2 c6:2 e6:4 c6:2 a5:2 e6:4   f5:2 a5:2 c6:4 d6:2 c6:2 a5:4   g5:4 b5:4 d6:4 b5:4   c6:8 g5:2 e5:2 c5:4"}, "harmony": {"duty": 0.25, "gain": 0.08, "pattern": "\n    e4:2 g4:2 c5:2 e5:4 g5:2 e5:6 -:2 g5:4 e5:4 c5:4 e5:4\n    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   f4:2 a4:2 c5:2 a4:2 f4:2 a4:2 c5:2 a4:2   g4:2 b4:2 d5:2 b4:2 g4:2 b4:2 d5:2 b4:2   c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2\n    c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2   f4:2 a4:2 c5:2 a4:2 f4:2 a4:2 c5:2 a4:2   g4:2 b4:2 d5:2 b4:2 g4:2 b4:2 d5:2 b4:2   c4:2 e4:2 g4:2 e4:2 c4:4 -:4\n    a4:2 c5:2 e5:2 c5:2 a4:2 c5:2 e5:2 c5:2   f4:2 a4:2 c5:2 a4:2 f4:2 a4:2 c5:2 a4:2   g4:2 b4:2 d5:2 b4:2 g4:2 b4:2 d5:2 b4:2   c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 g4:2 e4:2\n    a4:2 c5:2 e5:2 c5:2 a4:2 c5:2 e5:2 c5:2   f4:2 a4:2 c5:2 a4:2 f4:2 a4:2 c5:2 a4:2   g4:2 b4:2 d5:2 b4:2 g4:2 b4:2 d5:2 b4:2   c4:2 e4:2 g4:2 e4:2 c4:2 e4:2 c4:4"}, "bass": {"gain": 0.22, "pattern": "\n    c3:4 g2:4 c3:8 f2:4 g2:4 c3:4 c3:8\n    c3:4 g2:4 c3:4 g2:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:4 g2:4 c3:4 g2:4\n    c3:4 g2:4 c3:4 g2:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:8 c3:4 -:4\n    a2:4 e3:4 a2:4 e3:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:4 g2:4 c3:4 g2:4\n    a2:4 e3:4 a2:4 e3:4   f2:4 c3:4 f2:4 c3:4   g2:4 d3:4 g2:4 d3:4   c3:8 g2:4 c3:4"}, "drums": {"gain": 0.13, "pattern": "k:2 h:2 s:2 h:2 k:2 s:2 k:2 h:2 k:2 h:2 s:2 h:2 k:2 s:2 k:2 h:2 k:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2 k:2 h:2 s:2 h:2"}}};
+const SCENES = [["The one that works", "Your benchmark. Play this first, then use it to judge everything below."], ["Home", "Wants: relaxed, whimsical, the feeling of setting out. Plays on the title screen, Home, Stats and Settings, so it is the tune you will hear most."], ["Encounters", "Wants: energy and focus for reviews, without stress. Plays for a long stretch while you answer, so it must not nag."], ["New sightings", "Wants: calm curiosity while reading lesson cards. Nothing urgent."], ["Quiz", "A new scene. Today the quiz uses the lesson tune; it could have its own, a little tighter and more alert."], ["Kanjidex", "Wants: contemplative browsing. Plays on the dex, catch screen and item pages."], ["Evolution", "A one-shot cue under the flashing glyph when a kanji reaches a new stage group. About eight seconds."], ["Shiny", "A one-shot cue the moment a shiny card appears. Two or three seconds, must land instantly."]];
+
+/* ---------- the chip ---------- */
+const SEMI = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 };
+function noteFreq(name) {
+  const m = /^([a-g])([#b]?)(\d)$/i.exec(name);
+  const n = SEMI[m[1].toLowerCase()] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+  return 440 * Math.pow(2, (12 * (Number(m[3]) + 1) + n - 69) / 12);
+}
+function parsePattern(str) {
+  const out = []; let at = 0;
+  for (const tok of String(str).trim().split(/\s+/)) {
+    if (!tok) continue;
+    const [note, len] = tok.split(':');
+    const l = Number(len || 1);
+    out.push({ note: note === '-' ? null : note.toLowerCase(), len: l, at });
+    at += l;
+  }
+  return out;
+}
+let ctx = null, master = null, waves = {}, noiseBuf = null;
+let seq = null, timer = null, volume = 0.55;
+function getCtx() {
+  if (ctx) return ctx;
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  master = ctx.createGain(); master.gain.value = volume; master.connect(ctx.destination);
+  return ctx;
+}
+function pulseWave(duty) {
+  const k = String(duty);
+  if (waves[k]) return waves[k];
+  const n = 32, real = new Float32Array(n), imag = new Float32Array(n);
+  for (let i = 1; i < n; i++) real[i] = (2 / (i * Math.PI)) * Math.sin(i * Math.PI * duty);
+  waves[k] = ctx.createPeriodicWave(real, imag, { disableNormalization: false });
+  return waves[k];
+}
+function noise() {
+  if (noiseBuf) return noiseBuf;
+  const b = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  noiseBuf = b; return b;
+}
+function pulse(when, dur, freq, duty, gain) {
+  const o = ctx.createOscillator(); o.setPeriodicWave(pulseWave(duty)); o.frequency.value = freq;
+  const g = ctx.createGain(), a = 0.008, r = Math.min(0.06, dur * 0.3);
+  g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(gain, when + a);
+  g.gain.setValueAtTime(gain, when + Math.max(a, dur - r)); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  o.connect(g); g.connect(master); o.start(when); o.stop(when + dur + 0.01);
+}
+function tri(when, dur, freq, gain) {
+  const o = ctx.createOscillator(); o.type = 'triangle'; o.frequency.value = freq;
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(gain, when + 0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  o.connect(g); g.connect(master); o.start(when); o.stop(when + dur + 0.01);
+}
+function drum(when, kind, gain) {
+  if (kind === 'k') {
+    const o = ctx.createOscillator(); o.type = 'triangle';
+    o.frequency.setValueAtTime(160, when); o.frequency.exponentialRampToValueAtTime(45, when + 0.09);
+    const g = ctx.createGain(); g.gain.setValueAtTime(gain * 2.2, when); g.gain.exponentialRampToValueAtTime(0.0001, when + 0.12);
+    o.connect(g); g.connect(master); o.start(when); o.stop(when + 0.13); return;
+  }
+  const s = ctx.createBufferSource(); s.buffer = noise();
+  const f = ctx.createBiquadFilter();
+  if (kind === 'h') { f.type = 'highpass'; f.frequency.value = 7000; } else { f.type = 'bandpass'; f.frequency.value = 1800; f.Q.value = 0.7; }
+  const g = ctx.createGain(), dur = kind === 'h' ? 0.03 : 0.09;
+  g.gain.setValueAtTime(kind === 'h' ? gain * 0.7 : gain * 1.6, when); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+  s.connect(f); f.connect(g); g.connect(master); s.start(when); s.stop(when + dur + 0.01);
+}
+const CH_INDEX = { lead: 1, harmony: 2, bass: 3, drums: 4 };
+function flash(n, when) {
+  const delay = Math.max(0, (when - ctx.currentTime) * 1000);
+  setTimeout(() => {
+    const el = document.getElementById('c' + n);
+    if (!el) return;
+    el.classList.add('lit');
+    setTimeout(() => el.classList.remove('lit'), 110);
+  }, delay);
+}
+function build(id) {
+  const t = TUNES[id];
+  const chans = ['lead', 'harmony', 'bass', 'drums'].filter((k) => t[k]).map((kind) => {
+    const byStep = {};
+    for (const e of parsePattern(t[kind].pattern)) byStep[e.at] = e;
+    return { kind, byStep, cfg: t[kind] };
+  });
+  const len = Math.max(...chans.map((c) => Math.max(...Object.values(c.byStep).map((e) => e.at + e.len))));
+  return { id, tune: t, chans, length: len, step: 0, nextTime: 0, stepDur: 60 / t.bpm / 4 };
+}
+function tick() {
+  if (!seq || !ctx) return;
+  const horizon = ctx.currentTime + 0.15;
+  while (seq.nextTime < horizon) {
+    for (const ch of seq.chans) {
+      const ev = ch.byStep[seq.step];
+      if (!ev || !ev.note) continue;
+      const dur = ev.len * seq.stepDur * (ch.kind === 'drums' ? 1 : 0.92);
+      if (ch.kind === 'lead' || ch.kind === 'harmony') pulse(seq.nextTime, dur, noteFreq(ev.note), ch.cfg.duty || 0.5, ch.cfg.gain);
+      else if (ch.kind === 'bass') tri(seq.nextTime, dur, noteFreq(ev.note), ch.cfg.gain);
+      else drum(seq.nextTime, ev.note, ch.cfg.gain);
+      flash(CH_INDEX[ch.kind], seq.nextTime);
+    }
+    seq.nextTime += seq.stepDur;
+    seq.step += 1;
+    if (seq.step >= seq.length) {
+      if (seq.tune.once) { const id = seq.id; stop(); markStopped(id); return; }
+      seq.step = seq.tune.loopStart || 0;
+    }
+  }
+}
+function play(id) {
+  getCtx();
+  if (ctx.state === 'suspended') ctx.resume();
+  stop();
+  seq = build(id);
+  seq.nextTime = ctx.currentTime + 0.06;
+  timer = setInterval(tick, 40);
+  tick();
+  document.querySelectorAll('.tune').forEach((el) => el.classList.toggle('is-playing', el.dataset.id === id));
+  document.querySelectorAll('.play').forEach((b) => { b.innerHTML = b.dataset.id === id ? ICON_STOP : ICON_PLAY; b.setAttribute('aria-label', (b.dataset.id === id ? 'Stop ' : 'Play ') + TUNES[b.dataset.id].name); });
+  const t = TUNES[id];
+  document.getElementById('np').innerHTML = t.name + '<small>' + t.scene + ' \u00b7 ' + t.bpm + ' bpm \u00b7 ' + (t.key || '') + (t.once ? ' \u00b7 one-shot' : ' \u00b7 looping') + '</small>';
+}
+function stop() {
+  if (timer) { clearInterval(timer); timer = null; }
+  seq = null;
+}
+function markStopped(id) {
+  document.querySelectorAll('.tune').forEach((el) => el.classList.remove('is-playing'));
+  document.querySelectorAll('.play').forEach((b) => { b.innerHTML = ICON_PLAY; b.setAttribute('aria-label', 'Play ' + TUNES[b.dataset.id].name); });
+  const t = id && TUNES[id];
+  document.getElementById('np').innerHTML = t ? (t.name + '<small>finished · tap to play again</small>') : 'Nothing playing<small>Pick a tune above</small>';
+}
+const ICON_PLAY = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+const ICON_STOP = '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>';
+
+/* ---------- render ---------- */
+const host = document.getElementById('scenes');
+for (const [scene, note] of SCENES) {
+  const list = Object.values(TUNES).filter((t) => t.scene === scene);
+  if (!list.length) continue;
+  list.sort((a, b) => (a.current ? 1 : 0) - (b.current ? 1 : 0));
+  const sec = document.createElement('section');
+  sec.className = 'scene';
+  sec.innerHTML = '<div class="scene-head"><h2>' + scene + '</h2></div><p class="scene-note">' + note + '</p><div class="grid">' +
+    list.map((t) => '<article class="tune' + (t.current ? ' is-current' : '') + '" data-id="' + t.id + '">' +
+      '<div class="tune-top">' +
+        '<button class="play" data-id="' + t.id + '" aria-label="Play ' + t.name + '">' + ICON_PLAY + '</button>' +
+        '<div><div class="tune-name">' + t.name +
+          (t.current ? '<span class="tag">current</span>' : '') +
+          (t.once ? '<span class="tag once">one-shot</span>' : '') +
+        '</div></div>' +
+      '</div>' +
+      '<p class="blurb">' + t.blurb + '</p>' +
+      '<div class="facts"><span class="fact">' + t.bpm + ' bpm</span><span class="fact">' + (t.key || '—') + '</span>' +
+      '<span class="fact">' + t.bars + ' bars</span><span class="fact">' + t.secs + ' s</span></div>' +
+    '</article>').join('') + '</div>';
+  host.appendChild(sec);
+}
+document.querySelectorAll('.play').forEach((b) => b.addEventListener('click', () => {
+  const id = b.dataset.id;
+  if (seq && seq.id === id) { stop(); markStopped(null); } else play(id);
+}));
+document.getElementById('stopBtn').addEventListener('click', () => { stop(); markStopped(null); });
+document.getElementById('vol').addEventListener('input', (e) => {
+  volume = Number(e.target.value) / 100;
+  if (master) master.gain.value = volume;
+});
+</script>
