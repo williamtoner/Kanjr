@@ -276,3 +276,38 @@ polish. Real use surfaces the right bugs.
   mnemonic. Added `pipeline/bundle.py` for a single-file build. Next: mnemonics
   for levels 11+, review of the automatic decompositions and keywords beyond
   level 10, and real daily use to surface the rest.
+- **2026-09-09** Grid tab (every item as a colour-coded box), manual "mark as
+  caught" for known kanji, lenient answer matching (canonical forms plus a
+  curated synonym table), immediate review for manual adds, default pace 10.
+  Repository published at github.com/williamtoner/Kanjr and served by GitHub
+  Pages at williamtoner.github.io/Kanjr/app/; the prompt log was removed from
+  history first (rule 6). Device sync via a private GitHub Gist, with
+  copy/paste transfer for sandboxed copies.
+- **2026-09-10** Leeches with a practice drill, richer stats (projected
+  finish, accuracy by stage, items-learned chart, activity heatmap), typeface
+  variety in reviews, and a prominent "No, I got this right" override.
+  Sounds and haptics: synthesised dings that climb with a streak, stage-up and
+  burn chimes, bursts, streak counters and confetti.
+- **2026-09-11** Kanjidex redesign: ink/vermilion/paper identity, adventure
+  vocabulary (encounters, sightings, dex, catch, trainer level), rarity tiers,
+  dex numbers, shiny encounters (1 in 64), Kanjiland intro screen, seal-stamp
+  app icon. Photo capture reworked around a draggable capture square with
+  candidate picking (multi-scale OCR passes plus a shape-template second
+  opinion and a stroke-complexity check).
+- **2026-09-12** Four-channel chiptune music with five original tunes per
+  scene, plus iOS audio fixes (unlock on touchend, silent-mode workaround).
+  Celebration tune that loops on summary screens, an evolution moment when a
+  kanji reaches a new stage group, softened light and dark themes, and
+  shimmering shiny stamps in the dex.
+
+### Open threads (as of 2026-09-12)
+
+1. **Mnemonics stop at level 10** (340 of 2,231 items). Levels 11–20 are the
+   next content batch; keywords and decompositions beyond level 10 are
+   automatic and unreviewed.
+2. **Learning order**: a "simplicity-leaning" re-weighting was measured and
+   recommended (nothing above 10 strokes in levels 1–4) but never applied.
+   The user has not said yes or no.
+3. **Photo capture**: still the weakest feature on real photographs. The next
+   step needs real photos from the user to benchmark against, or a switch to
+   a scene-text model (PaddleOCR via ONNX) or a cloud recogniser.
