@@ -76,6 +76,9 @@ export function mergeProgress(a, b) {
     const entry = Object.assign({}, pick);
     if ((x && x.manual) || (y && y.manual)) entry.manual = true;
     if ((x && x.shiny) || (y && y.shiny)) entry.shiny = true;
+    if ((x && x.legendary) || (y && y.legendary)) entry.legendary = true;
+    const wilds = [x && x.wild, y && y.wild].filter(Boolean).sort();
+    if (wilds.length) entry.wild = wilds[0];
     if (x && y) {
       if (x.startedAt && y.startedAt) entry.startedAt = x.startedAt < y.startedAt ? x.startedAt : y.startedAt;
       entry.guruAt = entry.guruAt || x.guruAt || y.guruAt || null;
@@ -123,6 +126,7 @@ export function mergeProgress(a, b) {
     updatedAt: (a.updatedAt || '') >= (b.updatedAt || '') ? a.updatedAt : b.updatedAt,
     settings: Object.assign({}, older.settings || {}, newer.settings || {}),
     items, synonyms, notes, reviews: cappedReviews, days,
+    quests: Object.assign({}, a.quests || {}, b.quests || {}),
   };
 }
 

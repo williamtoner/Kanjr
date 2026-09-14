@@ -305,6 +305,30 @@ export function answerCurrent(session, ok, rng = Math.random) {
 }
 
 /**
+ * Record a wild catch (from the Catch screen). An unstarted item enters
+ * circulation as a manual start; a started one is left where it is. The
+ * item is marked `wild` with the date of its first wild catch, and if it is
+ * the day's quest kanji the quest is logged. `kind` may add a shiny or
+ * legendary flag. Returns the new progress.
+ */
+export function recordWildCatch(progress, id, now, { questId = null, kind = null } = {}) {
+  let p = progress;
+  if (!p.items[id] || p.items[id].stage === 0) p = startManually(p, [id], now);
+  const key = dayKey(toMillis(now));
+  const entry = Object.assign({}, p.items[id]);
+  if (!entry.wild) entry.wild = key;
+  if (kind === 'shiny') entry.shiny = true;
+  if (kind === 'legendary') entry.legendary = true;
+  const quests = Object.assign({}, p.quests || {});
+  if (questId && questId === id && !quests[key]) quests[key] = id;
+  return Object.assign({}, p, {
+    updatedAt: new Date(toMillis(now)).toISOString(),
+    items: Object.assign({}, p.items, { [id]: entry }),
+    quests,
+  });
+}
+
+/**
  * Take back a wrong answer for `id` (the learner's answer was a valid
  * synonym after all). The requeued copy is removed, the wrong count goes
  * back down, and the item completes as if answered correctly. Returns the

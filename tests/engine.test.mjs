@@ -4,7 +4,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import {
   orderedIds, stageOf, isUnlocked, apprenticeCount, groupCounts, lessonsDoneToday,
-  lessonQueue, lessonBlockReason, applyLesson, startManually, retractWrong,
+  lessonQueue, lessonBlockReason, applyLesson, startManually, retractWrong, recordWildCatch,
   dueIds, dueCount, shuffle, reviewQueue, createSession, currentId, answerCurrent,
   wrapUp, sessionStats, applyReview, REQUEUE_MIN, REQUEUE_MAX, REVIEW_LOG_CAP,
   currentLevel, levelProgress, forecast, nextReviewAt, streak, recentMistakes,
@@ -591,5 +591,19 @@ export const tests = {
     assert.strictEqual(h.max, 8);
     const future = h.cols[3].filter((c) => c === null).length;
     assert.strictEqual(future, 6 - ((NOW.getDay() + 6) % 7));
+  },
+  'recordWildCatch starts unstarted items, marks wild, logs the quest, flags legendary': () => {
+    const [a, b] = orderedIds(data);
+    const p0 = progressWith({ [b]: 5 });
+    const p1 = recordWildCatch(p0, a, NOW, { questId: a, kind: 'legendary' });
+    assert.strictEqual(stageOf(p1, a), 1);
+    assert.strictEqual(p1.items[a].wild, dayKey(NOW));
+    assert.strictEqual(p1.items[a].legendary, true);
+    assert.strictEqual(p1.quests[dayKey(NOW)], a);
+    const p2 = recordWildCatch(p1, b, NOW, { questId: a });
+    assert.strictEqual(stageOf(p2, b), 5, 'a started item keeps its stage');
+    assert.strictEqual(p2.items[b].wild, dayKey(NOW));
+    assert.strictEqual(p2.quests[dayKey(NOW)], a, 'the quest is not overwritten by another catch');
+    assert.strictEqual(p0.items[a], undefined, 'input not mutated');
   },
 };

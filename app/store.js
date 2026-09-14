@@ -74,6 +74,7 @@ export function defaultProgress(now = new Date()) {
     notes: {},
     reviews: [],
     days: {},
+    quests: {},
   };
 }
 
@@ -106,6 +107,7 @@ export function validateProgress(raw) {
     notes: {},
     reviews: [],
     days: {},
+    quests: {},
   };
 
   const items = raw.items || {};
@@ -125,6 +127,8 @@ export function validateProgress(raw) {
     };
     if (e.manual) out.items[id].manual = true;   // marked "seen before": exempt from the apprentice cap
     if (e.shiny) out.items[id].shiny = true;     // caught during a shiny encounter
+    if (e.legendary) out.items[id].legendary = true;
+    if (typeof e.wild === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e.wild)) out.items[id].wild = e.wild;
   }
   const synonyms = isObject(raw.synonyms) ? raw.synonyms : {};
   for (const id in synonyms) {
@@ -143,6 +147,10 @@ export function validateProgress(raw) {
       if (typeof r.s === 'number') entry.s = r.s;   // stage at answer time, for accuracy by stage
       out.reviews.push(entry);
     }
+  }
+  const quests = isObject(raw.quests) ? raw.quests : {};
+  for (const key in quests) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(key) && typeof quests[key] === 'string') out.quests[key] = quests[key];
   }
   const days = raw.days || {};
   for (const key in days) {

@@ -16,7 +16,7 @@
 
 import * as srs from './srs.js';
 import * as engine from './engine.js';
-import { isCorrect, acceptedFor, findCollision, normalise } from './match.js';
+import { isCorrect, acceptedFor, findCollision, normalise, canonical } from './match.js';
 import * as store from './store.js';
 import * as sync from './sync.js';
 import { sfx, configure as configureSfx, unlock as unlockAudio, audioState } from './sfx.js';
@@ -130,6 +130,103 @@ function rarityBadge(item) {
   return `<span class="rarity r-${r.key}" title="${r.key === 'part' ? 'A building block, not a kanji' : `Rarity by how often it appears in real text`}">${r.stars ? `<span class="stars">${'★'.repeat(r.stars)}</span>` : ''}${esc(r.label)}</span>`;
 }
 
+/* ---------- KanjiQuest ---------- */
+
+function todayKey() { return engine.dayKey(now()); }
+
+function questToday() {
+  if (!app.questPool) app.questPool = game.questPool(app.data);
+  const id = game.questFor(todayKey(), app.questPool);
+  const done = app.progress.quests && app.progress.quests[todayKey()] === id;
+  return { id, item: id ? itemOf(id) : null, done, streak: game.questStreak(app.progress.quests || {}, todayKey()) };
+}
+
+function questCardHtml(q) {
+  if (!q.item) return '';
+  return `<div class="card">
+    <h2>KanjiQuest <span class="muted">${q.done ? 'found today' : 'kanji of the day'}</span></h2>
+    <div class="quest-card">
+      <div class="quest-glyph jp ${q.done ? 'is-done' : ''}">${esc(q.item.char)}</div>
+      <div>
+        <div class="quest-name">${q.done ? `${esc(q.item.char)} found — quest complete` : `Find ${esc(q.item.char)} out in the wild`}</div>
+        <p class="small muted" style="margin:4px 0 8px">${esc(q.item.name)} · ${esc(game.rarityOf(q.item).label)} · Lv ${esc(q.item.level)}${q.done ? '' : '. Spot it on a sign, a menu or a package, snap it, and catch it. Wild catches of the quest kanji are shiny one time in four.'}</p>
+        <div class="btn-row">
+          ${q.done ? '' : '<a class="btn btn-sm btn-primary" href="#/scan">Go catch it</a>'}
+          <a class="btn btn-sm btn-ghost" href="#/quest">Calendar · streak ${q.streak.current}${q.streak.best > q.streak.current ? ` (best ${q.streak.best})` : ''}</a>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderQuest() {
+  const q = questToday();
+  const quests = app.progress.quests || {};
+  const t = now();
+  const view = app.questMonth || { y: t.getFullYear(), m: t.getMonth() };
+  app.questMonth = view;
+  const first = new Date(view.y, view.m, 1);
+  const daysIn = new Date(view.y, view.m + 1, 0).getDate();
+  const lead = (first.getDay() + 6) % 7;
+  const tk = todayKey();
+  const cells = [];
+  for (let i = 0; i < lead; i++) cells.push('<div class="day is-empty"></div>');
+  for (let d = 1; d <= daysIn; d++) {
+    const key = `${view.y}-${String(view.m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const id = quests[key];
+    const it = id ? itemOf(id) : null;
+    const future = key > tk;
+    cells.push(`<${it ? `a href="${itemHref(id)}"` : 'div'} class="day${it ? ' is-caught' : ''}${key === tk ? ' is-today' : ''}${future ? ' is-future' : ''}" title="${esc(key)}${it ? ` · ${esc(it.char)} ${esc(it.name)}` : ''}"><small>${d}</small>${it ? esc(it.char) : ''}</${it ? 'a' : 'div'}>`);
+  }
+  const monthName = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  const total = Object.keys(quests).length;
+  main.innerHTML = `
+    <section class="screen stack">
+      <div class="screen-head"><h1>KanjiQuest</h1><a class="btn btn-sm btn-ghost" href="#/">Home</a></div>
+      ${questCardHtml(q)}
+      <div class="card">
+        <h2>Streak <span class="muted">${total ? `${plural(total, 'quest')} completed` : 'no quests completed yet'}</span></h2>
+        <div class="stat-row">
+          <div class="stat"><div class="stat-value">${q.streak.current}</div><div class="stat-label">Current streak</div></div>
+          <div class="stat"><div class="stat-value">${q.streak.best}</div><div class="stat-label">Best streak</div></div>
+          <div class="stat"><div class="stat-value">${wildCount()}</div><div class="stat-label">Wild-caught</div></div>
+        </div>
+      </div>
+      <div class="card">
+        <h2>${esc(monthName)} <span class="btn-row"><button class="btn btn-sm btn-ghost" type="button" data-act="prev-month">←</button><button class="btn btn-sm btn-ghost" type="button" data-act="next-month">→</button></span></h2>
+        <div class="calendar">
+          ${['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => `<div class="dow">${d}</div>`).join('')}
+          ${cells.join('')}
+        </div>
+        <p class="small muted" style="margin:10px 0 0">Each square shows the kanji of the day if you caught it in the wild that day. The kanji of the day is the same for everyone and changes at midnight.</p>
+      </div>
+    </section>`;
+  $('[data-act="prev-month"]', main).addEventListener('click', () => { const d = new Date(view.y, view.m - 1, 1); app.questMonth = { y: d.getFullYear(), m: d.getMonth() }; renderQuest(); });
+  $('[data-act="next-month"]', main).addEventListener('click', () => { const d = new Date(view.y, view.m + 1, 1); app.questMonth = { y: d.getFullYear(), m: d.getMonth() }; renderQuest(); });
+}
+
+/** A catch made on the Catch screen: wild mark, quest check, special rolls. */
+function catchInWild(ids) {
+  const q = questToday();
+  const key = todayKey();
+  let p = app.progress;
+  let questDone = false, special = null, specialId = null;
+  for (const id of ids) {
+    let kind = null;
+    if (q.id === id && !q.done) { kind = game.wildRoll(key, id); questDone = true; if (kind) { special = kind; specialId = id; } }
+    p = engine.recordWildCatch(p, id, now(), { questId: q.id, kind });
+  }
+  setProgress(p, { immediate: true });
+  if (questDone) {
+    sfx.complete(); confetti(2000);
+    toast(`Quest complete! ${itemOf(q.id).char} found in the wild${special ? ` — and it's ${special === 'legendary' ? 'LEGENDARY' : 'shiny'}!` : ''}`, 'ok');
+    if (special === 'legendary') setTimeout(() => sfx.burned(), 500);
+  } else {
+    sfx.lessonDone();
+    toast(`${plural(ids.length, 'kanji', 'kanji')} caught in the wild`, 'ok');
+  }
+}
+
 function caughtCount() {
   let n = 0;
   for (const id in app.progress.items) if (app.progress.items[id].stage > 0 && app.data.items[id] && app.data.items[id].type === 'kanji') n++;
@@ -139,6 +236,18 @@ function caughtCount() {
 function shinyCount() {
   let n = 0;
   for (const id in app.progress.items) if (app.progress.items[id].shiny) n++;
+  return n;
+}
+
+function legendaryCount() {
+  let n = 0;
+  for (const id in app.progress.items) if (app.progress.items[id].legendary) n++;
+  return n;
+}
+
+function wildCount() {
+  let n = 0;
+  for (const id in app.progress.items) if (app.progress.items[id].wild) n++;
   return n;
 }
 
@@ -504,6 +613,23 @@ function glyphFont(item, session) {
   return GLYPH_FONTS[h % GLYPH_FONTS.length];
 }
 
+/**
+ * Every meaning of an item as chips in a random (but stable per session)
+ * order, so the learner sees the whole spread rather than the one word they
+ * memorised. The one they typed is highlighted; the primary keyword has a
+ * heavier border; their own synonyms are dashed.
+ */
+function meaningsHtml(item, synonyms, typed, seed) {
+  const list = [{ t: item.name, main: true }];
+  for (const a of item.alt || []) list.push({ t: a });
+  for (const a of synonyms || []) list.push({ t: a, mine: true });
+  const seen = new Set();
+  const uniq = list.filter((m) => { const k = normalise(m.t); if (seen.has(k)) return false; seen.add(k); return true; });
+  const order = uniq.map((m, i) => ({ m, k: game.hash32(`${item.id}|${seed}|${i}`) })).sort((a, b) => a.k - b.k).map((x) => x.m);
+  const typedN = canonical(typed || '');
+  return `<div class="meanings" aria-label="All meanings">${order.map((m) => `<span class="meaning${m.main ? ' is-main' : ''}${m.mine ? ' is-mine' : ''}${typedN && canonical(m.t) === typedN ? ' is-typed' : ''}">${esc(m.t)}</span>`).join('')}</div>`;
+}
+
 function mountQuiz(root, opts) {
   let session = opts.session;
   // `answeredId` and `counter` freeze what the feedback phase shows: the
@@ -533,9 +659,10 @@ function mountQuiz(root, opts) {
     const item = itemOf(id);
     const wrongSoFar = view.phase === 'ask' ? (session.wrong[id] || 0) : 0;
     const stateCls = view.phase === 'feedback' ? `is-${view.result === 'wrong' ? 'wrong' : view.result === 'typo' ? 'typo' : 'correct'}` : '';
-    const shinyNow = item.type === 'kanji' && game.isShinyEncounter(id, session.startedAt);
-    // A glitter the first time a shiny one turns up in this session.
-    if (shinyNow && view.phase === 'ask' && !view.shinySeen.has(id)) { view.shinySeen.add(id); music.jingle('shiny'); }
+    const kindNow = item.type === 'kanji' ? game.encounterKind(id, session.startedAt) : null;
+    const shinyNow = kindNow === 'shiny', legendaryNow = kindNow === 'legendary';
+    // A glitter the first time a shiny or legendary one turns up in this session.
+    if ((shinyNow || legendaryNow) && view.phase === 'ask' && !view.shinySeen.has(id)) { view.shinySeen.add(id); music.jingle('shiny'); if (legendaryNow) setTimeout(() => sfx.burned(), 900); }
     const progressPct = stats.total ? (stats.done / stats.total) * 100 : 0;
     const note = app.progress.notes[id];
 
@@ -552,8 +679,9 @@ function mountQuiz(root, opts) {
         </div>
         <div class="review-progress"><div style="width:${progressPct}%"></div></div>
 
-        <div class="card glyph-card type-${esc(item.type)} ${stateCls} ${shinyNow ? 'is-shiny' : ''} ${view.phase === 'feedback' && view.result === 'wrong' ? 'shake' : ''}" data-role="card">
+        <div class="card glyph-card type-${esc(item.type)} ${stateCls} ${shinyNow ? 'is-shiny' : ''} ${legendaryNow ? 'is-legendary' : ''} ${view.phase === 'feedback' && view.result === 'wrong' ? 'shake' : ''}" data-role="card">
           <div class="glyph-type">${typeBadge(item)}</div>
+          ${legendaryNow ? `<span class="legendary-badge shiny-tag">✦ Legendary</span><span class="sparkle" style="left:10%;top:28%">✦</span><span class="sparkle" style="right:12%;top:55%;animation-delay:.4s">✦</span><span class="sparkle" style="left:24%;bottom:16%;animation-delay:.9s">✦</span><span class="sparkle" style="right:26%;top:22%;animation-delay:1.3s">✦</span>` : ''}
           ${shinyNow ? `<span class="shiny-badge shiny-tag">✦ Shiny</span><span class="sparkle" style="left:12%;top:30%">✦</span><span class="sparkle" style="right:14%;top:58%;animation-delay:.5s">✦</span><span class="sparkle" style="left:22%;bottom:18%;animation-delay:1s">✦</span>` : ''}
           <div class="glyph ${esc(glyphFont(item, session))}">${esc(item.char)}</div>
           <div class="glyph-prompt">${typeLabel(item)} <strong>meaning</strong>${wrongSoFar ? ` · <span class="muted">missed ${wrongSoFar}×</span>` : ''}${view.phase === 'feedback' ? ' · <span class="muted">tap to continue</span>' : ''}</div>
@@ -622,7 +750,7 @@ function mountQuiz(root, opts) {
     return `
       <div class="feedback fade-in" data-role="feedback">
         <div class="feedback-answer">${esc(item.name)}</div>
-        ${alt.length || syn.length ? `<div class="feedback-alt">${esc([...alt, ...syn].join(' · '))}</div>` : ''}
+        ${meaningsHtml(item, syn, view.lastInput, session.startedAt)}
         <div class="feedback-meta">${stageBadge(engine.stageOf(app.progress, item.id))}
           ${item.strokes ? `<span class="pill">${plural(item.strokes, 'stroke')}</span>` : ''}
           <a class="pill" href="${itemHref(item.id)}">Item page ↗</a></div>
@@ -659,7 +787,8 @@ function mountQuiz(root, opts) {
       }
     }
 
-    const shiny = item.type === 'kanji' && game.isShinyEncounter(id, session.startedAt);
+    const kind = item.type === 'kanji' ? game.encounterKind(id, session.startedAt) : null;
+    const shiny = kind === 'shiny', legendary = kind === 'legendary';
     const wrongBefore = session.wrong[id] || 0;
     view.lastInput = raw;
     view.collision = null;
@@ -685,11 +814,11 @@ function mountQuiz(root, opts) {
     if (verdict !== 'wrong') {
       burst(card, { count: view.streak >= 5 ? 22 : 14, colour: view.streak >= 5 ? 'var(--accent)' : 'var(--ok)' });
       floatText(card, view.streak >= 5 && view.streak % 5 === 0 ? `×${view.streak} combo!` : view.streak >= 2 ? `×${view.streak}` : 'Caught!', view.streak >= 5 ? 'is-hot' : '');
-      stampHit(card, shiny ? 'Shiny!' : 'Caught', shiny);
-      if (shiny && opts.affectsSrs !== false && !wrongBefore) {
-        const entry = Object.assign({}, app.progress.items[id], { shiny: true });
+      stampHit(card, legendary ? 'Legendary!' : shiny ? 'Shiny!' : 'Caught', shiny || legendary);
+      if ((shiny || legendary) && opts.affectsSrs !== false && !wrongBefore) {
+        const entry = Object.assign({}, app.progress.items[id], legendary ? { legendary: true } : { shiny: true });
         setProgress(Object.assign({}, app.progress, { items: Object.assign({}, app.progress.items, { [id]: entry }) }), { immediate: true });
-        setTimeout(() => { sfx.burned(); toast(`✦ Shiny ${itemOf(id).char} caught!`, 'ok'); }, 350);
+        setTimeout(() => { sfx.burned(); toast(legendary ? `✦ LEGENDARY ${itemOf(id).char} caught! One in ${game.LEGENDARY_ODDS}.` : `✦ Shiny ${itemOf(id).char} caught!`, 'ok'); if (legendary) confetti(2400); }, 350);
       }
     }
   }
@@ -816,7 +945,7 @@ function renderHome() {
         ${ring(lp.ratio, `Lv ${level}`, pct(lp.ratio))}
         <div class="hero-text">
           <h1>${greeting()}, trainer</h1>
-          <p class="muted"><strong>${caughtCount()}</strong> of ${kanjiTotal} kanji caught${shinyCount() ? ` · <span class="shiny-badge">✦ ${shinyCount()} shiny</span>` : ''} · Level ${level}: ${lp.guru} of ${lp.total} at Guru</p>
+          <p class="muted"><strong>${caughtCount()}</strong> of ${kanjiTotal} kanji caught${shinyCount() ? ` · <span class="shiny-badge">✦ ${shinyCount()} shiny</span>` : ''}${legendaryCount() ? ` · <span class="legendary-badge">✦ ${legendaryCount()} legendary</span>` : ''} · Level ${level}: ${lp.guru} of ${lp.total} at Guru</p>
           <div class="btn-row">
             <span class="streak" title="Days in a row with lessons or reviews"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2s.7 3.2-1.2 5.3C10.6 9.2 8 10.4 8 14a4.5 4.5 0 0 0 9 0c0-1.6-.7-2.8-1.4-3.7-.2 1.2-.9 1.9-1.6 2.2.5-2.6-.3-5.5-.5-10.5zM12 22a7 7 0 0 1-7-7c0-3.3 1.8-5.1 3.4-6.6-.2 1.5.1 2.7.9 3.4A5.5 5.5 0 0 0 11 4.2c3 1.2 8 4.5 8 10.8a7 7 0 0 1-7 7z"/></svg> ${plural(streak, 'day')} streak</span>
             <a class="btn btn-sm btn-ghost" href="#/levels/${level}">See level ${level} →</a>
@@ -838,6 +967,8 @@ function renderHome() {
           <span class="big-btn-glyph" aria-hidden="true">発</span>
         </a>
       </div>
+
+      ${questCardHtml(questToday())}
 
       <div class="grid-2">
         <div class="card">
@@ -1053,7 +1184,7 @@ function finishLessonBatch(L) {
       <div class="card session-summary fade-in">
         <div class="big-number">${L.ids.length}</div>
         <h2>${L.ids.length === 1 ? 'new kanji sighted' : 'new kanji sighted'}</h2>
-        <p class="muted">They are in your dex at Apprentice 1; the first encounter is ${esc(whenPhrase(firstDue, t) || 'in about 4 hours')}.${L.ids.some((id) => ['epic', 'legendary'].includes(game.rarityOf(itemOf(id)).key)) ? ' A rare one among them!' : ''}</p>
+        <p class="muted">They are in your dex at Apprentice 1; the first encounter is ${esc(whenPhrase(firstDue, t) || 'in about 4 hours')}.${L.ids.some((id) => ['epic', 'ancient'].includes(game.rarityOf(itemOf(id)).key)) ? ' A rare one among them!' : ''}</p>
         <div style="margin:16px 0">${chipList(L.ids)}</div>
         <div class="btn-row" style="justify-content:center">
           ${more ? `<button class="btn btn-primary" data-act="more">Next batch (${Math.min(more, app.progress.settings.lessonBatch)})</button>` : ''}
@@ -1166,9 +1297,9 @@ function renderItem(id) {
     <section class="screen stack item-page">
       <div class="card">
         <div class="item-head">
-          <div class="glyph${entry && entry.shiny ? ' is-shiny' : ''}">${esc(item.char)}</div>
+          <div class="glyph${entry && entry.legendary ? ' is-legendary' : entry && entry.shiny ? ' is-shiny' : ''}">${esc(item.char)}</div>
           <div class="item-title">
-            <div class="btn-row" style="margin-bottom:6px"><span class="dexno">${esc(game.dexNo(dexNumberOf(id)))}</span> ${typeBadge(item)} ${rarityBadge(item)} ${stageBadge(stage)} ${entry && entry.shiny ? '<span class="shiny-badge">✦ Shiny</span>' : ''}${!entry && !unlocked ? '<span class="badge stage-locked">Unseen</span>' : ''}${isLeech ? '<span class="badge leech" title="Missed repeatedly — try rewriting the mnemonic in your own words">Leech</span>' : ''}</div>
+            <div class="btn-row" style="margin-bottom:6px"><span class="dexno">${esc(game.dexNo(dexNumberOf(id)))}</span> ${typeBadge(item)} ${rarityBadge(item)} ${stageBadge(stage)} ${entry && entry.legendary ? '<span class="legendary-badge">✦ Legendary</span>' : entry && entry.shiny ? '<span class="shiny-badge">✦ Shiny</span>' : ''}${entry && entry.wild ? `<span class="wild-badge" title="Caught in the wild">Wild · ${esc(fmtDate(entry.wild + 'T12:00:00'))}</span>` : ''}${!entry && !unlocked ? '<span class="badge stage-locked">Unseen</span>' : ''}${isLeech ? '<span class="badge leech" title="Missed repeatedly — try rewriting the mnemonic in your own words">Leech</span>' : ''}</div>
             <h1>${esc(item.name)}</h1>
             ${alt.length ? `<p class="muted">also: ${esc(alt.join(', '))}</p>` : ''}
             <div class="item-facts">
@@ -1335,7 +1466,7 @@ function renderLevel(n) {
     const stage = engine.stageOf(p, id);
     const entry = p.items[id];
     const dueSoon = entry && entry.due && stage < 9 && srs.toMillis(entry.due) <= t.getTime();
-    return `<a class="tile stage-${srs.groupOf(stage)} st-${stage} type-${esc(it.type)}${entry && entry.shiny ? ' is-shiny' : ''}" href="${itemHref(id)}" ${entry && entry.shiny ? `style="--d:${(game.hash32(id) % 24) / 8}s"` : ''}
+    return `<a class="tile stage-${srs.groupOf(stage)} st-${stage} type-${esc(it.type)}${entry && entry.legendary ? ' is-legendary' : entry && entry.shiny ? ' is-shiny' : ''}${entry && entry.wild ? ' is-wild' : ''}" href="${itemHref(id)}" ${entry && (entry.shiny || entry.legendary) ? `style="--d:${(game.hash32(id) % 24) / 8}s"` : ''}
       title="${esc(it.name)} · ${esc(srs.stageName(stage))}${dueSoon ? ' · due now' : ''}">
       <span class="tile-mark" aria-hidden="true"></span>${esc(it.char)}<span class="tile-name">${esc(it.name)}</span></a>`;
   }).join('');
@@ -1387,12 +1518,30 @@ function saveGridPrefs(prefs) {
 /** Selection state for "add kanji you already know" on the Grid. */
 const gridSelect = { active: false, ids: new Set() };
 
+const dexSearch = { q: '' };
+
+function dexHits(q) {
+  const hits = new Set();
+  const nq = normalise(q);
+  if (!nq) return hits;
+  const cq = canonical(q);
+  for (const id in app.data.items) {
+    const it = app.data.items[id];
+    if (nq.length === 1 && it.char === q.trim()) { hits.add(id); continue; }
+    const words = [it.name].concat(it.alt || [], app.progress.synonyms[id] || []);
+    if (words.some((w) => { const n = normalise(w); return n === nq || canonical(w) === cq || n.split(' ').includes(nq); })) hits.add(id);
+  }
+  return hits;
+}
+
 function renderGrid() {
   const data = app.data;
   const p = app.progress;
   const prefs = gridPrefs();
   const t = now().getTime();
   const selecting = gridSelect.active;
+  const searchQ = dexSearch.q;
+  const hits = dexHits(searchQ);
 
   const counts = { locked: 0, apprentice: 0, guru: 0, master: 0, enlightened: 0, burned: 0 };
   let total = 0;
@@ -1413,9 +1562,9 @@ function renderGrid() {
       const selected = selectable && gridSelect.ids.has(id);
       const hidden = stage === 0 && !prefs.reveal && !selecting;
       const entry2 = p.items[id];
-      cells.push(`<a class="kcell stage-${group} st-${stage}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}${hidden ? ' is-unseen' : ''}${entry2 && entry2.shiny ? ' is-shiny' : ''}"
-        href="${itemHref(id)}" data-id="${esc(id)}" ${entry2 && entry2.shiny ? `style="--d:${(game.hash32(id) % 24) / 8}s"` : ''} ${selectable ? 'role="checkbox" aria-checked="' + selected + '"' : ''}
-        title="${hidden ? `Unseen · ${game.dexNo(dexNumberOf(id))} · Lv ${lv.level}` : `${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${entry2 && entry2.shiny ? ' · shiny' : ''}${due ? ' · due now' : ''} · Lv ${lv.level}`}">${hidden ? '' : esc(it.char)}</a>`);
+      cells.push(`<a class="kcell stage-${group} st-${stage}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}${hidden ? ' is-unseen' : ''}${entry2 && entry2.legendary ? ' is-legendary' : entry2 && entry2.shiny ? ' is-shiny' : ''}${entry2 && entry2.wild ? ' is-wild' : ''}${searchQ && hits.has(id) ? ' is-hit' : ''}"
+        href="${itemHref(id)}" data-id="${esc(id)}" ${entry2 && (entry2.shiny || entry2.legendary) ? `style="--d:${(game.hash32(id) % 24) / 8}s"` : ''} ${selectable ? 'role="checkbox" aria-checked="' + selected + '"' : ''}
+        title="${hidden ? `Unseen · ${game.dexNo(dexNumberOf(id))} · Lv ${lv.level}` : `${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${entry2 && entry2.legendary ? ' · legendary' : entry2 && entry2.shiny ? ' · shiny' : ''}${entry2 && entry2.wild ? ` · wild-caught ${entry2.wild}` : ''}${due ? ' · due now' : ''} · Lv ${lv.level}`}">${hidden ? '' : esc(it.char)}</a>`);
     }
   }
   const learned = total - counts.locked;
@@ -1436,6 +1585,12 @@ function renderGrid() {
           <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="byLevel" ${prefs.byLevel ? 'checked' : ''}><span class="track"></span></span>Level numbers</label>
           <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="reveal" ${prefs.reveal ? 'checked' : ''}><span class="track"></span></span>Reveal unseen</label>
         </div>
+      </div>
+      <div class="card dex-search">
+        <label class="sr-only" for="dex-q">Search the dex</label>
+        <input type="text" id="dex-q" placeholder="Search in English or by kanji, e.g. shop" autocomplete="off" value="${esc(searchQ)}">
+        ${searchQ ? `<button class="btn btn-sm btn-ghost" type="button" data-act="dex-clear">Clear</button>` : ''}
+        ${searchQ ? `<div class="dex-hits" style="flex-basis:100%">${hits.size ? Array.from(hits).sort((a, b) => data.items[a].level - data.items[b].level).slice(0, 40).map((id) => { const it = data.items[id]; const st = engine.stageOf(p, id); return `<a class="dex-hit${st === 0 ? ' is-unseen' : ''}" href="${itemHref(id)}"><span class="jp">${esc(it.char)}</span>${esc(it.name)}<span class="muted">· Lv ${it.level}${st ? ` · ${esc(srs.stageName(st))}` : ''}</span></a>`; }).join('') + (hits.size > 40 ? `<span class="muted small">and ${hits.size - 40} more</span>` : '') : '<span class="muted small">No kanji with that meaning. Try another word.</span>'}</div>` : ''}
       </div>
       <div class="kgrid-bar" aria-hidden="true">
         ${['burned', 'enlightened', 'master', 'guru', 'apprentice'].map((g) => `<i class="stage-${g}" style="width:${total ? (counts[g] / total) * 100 : 0}%"></i>`).join('')}
@@ -1459,7 +1614,7 @@ function renderGrid() {
         <button class="btn btn-sm" type="button" data-act="start-select">Already know some? Mark them caught</button>
         <a class="btn btn-sm btn-primary" href="#/scan">Catch from a photo</a>
       </div>`}
-      <div class="kgrid${prefs.byLevel ? ' is-by-level' : ''}${selecting ? ' is-selecting' : ''}">${cells.join('')}</div>
+      <div class="kgrid${prefs.byLevel ? ' is-by-level' : ''}${selecting ? ' is-selecting' : ''}${searchQ && hits.size ? ' is-searching' : ''}">${cells.join('')}</div>
       ${selecting ? `
       <div class="kgrid-actionbar" role="region" aria-label="Selection">
         <span data-role="sel-count">${gridSelect.ids.size} selected</span>
@@ -1477,6 +1632,14 @@ function renderGrid() {
     renderGrid();
   }));
 
+  const dq = $('#dex-q', main);
+  let dqTimer = null;
+  dq.addEventListener('input', () => {
+    clearTimeout(dqTimer);
+    dqTimer = setTimeout(() => { dexSearch.q = dq.value; const pos = dq.selectionStart; renderGrid(); const el = $('#dex-q', main); el.focus(); el.setSelectionRange(pos, pos); }, 220);
+  });
+  const dclear = $('[data-act="dex-clear"]', main);
+  if (dclear) dclear.addEventListener('click', () => { dexSearch.q = ''; renderGrid(); $('#dex-q', main).focus(); });
   const startBtn = $('[data-act="start-select"]', main);
   if (startBtn) startBtn.addEventListener('click', () => { gridSelect.active = true; gridSelect.ids.clear(); renderGrid(); $('#kgrid-paste', main).focus(); });
   if (!selecting) return;
@@ -1749,20 +1912,22 @@ function renderScan() {
     const stage = engine.stageOf(p, id);
     const inCirc = stage > 0;
     const sel = scanState.selected.has(id);
-    return `<button type="button" class="scan-tile ${inCirc ? 'is-known' : ''} ${sel ? 'is-selected' : ''} ${conf < scan.SURE_CONF ? 'is-unsure' : ''}" data-id="${esc(id)}" ${inCirc ? 'disabled' : ''} aria-pressed="${sel}" title="Confidence ${esc(conf)}%">
+    const wildAlready = inCirc && p.items[id] && p.items[id].wild;
+    return `<button type="button" class="scan-tile ${wildAlready ? 'is-known' : ''} ${sel ? 'is-selected' : ''} ${conf < scan.SURE_CONF ? 'is-unsure' : ''}" data-id="${esc(id)}" ${wildAlready ? 'disabled' : ''} aria-pressed="${sel}" title="${wildAlready ? 'Already caught in the wild' : inCirc ? 'In your dex: tap to log a wild sighting' : `Confidence ${esc(conf)}%`}">
       <span class="scan-char jp">${esc(char)}</span>
       <span class="scan-name">${esc(it.name)}</span>
-      <span class="scan-meta">${inCirc ? `caught · ${esc(srs.stageName(stage))}` : `${esc(game.rarityOf(it).label)} · Lv ${esc(it.level)}`}${count > 1 ? ` · ${count}×` : ''}</span>
+      <span class="scan-meta">${wildAlready ? 'wild-caught' : inCirc ? `in dex · log sighting` : `${esc(game.rarityOf(it).label)} · Lv ${esc(it.level)}`}${count > 1 ? ` · ${count}×` : ''}</span>
     </button>`;
   };
   const sure = r ? r.kanji.filter((k) => k.conf >= scan.SURE_CONF) : [];
   const unsure = r ? r.kanji.filter((k) => k.conf < scan.SURE_CONF) : [];
   const tiles = sure.map(tile).join('') + (unsure.length ? `<div class="scan-unsure-label">Less sure — check these against the photo</div>${unsure.map(tile).join('')}` : '');
-  const selectable = r ? r.kanji.filter(({ char }) => engine.stageOf(p, `k:${char}`) === 0).length : 0;
+  const selectable = r ? r.kanji.filter(({ char }) => !(p.items[`k:${char}`] && p.items[`k:${char}`].wild)).length : 0;
 
   main.innerHTML = `
     <section class="screen stack scan">
       <div class="screen-head"><h1>Catch a kanji</h1><a class="btn btn-sm btn-ghost" href="#/grid">Dex</a></div>
+      ${(() => { const q = questToday(); return q.item && !q.done ? `<div class="card" style="padding:12px 16px"><div class="quest-card" style="grid-template-columns:auto 1fr;gap:12px"><div class="quest-glyph jp" style="width:56px;height:56px;font-size:2rem;border-radius:12px">${esc(q.item.char)}</div><div><div class="quest-name" style="font-size:1rem">Today's quest: ${esc(q.item.char)} (${esc(q.item.name)})</div><p class="small muted" style="margin:2px 0 0">Catch it here and the quest is complete. One in four wild quest catches is shiny.</p></div></div></div>` : ''; })()}
       <div class="card">
         <p class="small muted">Snap a sign, a menu or a package, then drag the red square onto one kanji and capture it. You get a handful of best guesses with their meanings; tap the right one to catch it. Everything is recognised on your phone; nothing is uploaded. "Read the whole photo" is there for clean, straight-on shots with several kanji.</p>
         <div class="btn-row" style="margin-top:8px">
@@ -1785,9 +1950,9 @@ function renderScan() {
       <div class="card">
         <h2>Which one is it? <span class="muted">best guesses for the square</span></h2>
         ${scanState.candidates.length ? `<div class="scan-tiles">${scanState.candidates.map((c) => { const id = `k:${c.char}`; const it = data.items[id]; const st = engine.stageOf(p, id); return `
-          <button type="button" class="scan-tile ${st > 0 ? 'is-known' : ''}" data-act="pick-candidate" data-id="${esc(id)}" title="Match ${c.score}%${c.source === 'shape' ? ' (by shape)' : ''}">
+          <button type="button" class="scan-tile ${p.items[id] && p.items[id].wild ? 'is-known' : ''}" data-act="pick-candidate" data-id="${esc(id)}" title="Match ${c.score}%${c.source === 'shape' ? ' (by shape)' : ''}">
             <span class="scan-char jp">${esc(c.char)}</span><span class="scan-name">${esc(it.name)}</span>
-            <span class="scan-meta">${st > 0 ? `caught · ${esc(srs.stageName(st))}` : `${esc(game.rarityOf(it).label)} · Lv ${esc(it.level)}`}</span></button>`; }).join('')}</div>
+            <span class="scan-meta">${p.items[id] && p.items[id].wild ? 'wild-caught' : st > 0 ? `in dex · log sighting` : `${esc(game.rarityOf(it).label)} · Lv ${esc(it.level)}`}</span></button>`; }).join('')}</div>
         <p class="small muted" style="margin-top:10px">Tap the right one to catch it. Not there? Tighten the square around a single kanji, or type it below.</p>` : '<p class="muted">Nothing readable in the square. Make it a little larger than the kanji, keep it to one character, and try again.</p>'}
       </div>` : ''}
       ${r ? `
@@ -1930,11 +2095,9 @@ function renderScan() {
   if (capBtn) capBtn.addEventListener('click', captureOne);
   $$('[data-act="pick-candidate"]', main).forEach((t) => t.addEventListener('click', () => {
     const id = t.dataset.id;
-    if (engine.stageOf(app.progress, id) > 0) { toast(`${itemOf(id).char} is already in your dex`); return; }
-    setProgress(engine.startManually(app.progress, [id], now()), { immediate: true });
+    if (app.progress.items[id] && app.progress.items[id].wild) { toast(`${itemOf(id).char} is already wild-caught`); return; }
     stampHit(t, 'Caught');
-    sfx.lessonDone();
-    toast(`${itemOf(id).char} caught — in your encounters now`, 'ok');
+    catchInWild([id]);
     setTimeout(() => renderScan(), 500);
   }));
   const recognise = async (f, crop) => {
@@ -1948,7 +2111,7 @@ function renderScan() {
         if (bar) bar.style.width = `${Math.round(ratio * 100)}%`;
       }, { crop });
       scanState.result = res;
-      for (const { char, conf } of res.kanji) if (conf >= scan.SURE_CONF && engine.stageOf(app.progress, `k:${char}`) === 0) scanState.selected.add(`k:${char}`);
+      for (const { char, conf } of res.kanji) if (conf >= scan.SURE_CONF && !(app.progress.items[`k:${char}`] && app.progress.items[`k:${char}`].wild)) scanState.selected.add(`k:${char}`);
       sfx.tap();
     } catch (err) {
       scanState.error = err && err.message ? err.message : String(err);
@@ -1976,15 +2139,13 @@ function renderScan() {
   if (addBtn) addBtn.addEventListener('click', () => {
     const ids = Array.from(scanState.selected);
     if (!ids.length) return;
-    setProgress(engine.startManually(app.progress, ids, now()), { immediate: true });
-    sfx.lessonDone();
-    toast(`${plural(ids.length, 'kanji', 'kanji')} caught — in your encounters now`, 'ok');
+    catchInWild(ids);
     scanState.selected.clear();
     renderScan();
   });
   const allBtn = $('[data-act="scan-all"]', main);
   if (allBtn) allBtn.addEventListener('click', () => {
-    for (const { char } of scanState.result.kanji) if (engine.stageOf(app.progress, `k:${char}`) === 0) scanState.selected.add(`k:${char}`);
+    for (const { char } of scanState.result.kanji) if (!(app.progress.items[`k:${char}`] && app.progress.items[`k:${char}`].wild)) scanState.selected.add(`k:${char}`);
     renderScan();
   });
   const typed = $('#scan-typed', main);
@@ -1992,7 +2153,7 @@ function renderScan() {
     const res = scan.extractKanji(typed.value, known);
     scanState.result = Object.assign(res, { text: typed.value });
     scanState.selected.clear();
-    for (const { char } of res.kanji) if (engine.stageOf(app.progress, `k:${char}`) === 0) scanState.selected.add(`k:${char}`);
+    for (const { char } of res.kanji) if (!(app.progress.items[`k:${char}`] && app.progress.items[`k:${char}`].wild)) scanState.selected.add(`k:${char}`);
     renderScan();
   };
   $('[data-act="scan-typed"]', main).addEventListener('click', showTyped);
@@ -2198,6 +2359,8 @@ function renderStats() {
         <div class="stat card"><div class="stat-value">${engine.streak(p.days, t)}</div><div class="stat-label">Day streak</div></div>
         <div class="stat card"><div class="stat-value">${groups.burned}</div><div class="stat-label">Burned</div></div>
         <div class="stat card"><div class="stat-value">✦ ${shinyCount()}</div><div class="stat-label">Shiny</div></div>
+        <div class="stat card"><div class="stat-value">✦ ${legendaryCount()}</div><div class="stat-label">Legendary</div></div>
+        <div class="stat card"><div class="stat-value">${wildCount()}</div><div class="stat-label">Wild-caught</div></div>
       </div>
 
       <div class="grid-2">
@@ -2607,7 +2770,7 @@ function route() {
   const parts = parseRoute();
   const head = parts[0] || 'home';
   music.play(sceneFor(head));
-  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'grid', item: 'grid', grid: 'grid', scan: 'scan', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
+  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'grid', item: 'grid', grid: 'grid', scan: 'scan', quest: 'home', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
   $$('#nav a').forEach((a) => {
     if (a.dataset.route === routeName) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
@@ -2630,6 +2793,7 @@ function route() {
       case 'grid': renderGrid(); break;
       case 'drill': renderLeechDrill(); break;
       case 'scan': renderScan(); break;
+      case 'quest': renderQuest(); break;
       case 'stats': renderStats(); break;
       case 'settings': renderSettings(); break;
       default: renderNotFound();
@@ -2639,7 +2803,7 @@ function route() {
     main.innerHTML = `<section class="screen">${emptyState('誤', 'Something went wrong', `<span class="small muted">${esc(err && err.message)}</span>`, '<a class="btn btn-primary" href="#/">Home</a>')}</section>`;
   }
   window.scrollTo({ top: 0 });
-  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Kanjidex · Kanjr', drill: 'Leech drill · Kanjr', scan: 'Catch · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
+  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Kanjidex · Kanjr', drill: 'Leech drill · Kanjr', scan: 'Catch · Kanjr', quest: 'KanjiQuest · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
 }
 
 function showBanner(html, { kind = '', dismiss = null } = {}) {
@@ -2742,6 +2906,7 @@ async function boot() {
   registerServiceWorker();
   applySfxSettings();
   window.kanjrMusic = music;   // handy in the console
+  window.kanjrGame = game;
   maybeIntro();
   // iOS only unlocks audio from click, touchend or a key press (not
   // touchstart/pointerdown), so listen to those.

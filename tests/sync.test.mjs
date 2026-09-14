@@ -64,4 +64,12 @@ export const tests = {
     assert.strictEqual(p.reviews.length, SYNC_LOG_CAP);
     assert.strictEqual(p.reviews[0].t, 't50');
   },
+  'merge keeps legendary, the earliest wild date, and unions quests': () => {
+    const a = base({ items: { 'k:日': entry(3, 5, 1, { wild: '2026-09-12', legendary: true }) }, quests: { '2026-09-12': 'k:日' } });
+    const b = base({ items: { 'k:日': entry(3, 5, 1, { wild: '2026-09-10' }) }, quests: { '2026-09-13': 'k:月' } });
+    const m = mergeProgress(a, b);
+    assert.strictEqual(m.items['k:日'].legendary, true);
+    assert.strictEqual(m.items['k:日'].wild, '2026-09-10');
+    assert.deepStrictEqual(m.quests, { '2026-09-12': 'k:日', '2026-09-13': 'k:月' });
+  },
 };

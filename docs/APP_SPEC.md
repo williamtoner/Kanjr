@@ -203,6 +203,33 @@ tap or Enter continues, auto-dismisses after a few seconds, off with the
 celebrations setting. Themes: light paper is a softer parchment (bg #efe8dc),
 dark is a warm brown (bg #2a241f) rather than near-black.
 
+## Search, meanings, KanjiQuest, legendary (2026-09-14)
+
+- Dex search: a box above the grid matches English meanings (name, alternates,
+  user synonyms; whole words or canonical forms) or a kanji; matching tiles
+  are outlined and the rest dimmed, and a strip of result chips links to
+  item pages (always showing the kanji, even if unseen in the dex).
+- Feedback in encounters and quizzes lists every meaning (name, alternates,
+  user synonyms) as chips in a per-session random order; the typed one is
+  highlighted, the primary keyword has a heavier border, user synonyms are
+  dashed.
+- KanjiQuest: `game.questFor(dateKey, pool)` picks a kanji of the day (same
+  for everyone) from kanji with frequency rank ≤ 600. Catching it on the
+  Catch screen that day (photo capture, whole-photo read, or the typed box)
+  logs `progress.quests[date] = id`, marks the item `wild` with the date, and
+  rolls `game.wildRoll`: legendary 1 in 16, shiny 1 in 4. Home and Catch show
+  the quest; `#/quest` shows streaks (`game.questStreak`) and a month
+  calendar with the caught kanji in each square. Any Catch-screen catch marks
+  an item wild (green underline on dex tiles, "Wild · date" badge on the
+  item page); items already in the dex can be tapped to log a wild sighting.
+- Legendary: `game.encounterKind` rolls legendary (1 in 512, own hash salt)
+  before shiny (1 in 64). A legendary card has a spinning rainbow border and
+  gradient glyph; a first-try catch sets `legendary: true` (kept by store and
+  sync merge), shown as a rainbow tile in the dex and counted on Home and
+  Stats. The frequency rarity tier formerly called Legendary is now Ancient.
+- Synonym table tightened to same-sense groups (it had leaked "shop" onto
+  everything with "house").
+
 ## Sounds and feedback (sfx.js)
 
 All sounds are synthesised with the Web Audio API (no files): a two-note
