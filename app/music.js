@@ -224,7 +224,7 @@ export function tuneLength(tune) {
 /* Playback                                                            */
 /* ------------------------------------------------------------------ */
 
-const state = { ctx: null, master: null, waves: {}, noise: null, current: null, wanted: null, timer: null, enabled: true, volume: 0.4, paused: false };
+const state = { ctx: null, master: null, waves: {}, noise: null, current: null, wanted: null, timer: null, enabled: true, volume: 0.4, paused: false, interrupted: null };
 
 function getCtx() {
   if (state.ctx) return state.ctx;
@@ -349,18 +349,24 @@ function tick() {
     seq.nextTime += seq.stepDur;
     seq.step += 1;
     if (seq.step >= seq.length) {
-      if (seq.tune.once) { stopInternal(); if (state.wanted && state.wanted !== seq.name) startInternal(state.wanted); return; }
+      if (seq.tune.once) {
+        stopInternal();
+        const back = state.interrupted; state.interrupted = null;
+        if (state.wanted && state.wanted !== seq.name) startInternal(state.wanted, back);
+        return;
+      }
       seq.step = seq.tune.loopStart || 0;
     }
   }
 }
 
-function startInternal(name) {
+function startInternal(name, resumeFrom = null) {
   const ctx = getCtx();
   if (!ctx || !TUNES[name]) return;
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   stopInternal();
   state.current = buildSequence(name);
+  if (resumeFrom && resumeFrom.name === name) state.current.step = resumeFrom.step;   // carry on where the cue interrupted
   state.current.nextTime = ctx.currentTime + 0.05;
   state.timer = setInterval(tick, 40);
   tick();
@@ -393,6 +399,8 @@ export const music = {
   jingle(name) {
     if (!state.enabled) return;
     const resumeTo = state.wanted;
+    // Remember where the scene tune was so it can pick up from there.
+    if (state.current && !state.current.tune.once) state.interrupted = { name: state.current.name, step: state.current.step };
     startInternal(name);
     state.wanted = resumeTo;
   },
@@ -408,9 +416,13 @@ export const music = {
   state() { return state.ctx ? state.ctx.state : 'not created'; },
   configure({ enabled, volume } = {}) {
     if (typeof enabled === 'boolean') {
+      const was = state.enabled;
       state.enabled = enabled;
-      if (!enabled) stopInternal();
-      else if (state.wanted && state.ctx && state.ctx.state === 'running') startInternal(state.wanted);
+      // Only act on a real change: settings are re-applied on every save,
+      // and restarting the tune each time made the music jump back to the
+      // start after every answer.
+      if (!enabled && was) stopInternal();
+      else if (enabled && !was && state.wanted && !state.current && state.ctx && state.ctx.state === 'running') startInternal(state.wanted);
     }
     if (typeof volume === 'number') state.volume = Math.max(0, Math.min(1, volume));
     if (state.master) state.master.gain.value = state.enabled ? state.volume : 0;
@@ -422,5 +434,6 @@ export const music = {
     if (state.current && state.ctx) state.current.nextTime = state.ctx.currentTime + 0.05;
   },
   playing() { return state.current ? state.current.name : null; },
+  position() { return state.current ? state.current.step : -1; },
   wanted() { return state.wanted; },
 };

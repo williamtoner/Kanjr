@@ -155,6 +155,15 @@ class TestBuiltData(unittest.TestCase):
         for key in ("id", "char", "name", "level", "pos", "note", "used_in", "mnemonic"):
             self.assertIn(key, rad)
 
+    def test_every_kanji_has_a_spoken_form(self):
+        for i in self.data["items"].values():
+            if i["type"] == "kanji":
+                self.assertTrue(i.get("speak"), i["char"])
+                self.assertNotIn(".", i["speak"])
+        self.assertEqual(self.data["items"]["k:山"]["speak"], "やま")
+        self.assertEqual(self.data["items"]["k:見"]["speak"], "みる")
+        self.assertEqual(self.data["items"]["k:駅"]["speak"], "エキ")
+
     def test_early_levels_have_mnemonics(self):
         for lvl in self.data["levels"][:3]:
             for i in lvl["items"]:

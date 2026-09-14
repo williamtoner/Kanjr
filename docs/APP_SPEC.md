@@ -230,6 +230,17 @@ dark is a warm brown (bg #2a241f) rather than near-black.
 - Synonym table tightened to same-sense groups (it had leaked "shop" onto
   everything with "house").
 
+## Speak the kanji (optional, off by default)
+
+Setting `speakKanji`. After every completed answer in encounters, drills and
+lesson quizzes, `speakItem` uses the Web Speech API with a Japanese voice
+(preferring a local one, e.g. Kyoko on iOS) to say the item's hidden spoken
+form. The pipeline stores `speak` per kanji: the first non-affix kun reading
+with okurigana joined (見.る → みる), else the first on reading (駅 → エキ).
+Readings are never shown in the UI. Music: settings re-application no longer
+restarts the tune (only real enable/disable changes act), and a one-shot cue
+resumes the interrupted scene tune from the step it was at.
+
 ## Sounds and feedback (sfx.js)
 
 All sounds are synthesised with the Web Audio API (no files): a two-note

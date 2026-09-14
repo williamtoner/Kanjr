@@ -59,6 +59,8 @@ class KanjiRecord:
     meanings: list[str]          # English glosses in KANJIDIC2 order
     heisig: int | None
     radical: int | None          # classical (Kangxi) radical number
+    on: list[str] = field(default_factory=list)    # on'yomi (katakana), for speech only
+    kun: list[str] = field(default_factory=list)   # kun'yomi (hiragana, '.' marks okurigana), for speech only
 
     @property
     def joyo(self) -> bool:
@@ -95,10 +97,12 @@ def load_kanjidic(path: Path = RAW / "kanjidic2.xml.gz") -> dict[str, KanjiRecor
                 for m in elem.iter("meaning")
                 if m.get("m_lang") is None and (m.text or "").strip()
             ]
+            on = [(r.text or "").strip() for r in elem.iter("reading") if r.get("r_type") == "ja_on" and (r.text or "").strip()]
+            kun = [(r.text or "").strip() for r in elem.iter("reading") if r.get("r_type") == "ja_kun" and (r.text or "").strip()]
             out[literal] = KanjiRecord(
                 char=literal, ucs=ucs, grade=grade, strokes=strokes or 0,
                 freq_news=freq, jlpt=jlpt, meanings=meanings, heisig=heisig,
-                radical=radical,
+                radical=radical, on=on, kun=kun,
             )
             elem.clear()
     return out

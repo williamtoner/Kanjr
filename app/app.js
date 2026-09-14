@@ -298,6 +298,40 @@ function sceneFor(head) {
   return { reviews: 'encounter', drill: 'encounter', lessons: 'sighting', grid: 'dex', scan: 'dex', item: 'dex', levels: 'dex' }[head] || 'overworld';
 }
 
+/* ---------- Speech: optionally say the kanji after each answer ---------- */
+
+const speech = { voice: null, tried: false };
+
+function pickJapaneseVoice() {
+  if (!('speechSynthesis' in window)) return null;
+  const voices = speechSynthesis.getVoices();
+  const ja = voices.filter((v) => /^ja/i.test(v.lang));
+  // Prefer a local (offline) voice; iOS ships Kyoko, Android usually has one too.
+  return ja.find((v) => v.localService) || ja[0] || null;
+}
+
+/**
+ * Say the kanji out loud, using the hidden spoken form built into the data
+ * (a kana reading), so the voice does not have to guess how to read a lone
+ * character. Off by default; the app still never shows readings.
+ */
+function speakItem(item) {
+  if (!item || item.type !== 'kanji') return;
+  if (app.progress.settings.speakKanji !== true) return;
+  if (!('speechSynthesis' in window)) return;
+  try {
+    if (!speech.voice) speech.voice = pickJapaneseVoice();
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(item.speak || item.char);
+    u.lang = 'ja-JP';
+    if (speech.voice) u.voice = speech.voice;
+    u.rate = 0.9;
+    u.volume = Math.max(0.2, (Number(app.progress.settings.volume) || 70) / 100);
+    setTimeout(() => speechSynthesis.speak(u), 120);   // just after the ding
+  } catch (_) { /* no speech on this device */ }
+}
+if ('speechSynthesis' in window) speechSynthesis.addEventListener('voiceschanged', () => { speech.voice = pickJapaneseVoice(); });
+
 /* ---------- Juice: little visual rewards ---------- */
 
 function reducedMotion() {
@@ -810,6 +844,7 @@ function mountQuiz(root, opts) {
     }
     opts.onSession(session);
     render();
+    speakItem(item);
     const card = $('[data-role="card"]', root);
     if (verdict !== 'wrong') {
       burst(card, { count: view.streak >= 5 ? 22 : 14, colour: view.streak >= 5 ? 'var(--accent)' : 'var(--ok)' });
@@ -2508,6 +2543,7 @@ function renderSettings() {
         ${toggle('haptics', 'Vibration', 'A tiny buzz on answers and taps, on phones that support it (Android; iPhones do not vibrate for websites).')}
         ${toggle('celebrations', 'Celebrations', 'Stamps and bursts on catches, combo counters and confetti at the end of a session.')}
         ${toggle('intro', 'Intro screen', 'Show the Kanjiland title screen when the app opens.')}
+        ${toggle('speakKanji', 'Speak the kanji', 'After each answer, right or wrong, a Japanese voice says the kanji so you get used to its sound. Off by default. The app still never shows readings; this uses the voice built into your phone, so the accent is only as good as that voice.')}
         ${toggle('music', 'Music', 'Original 8-bit tunes: a whimsical overworld theme on the home screen, an encounter theme in reviews, a gentle one for new sightings, a dreamy one in the dex, and a victory fanfare.')}
         ${num('musicVolume', 'Music volume', '0 to 100. Sound effects have their own volume above.', 0, 100)}
         <div class="btn-row" style="margin-top:12px"><button class="btn btn-sm" type="button" data-act="sound-test">Play the ding</button><button class="btn btn-sm" type="button" data-act="music-test">Start the music</button></div>
@@ -2906,6 +2942,7 @@ async function boot() {
   registerServiceWorker();
   applySfxSettings();
   window.kanjrMusic = music;   // handy in the console
+  window.kanjrSpeakLast = null;
   window.kanjrGame = game;
   maybeIntro();
   // iOS only unlocks audio from click, touchend or a key press (not

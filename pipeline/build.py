@@ -79,6 +79,28 @@ def load_mnemonics() -> dict[str, dict]:
     return out
 
 
+def spoken_form(rec: parse.KanjiRecord) -> str:
+    """What text-to-speech should say for this kanji, in kana.
+
+    The app never shows readings; this exists only for the optional
+    "speak the kanji" feature. The first kun reading (with its okurigana
+    joined on, so 見.る becomes みる) is the kanji as a standalone word; when
+    there is none, the first on reading is what it sounds like in compounds.
+    """
+    # KANJIDIC lists the common reading first; skip prefix/suffix forms
+    # like おお- or -あ.う unless nothing else exists.
+    kuns = [k for k in rec.kun if not (k.startswith("-") or k.endswith("-"))] or rec.kun
+    for k in kuns:
+        k = k.replace(".", "").replace("-", "")
+        if k:
+            return k
+    for o in rec.on:
+        o = o.replace("-", "")
+        if o:
+            return o
+    return rec.char
+
+
 def pick_examples(words: list[parse.ExampleWord], kanji: str, n: int = 3) -> list[dict]:
     out, seen_gloss = [], set()
     for w in words:
@@ -157,6 +179,7 @@ def build(check_only: bool = False) -> dict:
             "freq": rank[k], "freq_news": r.freq_news,
             "parts": decs[k].parts, "used_in": [], "mnemonic": m.get("mnemonic", ""),
             "hint": m.get("hint", ""), "examples": pick_examples(ex_src, k),
+            "speak": spoken_form(r),
         }
     for sym, row in radicals.items():
         if sym not in rad_usage:

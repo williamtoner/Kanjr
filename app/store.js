@@ -36,6 +36,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   intro: true,
   music: true,
   musicVolume: 40,
+  speakKanji: false,
 });
 
 /** Allowed ranges for numeric settings (used by import validation and the UI). */
@@ -182,6 +183,7 @@ export function normaliseSettings(raw) {
   s.celebrations = s.celebrations !== false;
   s.intro = s.intro !== false;
   s.music = s.music !== false;
+  s.speakKanji = s.speakKanji === true;
   const mv = Number(s.musicVolume);
   s.musicVolume = Number.isFinite(mv) ? Math.max(0, Math.min(100, Math.round(mv))) : 40;
   const vol = Number(s.volume);
