@@ -300,34 +300,79 @@ function sceneFor(head) {
 
 /* ---------- Speech: optionally say the kanji after each answer ---------- */
 
-const speech = { voice: null, tried: false };
+const speech = { voice: null, clips: new Map(), ctx: null, gain: null };
 
 function pickJapaneseVoice() {
   if (!('speechSynthesis' in window)) return null;
   const voices = speechSynthesis.getVoices();
   const ja = voices.filter((v) => /^ja/i.test(v.lang));
-  // Prefer a local (offline) voice; iOS ships Kyoko, Android usually has one too.
   return ja.find((v) => v.localService) || ja[0] || null;
 }
 
+/** The app's own audio path for voice clips: full volume, mixed over the music. */
+function voiceContext() {
+  if (speech.ctx) return speech.ctx;
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  speech.ctx = new AC();
+  speech.gain = speech.ctx.createGain();
+  speech.gain.gain.value = 1;
+  speech.gain.connect(speech.ctx.destination);
+  return speech.ctx;
+}
+
+async function loadClip(item) {
+  const key = item.char.codePointAt(0).toString(16);
+  if (speech.clips.has(key)) return speech.clips.get(key);
+  const p = (async () => {
+    const ctx = voiceContext();
+    if (!ctx) return null;
+    const res = await fetch(`voices/${key}.mp3`);
+    if (!res.ok) return null;
+    const buf = await res.arrayBuffer();
+    return await ctx.decodeAudioData(buf);
+  })().catch(() => null);
+  speech.clips.set(key, p);
+  return p;
+}
+
+/** Fetch and decode the clip while the question is on screen, so the answer is spoken instantly. */
+function preloadVoice(item) {
+  if (!item || item.type !== 'kanji' || app.progress.settings.speakKanji !== true) return;
+  loadClip(item);
+}
+
 /**
- * Say the kanji out loud, using the hidden spoken form built into the data
- * (a kana reading), so the voice does not have to guess how to read a lone
- * character. Off by default; the app still never shows readings.
+ * Say the kanji out loud after an answer (setting `speakKanji`, off by
+ * default). Prefers a pre-recorded clip of the hidden spoken form, played
+ * through Web Audio so it sits loud over the music with no clipping; falls
+ * back to the phone's speech synthesiser when no clip is available.
  */
-function speakItem(item) {
+async function speakItem(item) {
   if (!item || item.type !== 'kanji') return;
   if (app.progress.settings.speakKanji !== true) return;
+  try {
+    const buf = await loadClip(item);
+    if (buf && speech.ctx) {
+      if (speech.ctx.state === 'suspended') await speech.ctx.resume().catch(() => {});
+      const src = speech.ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(speech.gain);
+      src.start(speech.ctx.currentTime + 0.05);
+      return;
+    }
+  } catch (_) { /* fall through to the system voice */ }
   if (!('speechSynthesis' in window)) return;
   try {
     if (!speech.voice) speech.voice = pickJapaneseVoice();
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(item.speak || item.char);
+    const u = new SpeechSynthesisUtterance('、' + (item.speak || item.char));
     u.lang = 'ja-JP';
     if (speech.voice) u.voice = speech.voice;
-    u.rate = 0.9;
-    u.volume = Math.max(0.2, (Number(app.progress.settings.volume) || 70) / 100);
-    setTimeout(() => speechSynthesis.speak(u), 120);   // just after the ding
+    u.rate = 0.95;
+    u.volume = 1;
+    try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (_) { /* not supported */ }
+    setTimeout(() => speechSynthesis.speak(u), 60);
   } catch (_) { /* no speech on this device */ }
 }
 if ('speechSynthesis' in window) speechSynthesis.addEventListener('voiceschanged', () => { speech.voice = pickJapaneseVoice(); });
@@ -691,6 +736,7 @@ function mountQuiz(root, opts) {
       view.counter = Math.min(stats.total, stats.done + 1);
     }
     const item = itemOf(id);
+    if (view.phase === 'ask') preloadVoice(item);
     const wrongSoFar = view.phase === 'ask' ? (session.wrong[id] || 0) : 0;
     const stateCls = view.phase === 'feedback' ? `is-${view.result === 'wrong' ? 'wrong' : view.result === 'typo' ? 'typo' : 'correct'}` : '';
     const kindNow = item.type === 'kanji' ? game.encounterKind(id, session.startedAt) : null;
@@ -2947,7 +2993,7 @@ async function boot() {
   maybeIntro();
   // iOS only unlocks audio from click, touchend or a key press (not
   // touchstart/pointerdown), so listen to those.
-  const unlockOnce = () => { unlockAudio(); music.unlock(); };
+  const unlockOnce = () => { unlockAudio(); music.unlock(); const vc = voiceContext(); if (vc && vc.state === 'suspended') vc.resume().catch(() => {}); };
   document.addEventListener('click', unlockOnce, true);
   document.addEventListener('touchend', unlockOnce, { passive: true, capture: true });
   document.addEventListener('keydown', unlockOnce, true);

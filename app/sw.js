@@ -7,12 +7,14 @@
  *            served network-first with a cache fallback.
  * Fonts:     Google Fonts responses are cached opportunistically
  *            (stale-while-revalidate); the app works without them.
+ * Voices:    voices/*.mp3 are immutable; cached on first play, then
+ *            served cache-first so the spoken kanji works offline.
  *
  * Bump CACHE_VERSION whenever a shell file changes in a way that must
  * invalidate old caches.
  */
 
-const CACHE_VERSION = 'kanjr-v11';
+const CACHE_VERSION = 'kanjr-v12';
 const SHELL = [
   './',
   './index.html',
@@ -72,6 +74,15 @@ async function networkFirst(request) {
   }
 }
 
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE_VERSION);
+  const cached = await cache.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response && response.ok) cache.put(request, response.clone());
+  return response;
+}
+
 async function staleWhileRevalidate(request) {
   const cache = await caches.open(CACHE_VERSION);
   const cached = await cache.match(request);
@@ -93,7 +104,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.origin === self.location.origin) {
-    event.respondWith(networkFirst(request));
+    event.respondWith(/\/voices\/[0-9a-f]+\.mp3$/.test(url.pathname) ? cacheFirst(request) : networkFirst(request));
   }
 });
 

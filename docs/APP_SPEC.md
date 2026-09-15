@@ -233,13 +233,27 @@ dark is a warm brown (bg #2a241f) rather than near-black.
 ## Speak the kanji (optional, off by default)
 
 Setting `speakKanji`. After every completed answer in encounters, drills and
-lesson quizzes, `speakItem` uses the Web Speech API with a Japanese voice
-(preferring a local one, e.g. Kyoko on iOS) to say the item's hidden spoken
-form. The pipeline stores `speak` per kanji: the first non-affix kun reading
-with okurigana joined (見.る → みる), else the first on reading (駅 → エキ).
-Readings are never shown in the UI. Music: settings re-application no longer
-restarts the tune (only real enable/disable changes act), and a one-shot cue
-resumes the interrupted scene tune from the step it was at.
+lesson quizzes, `speakItem` says the item's hidden spoken form. The pipeline
+stores `speak` per kanji: the first non-affix kun reading with okurigana
+joined (見.る → みる), else the first on reading (駅 → エキ). Readings are
+never shown in the UI.
+
+Playback prefers a pre-recorded clip, `app/voices/<hex codepoint>.mp3`
+(one per kanji, mono 24 kHz 32 kbps, about 2 KB each, ~4 MB in all),
+generated offline by `pipeline/voices.py` with Open JTalk (Mei voice),
+peak-normalised and silence-trimmed with short fades. Clips are decoded once
+and played through the app's own AudioContext at full volume, so they mix
+over the music rather than ducking it (the phone's speech synthesiser on
+iOS ducks other audio and clips the first syllable). The clip for the item
+being asked is prefetched when the question renders, and the service worker
+serves clips cache-first so they work offline after the first play. If a clip
+is missing or cannot be decoded (e.g. the single-file build), the Web Speech
+API is used as a fallback with a local Japanese voice, volume 1 and a
+leading pause mark to protect the first syllable.
+
+Music: settings re-application no longer restarts the tune (only real
+enable/disable changes act), and a one-shot cue resumes the interrupted
+scene tune from the step it was at.
 
 ## Sounds and feedback (sfx.js)
 

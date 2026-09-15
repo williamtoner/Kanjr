@@ -300,6 +300,14 @@ polish. Real use surfaces the right bugs.
   kanji reaches a new stage group, softened light and dark themes, and
   shimmering shiny stamps in the dex.
 
+- **2026-09-15** Spoken kanji now uses pre-recorded clips: `pipeline/voices.py`
+  synthesises every kanji's hidden spoken form with Open JTalk (Mei voice)
+  into `app/voices/<codepoint>.mp3` (2,136 clips, ~2 KB each), normalised,
+  silence-trimmed with a short lead-in. The app decodes and plays them through
+  its own AudioContext at full volume, mixed over the music, prefetching the
+  clip while the question is up; the service worker caches them cache-first
+  for offline use. The phone's speech synthesiser remains only as a fallback.
+
 ### Open threads (as of 2026-09-12)
 
 1. **Mnemonics stop at level 10** (340 of 2,231 items). Levels 11–20 are the
