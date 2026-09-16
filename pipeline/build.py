@@ -14,7 +14,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from . import decompose, keywords, order, parse
+from . import decompose, keywords, order, parse, vocab
 
 ROOT = Path(__file__).resolve().parent.parent
 DATA = ROOT / "data"
@@ -214,15 +214,30 @@ def build(check_only: bool = False) -> dict:
             items[i]["pos"] = pos
         level_items[lvl] = ordered
 
+    # ---- vocabulary: words made only of kanji taught so far ---------------
+    print("vocabulary ...")
+    kanji_level = {k: levels[f"k:{k}"] for k in joyo}
+    level_kanji = {lvl: [items[i]["char"] for i in ids if items[i]["type"] == "kanji"] for lvl, ids in level_items.items()}
+    chosen = vocab.select_by_level(vocab.load_jmdict_vocab(joyo), kanji_level, level_kanji)
+    vocab_items = vocab.to_items(chosen, kanji_level)
+    level_vocab: dict[int, list[str]] = defaultdict(list)
+    for vid in sorted(vocab_items, key=lambda v: (vocab_items[v]["level"], vocab_items[v]["freq"], v)):
+        it = vocab_items[vid]
+        it["pos"] = len(level_items[it["level"]]) + len(level_vocab[it["level"]])
+        level_vocab[it["level"]].append(vid)
+        for pid in it["parts"]:
+            items[pid].setdefault("words", []).append(vid)
+    items.update(vocab_items)
+
     data = {
         "meta": {
             "built": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
             "version": 1,
-            "counts": {"kanji": len(joyo), "radicals": len(rad_usage), "levels": max(level_items)},
+            "counts": {"kanji": len(joyo), "radicals": len(rad_usage), "vocab": len(vocab_items), "levels": max(level_items)},
             "sources": ["KANJIDIC2", "KRADFILE", "JMdict", "scriptin/kanji-frequency"],
         },
         "items": items,
-        "levels": [{"level": lvl, "items": level_items[lvl]} for lvl in sorted(level_items)],
+        "levels": [{"level": lvl, "items": level_items[lvl], "vocab": level_vocab.get(lvl, [])} for lvl in sorted(level_items)],
     }
 
     # ---- sanity checks -----------------------------------------------------
@@ -259,7 +274,9 @@ def sanity_checks(data: dict, rank: dict[str, int]) -> list[str]:
     kanji = [i for i in items.values() if i["type"] == "kanji"]
     if len(kanji) != 2136:
         problems.append(f"expected 2136 kanji, got {len(kanji)}")
-    names = Counter(i["name"].lower() for i in items.values())
+    # Kanji and radical keywords are unique; words may legitimately share a
+    # meaning with a kanji (山 the word and 山 the kanji are both "mountain").
+    names = Counter(i["name"].lower() for i in items.values() if i["type"] != "vocab")
     for nm, c in names.items():
         if c > 1:
             problems.append(f"duplicate name {nm!r} x{c}")
@@ -269,6 +286,11 @@ def sanity_checks(data: dict, rank: dict[str, int]) -> list[str]:
                 problems.append(f"{i['id']} has unknown part {p}")
             elif (items[p]["level"], items[p]["pos"]) >= (i["level"], i["pos"]):
                 problems.append(f"{i['id']} (L{i['level']}) comes before its part {p} (L{items[p]['level']})")
+        if i["type"] == "vocab":
+            if not i["parts"] or any(items[p]["type"] != "kanji" for p in i["parts"]):
+                problems.append(f"{i['id']} must be made of kanji")
+            if not i["name"] or not i.get("speak"):
+                problems.append(f"{i['id']} lacks a meaning or reading")
     for lvl in data["levels"]:
         if len(lvl["items"]) > order.LEVEL_SIZE + 5:
             problems.append(f"level {lvl['level']} has {len(lvl['items'])} items")
@@ -276,7 +298,7 @@ def sanity_checks(data: dict, rank: dict[str, int]) -> list[str]:
     late = [k for k in top100 if items[f"k:{k}"]["level"] > 10]
     if late:
         problems.append(f"top-100 kanji later than level 10: {late}")
-    seen = Counter(i for lvl in data["levels"] for i in lvl["items"])
+    seen = Counter(i for lvl in data["levels"] for i in lvl["items"] + lvl.get("vocab", []))
     if any(c != 1 for c in seen.values()) or len(seen) != len(items):
         problems.append("levels do not list every item exactly once")
     return problems

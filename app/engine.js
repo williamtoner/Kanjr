@@ -56,6 +56,29 @@ export function orderedIds(data) {
   return out;
 }
 
+/** Vocabulary in learning order (each level's words, level by level). */
+export function orderedVocabIds(data) {
+  const out = [];
+  for (const level of (data && data.levels) || []) {
+    for (const id of level.vocab || []) out.push(id);
+  }
+  return out;
+}
+
+/**
+ * Alternate two ordered lists, `a` first: a0 b0 a1 b1 ... When one runs
+ * out, the rest of the other follows. Used to give lessons a roughly even
+ * split of kanji/radicals and words whenever both are available.
+ */
+export function interleave(a, b) {
+  const out = [];
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if (i < a.length) out.push(a[i]);
+    if (i < b.length) out.push(b[i]);
+  }
+  return out;
+}
+
 /** SRS stage of an item (0 when it has no progress). */
 export function stageOf(progress, id) {
   const entry = progress && progress.items && progress.items[id];
@@ -115,7 +138,8 @@ export function lessonsDoneToday(progress, now) {
  * Items eligible for a lesson right now, in global order.
  *
  * An item is eligible when it has no progress and every part is at or above
- * `settings.unlockStage`. Locked items are skipped, not blocked on.
+ * `settings.unlockStage`. Locked items are skipped, not blocked on. Words
+ * (vocabulary) are interleaved one-for-one with kanji and radicals.
  *
  * Limits (unless `opts.ignoreLimits`): at most `dailyLessons − done today`,
  * and none while the Apprentice count is at or above `apprenticeCap`.
@@ -123,12 +147,19 @@ export function lessonsDoneToday(progress, now) {
 export function lessonQueue(data, progress, now, opts = {}) {
   const settings = (progress && progress.settings) || {};
   const unlockStage = Number(settings.unlockStage) || 0;
-  const unlocked = [];
-  for (const id of orderedIds(data)) {
-    const item = data.items[id];
-    if (!item || stageOf(progress, id) > 0) continue;
-    if (isUnlocked(item, progress, unlockStage)) unlocked.push(id);
-  }
+  const pick = (ids) => {
+    const out = [];
+    for (const id of ids) {
+      const item = data.items[id];
+      if (!item || stageOf(progress, id) > 0) continue;
+      if (isUnlocked(item, progress, unlockStage)) out.push(id);
+    }
+    return out;
+  };
+  // Kanji and radicals in learning order, alternated with the words whose
+  // kanji have all reached the unlock stage: a roughly even split of the
+  // two whenever words are available.
+  const unlocked = interleave(pick(orderedIds(data)), pick(orderedVocabIds(data)));
   if (opts.ignoreLimits) return unlocked;
 
   const cap = Number(settings.apprenticeCap);

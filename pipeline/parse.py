@@ -217,7 +217,9 @@ def load_jmdict_examples(
             pos = {p.text for p in sense.findall("pos")}
             misc = {m.text for m in sense.findall("misc")}
             # Skip usually-kana words, proper nouns, archaic/obscure terms.
-            if misc & {"uk", "arch", "obsc", "rare", "obs"} or pos & {"n-pr"}:
+            # (JMdict_e expands the entity codes into descriptive text.)
+            bad = ("kana alone", "archaic", "obsolete", "rare term", "abbreviation", "slang", "vulgar")
+            if any(b in m for m in misc for b in bad) or any("proper" in p for p in pos):
                 elem.clear()
                 continue
             glosses = [g.text for g in sense.findall("gloss") if g.text]

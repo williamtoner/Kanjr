@@ -4,7 +4,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import {
   orderedIds, stageOf, isUnlocked, apprenticeCount, groupCounts, lessonsDoneToday,
-  lessonQueue, lessonBlockReason, applyLesson, startManually, retractWrong, recordWildCatch,
+  lessonQueue, lessonBlockReason, applyLesson, startManually, retractWrong, recordWildCatch, interleave, orderedVocabIds,
   dueIds, dueCount, shuffle, reviewQueue, createSession, currentId, answerCurrent,
   wrapUp, sessionStats, applyReview, REQUEUE_MIN, REQUEUE_MAX, REVIEW_LOG_CAP,
   currentLevel, levelProgress, forecast, nextReviewAt, streak, recentMistakes,
@@ -102,6 +102,32 @@ export const tests = {
     const p = progressWith({}, { settings: { dailyLessons: 100, apprenticeCap: 120, unlockStage: 3 } });
     const q = lessonQueue(data, p, NOW);
     assert.deepStrictEqual(q, ['r:丨', 'r:汁', 'k:一', 'k:口', 'k:日', 'k:月', 'k:人', 'k:木', 'r:也']);
+  },
+
+  'interleave alternates two lists and appends the remainder': () => {
+    assert.deepStrictEqual(interleave(['a', 'b', 'c'], ['x']), ['a', 'x', 'b', 'c']);
+    assert.deepStrictEqual(interleave([], ['x', 'y']), ['x', 'y']);
+    assert.deepStrictEqual(interleave(['a'], []), ['a']);
+  },
+
+  'lessonQueue alternates kanji and words once the words are unlocked': () => {
+    const withWords = JSON.parse(JSON.stringify(data));
+    withWords.items['v:一日'] = { id: 'v:一日', type: 'vocab', char: '一日', name: 'one day', alt: [], level: 1, pos: 9, parts: ['k:一', 'k:日'] };
+    withWords.items['v:人口'] = { id: 'v:人口', type: 'vocab', char: '人口', name: 'population', alt: [], level: 1, pos: 10, parts: ['k:人', 'k:口'] };
+    withWords.levels[0].vocab = ['v:一日', 'v:人口'];
+    assert.deepStrictEqual(orderedVocabIds(withWords), ['v:一日', 'v:人口']);
+    // Nothing started: no word is unlocked, so the queue is kanji/radicals only.
+    const fresh = progressWith({}, { settings: { dailyLessons: 100, apprenticeCap: 120, unlockStage: 3 } });
+    assert.ok(lessonQueue(withWords, fresh, NOW).every((id) => !id.startsWith('v:')));
+    // 一 and 日 at the unlock stage: 一日 slots in second, 人口 stays locked (人 not started).
+    const p = progressWith({ 'k:一': 3, 'k:日': 3 }, { settings: { dailyLessons: 100, apprenticeCap: 120, unlockStage: 3 } });
+    const q = lessonQueue(withWords, p, NOW);
+    assert.strictEqual(q[1], 'v:一日');
+    assert.ok(!q.includes('v:人口'));
+    assert.ok(!q.includes('k:一') && !q.includes('k:日'));
+    // The daily allowance is shared across both kinds.
+    const capped = progressWith({ 'k:一': 3, 'k:日': 3 }, { settings: { dailyLessons: 2, apprenticeCap: 120, unlockStage: 3 } });
+    assert.deepStrictEqual(lessonQueue(withWords, capped, NOW), [q[0], 'v:一日']);
   },
 
   'lessonQueue excludes items that already have progress': () => {

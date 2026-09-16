@@ -1,5 +1,5 @@
 import assert from 'assert';
-import { rarity, rarityOf, dexNumbers, dexNo, isShinyEncounter, hash32, SHINY_ODDS, encounterKind, LEGENDARY_ODDS, questPool, questFor, wildRoll, questStreak } from '../app/game.js';
+import { rarity, rarityOf, dexNumbers, dexNo, wordNumbers, wordNo, isShinyEncounter, hash32, SHINY_ODDS, encounterKind, LEGENDARY_ODDS, questPool, questFor, wildRoll, questStreak } from '../app/game.js';
 
 export const tests = {
   'rarity tiers follow frequency rank': () => {
@@ -17,6 +17,14 @@ export const tests = {
     assert.deepStrictEqual(d, { a: 1, b: 2, c: 3 });
     assert.strictEqual(dexNo(7), 'No. 0007');
   },
+  'words are numbered separately from kanji': () => {
+    const d = { levels: [{ items: ['a'], vocab: ['v:x', 'v:y'] }, { items: ['b'] }, { items: ['c'], vocab: ['v:z'] }] };
+    assert.deepStrictEqual(wordNumbers(d), { 'v:x': 1, 'v:y': 2, 'v:z': 3 });
+    assert.deepStrictEqual(dexNumbers(d), { a: 1, b: 2, c: 3 });
+    assert.strictEqual(wordNo(12), 'W. 0012');
+    assert.strictEqual(rarityOf({ type: 'vocab', freq: 5 }).key, 'common');
+  },
+
   'shiny encounters are deterministic and roughly 1 in SHINY_ODDS': () => {
     assert.strictEqual(isShinyEncounter('k:日', 's1'), isShinyEncounter('k:日', 's1'));
     let n = 0;

@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from pipeline import build, decompose, keywords, order, parse  # noqa: E402
+from pipeline import build, decompose, keywords, order, parse, vocab  # noqa: E402
 
 
 class SourcesMixin:
@@ -164,10 +164,68 @@ class TestBuiltData(unittest.TestCase):
         self.assertEqual(self.data["items"]["k:見"]["speak"], "みる")
         self.assertEqual(self.data["items"]["k:駅"]["speak"], "エキ")
 
+    def test_vocabulary_is_made_of_taught_kanji(self):
+        items = self.data["items"]
+        words = [i for i in items.values() if i["type"] == "vocab"]
+        self.assertGreater(len(words), 2000)
+        for w in words:
+            self.assertTrue(w["parts"], w["id"])
+            for pid in w["parts"]:
+                self.assertEqual(items[pid]["type"], "kanji")
+                self.assertLessEqual(items[pid]["level"], w["level"], w["id"])
+            self.assertTrue(w["name"] and w["speak"], w["id"])
+            self.assertIn(w["kind"], ("noun", "verb", "adjective", "adverb", "expression", "word"))
+        # The user's own example: knowing 弁 and 当 unlocks 弁当.
+        bento = items["v:弁当"]
+        self.assertEqual(bento["parts"], ["k:弁", "k:当"])
+        self.assertEqual(bento["level"], max(items["k:弁"]["level"], items["k:当"]["level"]))
+        self.assertEqual(bento["speak"], "べんとう")
+        # Every level lists its words once, and kanji point back at their words.
+        listed = [v for lvl in self.data["levels"] for v in lvl.get("vocab", [])]
+        self.assertEqual(len(listed), len(set(listed)))
+        self.assertEqual(set(listed), {w["id"] for w in words})
+        self.assertIn("v:弁当", items["k:弁"]["words"])
+        # Roughly one word per kanji on the early levels.
+        for lvl in self.data["levels"][:10]:
+            n_kanji = sum(1 for i in lvl["items"] if items[i]["type"] == "kanji")
+            self.assertGreaterEqual(len(lvl["vocab"]), n_kanji * 0.8, lvl["level"])
+
     def test_early_levels_have_mnemonics(self):
         for lvl in self.data["levels"][:3]:
             for i in lvl["items"]:
                 self.assertTrue(self.data["items"][i]["mnemonic"], f"{i} has no mnemonic")
+
+
+class VocabHelpersTest(unittest.TestCase):
+    def test_clean_gloss(self):
+        self.assertEqual(vocab.clean_gloss("meal (e.g. lunch)"), "meal")
+        self.assertEqual(vocab.clean_gloss("(what) the heck"), "")
+        self.assertEqual(vocab.clean_gloss("to eat"), "to eat")
+        self.assertEqual(vocab.clean_gloss("a" * 40), "")
+
+    def test_kind_of(self):
+        self.assertEqual(vocab.kind_of({"noun (common) (futsuumeishi)", "adverb (fukushi)"}), "noun")
+        self.assertEqual(vocab.kind_of({"Ichidan verb", "transitive verb"}), "verb")
+        self.assertEqual(vocab.kind_of({"adjective (keiyoushi)"}), "adjective")
+        self.assertEqual(vocab.kind_of({"adverb (fukushi)"}), "adverb")
+
+    def test_select_by_level_covers_each_kanji_first(self):
+        W = vocab.VocabWord
+        words = [
+            W("学校", "がっこう", ["school"], "noun", 9.0, ["学", "校"], ["ichi1", "news1", "nf01"]),
+            W("学生", "がくせい", ["student"], "noun", 8.0, ["学", "生"], ["ichi1", "news1", "nf02"]),
+            W("校", "こう", ["school"], "noun", 8.5, ["校"], ["news1"]),
+            W("生", "せい", ["life"], "noun", 1.0, ["生"], ["news2"]),
+            W("先生", "せんせい", ["teacher"], "noun", 9.5, ["先", "生"], ["ichi1", "news1", "nf01"]),
+        ]
+        levels = {"学": 1, "校": 1, "生": 1, "先": 2}
+        chosen = vocab.select_by_level(words, levels, {1: ["学", "校", "生"], 2: ["先"]}, per_level=2)
+        # Level 1: 学校 covers 学 and 校; 生's only own word scores too low, so 学生 fills the quota.
+        self.assertEqual([w.word for w in chosen[1]], ["学校", "学生"])
+        # 先生 waits for level 2, where 先 is taught.
+        self.assertEqual([w.word for w in chosen[2]], ["先生"])
+        # A word never repeats a meaning already used on its level (校 "school").
+        self.assertNotIn("校", [w.word for w in chosen[1]])
 
 
 if __name__ == "__main__":

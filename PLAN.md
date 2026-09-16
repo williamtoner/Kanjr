@@ -308,7 +308,17 @@ polish. Real use surfaces the right bugs.
   clip while the question is up; the service worker caches them cache-first
   for offline use. The phone's speech synthesiser remains only as a fallback.
 
-### Open threads (as of 2026-09-12)
+- **2026-09-16** Vocabulary layer: `pipeline/vocab.py` picks 2,815 common
+  JMdict words spelt only with jōyō kanji, one level's worth per level (a
+  word lives at the level of its last kanji; every kanji taught there gets
+  its best word first). Words are items of type `vocab` with `parts` = their
+  kanji, so the usual unlock rule applies; lessons interleave words one-for-
+  one with kanji/radicals; the Dex has a Words tab with its own numbering;
+  word cards show class and composition. Voice clips regenerated with the
+  Kokoro neural voice (the Open JTalk voice was judged robotic); clips now
+  cover words too.
+
+### Open threads (as of 2026-09-16)
 
 1. **Mnemonics stop at level 10** (340 of 2,231 items). Levels 11–20 are the
    next content batch; keywords and decompositions beyond level 10 are
@@ -319,3 +329,10 @@ polish. Real use surfaces the right bugs.
 3. **Photo capture**: still the weakest feature on real photographs. The next
    step needs real photos from the user to benchmark against, or a switch to
    a scene-text model (PaddleOCR via ONNX) or a cloud recogniser.
+4. **Voice**: Kokoro `jf_alpha` shipped unheard; a sampler of its five
+   Japanese voices was sent to the user. VOICEVOX would be the next step up
+   but its model download requires agreeing to per-character terms, which is
+   the user's call.
+5. **Vocabulary quality**: selection is automatic from JMdict priority tags.
+   Odd picks (newspaper compounds, 上田-style place-like nouns) are possible;
+   an overrides file (`data/overrides/vocab.csv`) is the natural next step.

@@ -14,7 +14,7 @@
  * invalidate old caches.
  */
 
-const CACHE_VERSION = 'kanjr-v12';
+const CACHE_VERSION = 'kanjr-v13';
 const SHELL = [
   './',
   './index.html',
@@ -104,7 +104,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   if (url.origin === self.location.origin) {
-    event.respondWith(/\/voices\/[0-9a-f]+\.mp3$/.test(url.pathname) ? cacheFirst(request) : networkFirst(request));
+    event.respondWith(/\/voices\/(w-)?[0-9a-f-]+\.mp3$/.test(url.pathname) ? cacheFirst(request) : networkFirst(request));
   }
 });
 

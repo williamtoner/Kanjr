@@ -122,7 +122,14 @@ function greeting() {
 
 function dexNumberOf(id) {
   if (!app.dex) app.dex = game.dexNumbers(app.data);
-  return app.dex[id] || 0;
+  if (!app.wordDex) app.wordDex = game.wordNumbers(app.data);
+  return app.dex[id] || app.wordDex[id] || 0;
+}
+
+/** "No. 0012" for kanji and radicals, "W. 0012" for words. */
+function dexLabel(id) {
+  const it = itemOf(id);
+  return it && it.type === 'vocab' ? game.wordNo(dexNumberOf(id)) : game.dexNo(dexNumberOf(id));
 }
 
 function rarityBadge(item) {
@@ -251,12 +258,38 @@ function wildCount() {
   return n;
 }
 
+function wordsCaught() {
+  let n = 0;
+  for (const id in app.progress.items) if (app.progress.items[id].stage > 0 && app.data.items[id] && app.data.items[id].type === 'vocab') n++;
+  return n;
+}
+
 function itemOf(id) {
   return app.data && app.data.items ? app.data.items[id] : null;
 }
 
 function typeLabel(item) {
-  return item.type === 'radical' ? 'Radical' : 'Kanji';
+  return item.type === 'radical' ? 'Radical' : item.type === 'vocab' ? 'Word' : 'Kanji';
+}
+
+const KIND_LABELS = { noun: 'Noun', verb: 'Verb', adjective: 'Adjective', adverb: 'Adverb', expression: 'Expression', word: 'Word' };
+function kindLabel(kind) { return KIND_LABELS[kind] || ''; }
+
+/** "6 kanji · 4 words" for a list of ids (radicals count with the kanji). */
+function describeIds(ids) {
+  let words = 0;
+  for (const id of ids) if (itemOf(id) && itemOf(id).type === 'vocab') words++;
+  const kanji = ids.length - words;
+  const bits = [];
+  if (kanji) bits.push(plural(kanji, 'kanji', 'kanji'));
+  if (words) bits.push(plural(words, 'word'));
+  return bits.join(' · ') || '0 items';
+}
+
+/** Glyph sizing: words get a smaller face so several characters fit. */
+function glyphClass(item) {
+  if (!item || item.type !== 'vocab') return '';
+  return Array.from(item.char).length >= 4 ? 'is-word is-long' : 'is-word';
 }
 
 function itemHref(id) {
@@ -321,8 +354,13 @@ function voiceContext() {
   return speech.ctx;
 }
 
+function clipKey(item) {
+  const hex = Array.from(item.char).map((c) => c.codePointAt(0).toString(16)).join('-');
+  return item.type === 'vocab' ? `w-${hex}` : hex;
+}
+
 async function loadClip(item) {
-  const key = item.char.codePointAt(0).toString(16);
+  const key = clipKey(item);
   if (speech.clips.has(key)) return speech.clips.get(key);
   const p = (async () => {
     const ctx = voiceContext();
@@ -338,7 +376,7 @@ async function loadClip(item) {
 
 /** Fetch and decode the clip while the question is on screen, so the answer is spoken instantly. */
 function preloadVoice(item) {
-  if (!item || item.type !== 'kanji' || app.progress.settings.speakKanji !== true) return;
+  if (!item || (item.type !== 'kanji' && item.type !== 'vocab') || app.progress.settings.speakKanji !== true) return;
   loadClip(item);
 }
 
@@ -349,7 +387,7 @@ function preloadVoice(item) {
  * back to the phone's speech synthesiser when no clip is available.
  */
 async function speakItem(item) {
-  if (!item || item.type !== 'kanji') return;
+  if (!item || (item.type !== 'kanji' && item.type !== 'vocab')) return;
   if (app.progress.settings.speakKanji !== true) return;
   try {
     const buf = await loadClip(item);
@@ -616,6 +654,10 @@ function chipList(ids, opts) {
 function mnemonicBlock(item, note) {
   const own = note ? `<div class="mnemonic mnemonic-note"><strong>Your note:</strong> ${esc(note)}</div>` : '';
   if (item.mnemonic) return `<div class="mnemonic">${esc(item.mnemonic)}</div>${own}`;
+  if (item.type === 'vocab') {
+    const made = (item.parts || []).map((pid) => itemOf(pid)).filter(Boolean).map((k) => `<span class="jp">${esc(k.char)}</span> <em>${esc(k.name)}</em>`).join(' + ');
+    return `<div class="mnemonic">${made} → <strong>${esc(item.name)}</strong>. Read the kanji you know in order; the meanings usually add up.</div>${own}`;
+  }
   const hint = item.type === 'radical' && item.note ? esc(item.note) : 'No mnemonic written yet — add your own note on the item page.';
   return `<div class="mnemonic is-empty">${hint}</div>${own}`;
 }
@@ -763,7 +805,7 @@ function mountQuiz(root, opts) {
           <div class="glyph-type">${typeBadge(item)}</div>
           ${legendaryNow ? `<span class="legendary-badge shiny-tag">✦ Legendary</span><span class="sparkle" style="left:10%;top:28%">✦</span><span class="sparkle" style="right:12%;top:55%;animation-delay:.4s">✦</span><span class="sparkle" style="left:24%;bottom:16%;animation-delay:.9s">✦</span><span class="sparkle" style="right:26%;top:22%;animation-delay:1.3s">✦</span>` : ''}
           ${shinyNow ? `<span class="shiny-badge shiny-tag">✦ Shiny</span><span class="sparkle" style="left:12%;top:30%">✦</span><span class="sparkle" style="right:14%;top:58%;animation-delay:.5s">✦</span><span class="sparkle" style="left:22%;bottom:18%;animation-delay:1s">✦</span>` : ''}
-          <div class="glyph ${esc(glyphFont(item, session))}">${esc(item.char)}</div>
+          <div class="glyph ${esc(glyphFont(item, session))} ${glyphClass(item)}">${esc(item.char)}</div>
           <div class="glyph-prompt">${typeLabel(item)} <strong>meaning</strong>${wrongSoFar ? ` · <span class="muted">missed ${wrongSoFar}×</span>` : ''}${view.phase === 'feedback' ? ' · <span class="muted">tap to continue</span>' : ''}</div>
         </div>
 
@@ -814,7 +856,7 @@ function mountQuiz(root, opts) {
   function hintText(item) {
     if (view.phase === 'ask') {
       if (view.collision) {
-        return `That's another ${item.type} (${esc(view.collision.char)} <strong>${esc(view.collision.name)}</strong>). Try once more.`;
+        return `That's another ${typeLabel(item).toLowerCase()} (${esc(view.collision.char)} <strong>${esc(view.collision.name)}</strong>). Try once more.`;
       }
       return `<kbd>Enter</kbd> to check${opts.onWrapUp ? ' · <kbd>Esc</kbd> to wrap up' : ''}`;
     }
@@ -836,7 +878,7 @@ function mountQuiz(root, opts) {
           <a class="pill" href="${itemHref(item.id)}">Item page ↗</a></div>
         ${showDetail ? `
           ${mnemonicBlock(item, note)}
-          ${item.parts && item.parts.length ? `<div class="section-label">Parts</div>${chipList(item.parts)}` : ''}
+          ${item.parts && item.parts.length ? `<div class="section-label">${item.type === 'vocab' ? 'Made of' : 'Parts'}</div>${chipList(item.parts)}` : ''}
           ${item.type === 'radical' && item.used_in && item.used_in.length ? `<div class="section-label">Used in</div>${chipList(item.used_in.slice(0, 8))}` : ''}
           ${view.info && item.examples && item.examples.length ? `<div class="section-label">Examples</div>${examplesList(item)}` : ''}
         ` : ''}
@@ -1012,7 +1054,7 @@ function renderHome() {
   const upcoming = fc.hours.reduce((a, b) => a + b, 0);
 
   const lessonSub = lessons.length
-    ? `${plural(lessons.length, 'kanji', 'kanji')} to sight`
+    ? `${describeIds(lessons)} to sight`
     : blockReason === 'apprentice-cap' ? 'Apprentice cap reached'
       : blockReason === 'daily-cap' ? 'Done for today'
         : blockReason === 'nothing-unlocked' ? 'Nothing unlocked yet' : 'None right now';
@@ -1026,7 +1068,7 @@ function renderHome() {
         ${ring(lp.ratio, `Lv ${level}`, pct(lp.ratio))}
         <div class="hero-text">
           <h1>${greeting()}, trainer</h1>
-          <p class="muted"><strong>${caughtCount()}</strong> of ${kanjiTotal} kanji caught${shinyCount() ? ` · <span class="shiny-badge">✦ ${shinyCount()} shiny</span>` : ''}${legendaryCount() ? ` · <span class="legendary-badge">✦ ${legendaryCount()} legendary</span>` : ''} · Level ${level}: ${lp.guru} of ${lp.total} at Guru</p>
+          <p class="muted"><strong>${caughtCount()}</strong> of ${kanjiTotal} kanji caught${wordsCaught() ? ` · ${wordsCaught()} words` : ''}${shinyCount() ? ` · <span class="shiny-badge">✦ ${shinyCount()} shiny</span>` : ''}${legendaryCount() ? ` · <span class="legendary-badge">✦ ${legendaryCount()} legendary</span>` : ''} · Level ${level}: ${lp.guru} of ${lp.total} at Guru</p>
           <div class="btn-row">
             <span class="streak" title="Days in a row with lessons or reviews"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2s.7 3.2-1.2 5.3C10.6 9.2 8 10.4 8 14a4.5 4.5 0 0 0 9 0c0-1.6-.7-2.8-1.4-3.7-.2 1.2-.9 1.9-1.6 2.2.5-2.6-.3-5.5-.5-10.5zM12 22a7 7 0 0 1-7-7c0-3.3 1.8-5.1 3.4-6.6-.2 1.5.1 2.7.9 3.4A5.5 5.5 0 0 0 11 4.2c3 1.2 8 4.5 8 10.8a7 7 0 0 1-7 7z"/></svg> ${plural(streak, 'day')} streak</span>
             <a class="btn btn-sm btn-ghost" href="#/levels/${level}">See level ${level} →</a>
@@ -1160,10 +1202,11 @@ function renderLessonCard(L) {
       ${lessonDots(L, false)}
       <div class="card glyph-card lesson-card type-${esc(item.type)} fade-in" data-role="card">
         <div class="glyph-type">${typeBadge(item)} <span class="badge stage-locked">New</span></div>
-        <div class="glyph">${esc(item.char)}</div>
+        <div class="glyph ${glyphClass(item)}">${esc(item.char)}</div>
         <div class="lesson-name">${esc(item.name)}</div>
         ${alt.length ? `<div class="lesson-alt">also: ${esc(alt.join(', '))}</div>` : ''}
         <div class="lesson-facts">
+          ${item.kind ? `<span class="pill">${esc(kindLabel(item.kind))}</span>` : ''}
           ${item.strokes ? `<span class="pill">${plural(item.strokes, 'stroke')}</span>` : ''}
           ${item.grade ? `<span class="pill">Grade ${esc(item.grade)}</span>` : ''}
           ${item.jlpt ? `<span class="pill">JLPT N${esc(item.jlpt)}</span>` : ''}
@@ -1174,7 +1217,7 @@ function renderLessonCard(L) {
         <div class="lesson-body">
           ${item.type === 'radical' && item.note ? `<div class="section-label">About</div><p class="muted">${esc(item.note)}</p>` : ''}
           ${item.parts && item.parts.length ? `
-            <div class="section-label">Parts <span class="muted" style="font-weight:500;text-transform:none;letter-spacing:0">(tap to peek)</span></div>
+            <div class="section-label">${item.type === 'vocab' ? 'Made of' : 'Parts'} <span class="muted" style="font-weight:500;text-transform:none;letter-spacing:0">(tap to peek)</span></div>
             <div class="chips">${item.parts.map((pid) => {
               const part = itemOf(pid);
               return part ? `<button class="chip type-${esc(part.type)}" data-peek="${esc(pid)}" type="button"><span class="chip-glyph">${esc(part.char)}</span>${esc(part.name)}</button>` : '';
@@ -1184,6 +1227,7 @@ function renderLessonCard(L) {
           ${mnemonicBlock(item, app.progress.notes[id])}
           ${item.type === 'kanji' && item.examples && item.examples.length ? `<div class="section-label">Examples</div>${examplesList(item)}` : ''}
           ${item.type === 'radical' && item.used_in && item.used_in.length ? `<div class="section-label">Used in</div>${chipList(item.used_in.slice(0, 10))}` : ''}
+          ${item.type === 'kanji' && item.words && item.words.length ? `<div class="section-label">Words to come</div>${chipList(item.words.slice(0, 6), { locked: true })}` : ''}
         </div>
       </div>
       <div class="lesson-nav">
@@ -1378,13 +1422,14 @@ function renderItem(id) {
     <section class="screen stack item-page">
       <div class="card">
         <div class="item-head">
-          <div class="glyph${entry && entry.legendary ? ' is-legendary' : entry && entry.shiny ? ' is-shiny' : ''}">${esc(item.char)}</div>
+          <div class="glyph ${glyphClass(item)}${entry && entry.legendary ? ' is-legendary' : entry && entry.shiny ? ' is-shiny' : ''}">${esc(item.char)}</div>
           <div class="item-title">
-            <div class="btn-row" style="margin-bottom:6px"><span class="dexno">${esc(game.dexNo(dexNumberOf(id)))}</span> ${typeBadge(item)} ${rarityBadge(item)} ${stageBadge(stage)} ${entry && entry.legendary ? '<span class="legendary-badge">✦ Legendary</span>' : entry && entry.shiny ? '<span class="shiny-badge">✦ Shiny</span>' : ''}${entry && entry.wild ? `<span class="wild-badge" title="Caught in the wild">Wild · ${esc(fmtDate(entry.wild + 'T12:00:00'))}</span>` : ''}${!entry && !unlocked ? '<span class="badge stage-locked">Unseen</span>' : ''}${isLeech ? '<span class="badge leech" title="Missed repeatedly — try rewriting the mnemonic in your own words">Leech</span>' : ''}</div>
+            <div class="btn-row" style="margin-bottom:6px"><span class="dexno">${esc(dexLabel(id))}</span> ${typeBadge(item)} ${rarityBadge(item)} ${stageBadge(stage)} ${entry && entry.legendary ? '<span class="legendary-badge">✦ Legendary</span>' : entry && entry.shiny ? '<span class="shiny-badge">✦ Shiny</span>' : ''}${entry && entry.wild ? `<span class="wild-badge" title="Caught in the wild">Wild · ${esc(fmtDate(entry.wild + 'T12:00:00'))}</span>` : ''}${!entry && !unlocked ? '<span class="badge stage-locked">Unseen</span>' : ''}${isLeech ? '<span class="badge leech" title="Missed repeatedly — try rewriting the mnemonic in your own words">Leech</span>' : ''}</div>
             <h1>${esc(item.name)}</h1>
             ${alt.length ? `<p class="muted">also: ${esc(alt.join(', '))}</p>` : ''}
             <div class="item-facts">
               <a class="pill" href="#/levels/${esc(item.level)}">Level ${esc(item.level)}</a>
+              ${item.kind ? `<span class="pill">${esc(kindLabel(item.kind))}</span>` : ''}
               ${item.strokes ? `<span class="pill" title="Stroke count">Power ${esc(item.strokes)}</span>` : ''}
               ${item.grade ? `<span class="pill">Grade ${esc(item.grade)}</span>` : ''}
               ${item.jlpt ? `<span class="pill">JLPT N${esc(item.jlpt)}</span>` : ''}
@@ -1431,9 +1476,10 @@ function renderItem(id) {
       </div>
 
       <div class="grid-2">
-        <div class="card"><h2>Parts</h2>${chipList(item.parts || [])}</div>
-        <div class="card"><h2>Used in <span class="muted">${(item.used_in || []).length}</span></h2>${chipList((item.used_in || []).slice(0, 40))}</div>
+        <div class="card"><h2>${item.type === 'vocab' ? 'Made of' : 'Parts'}</h2>${chipList(item.parts || [])}</div>
+        ${item.type === 'vocab' ? '' : `<div class="card"><h2>Used in <span class="muted">${(item.used_in || []).length}</span></h2>${chipList((item.used_in || []).slice(0, 40))}</div>`}
       </div>
+      ${item.type === 'kanji' && item.words && item.words.length ? `<div class="card"><h2>Words <span class="muted">${item.words.length}</span></h2>${chipList(item.words.slice(0, 40))}</div>` : ''}
 
       ${item.examples && item.examples.length ? `<div class="card"><h2>Examples</h2>${examplesList(item)}</div>` : ''}
     </section>`;
@@ -1541,7 +1587,7 @@ function renderLevel(n) {
   const next = data.levels.find((l) => l.level === n + 1);
   const t = now();
 
-  const tiles = lv.items.map((id) => {
+  const tileFor = (id) => {
     const it = itemOf(id);
     if (!it) return '';
     const stage = engine.stageOf(p, id);
@@ -1550,7 +1596,9 @@ function renderLevel(n) {
     return `<a class="tile stage-${srs.groupOf(stage)} st-${stage} type-${esc(it.type)}${entry && entry.legendary ? ' is-legendary' : entry && entry.shiny ? ' is-shiny' : ''}${entry && entry.wild ? ' is-wild' : ''}" href="${itemHref(id)}" ${entry && (entry.shiny || entry.legendary) ? `style="--d:${(game.hash32(id) % 24) / 8}s"` : ''}
       title="${esc(it.name)} · ${esc(srs.stageName(stage))}${dueSoon ? ' · due now' : ''}">
       <span class="tile-mark" aria-hidden="true"></span>${esc(it.char)}<span class="tile-name">${esc(it.name)}</span></a>`;
-  }).join('');
+  };
+  const tiles = lv.items.map(tileFor).join('');
+  const wordTiles = (lv.vocab || []).map(tileFor).join('');
 
   main.innerHTML = `
     <section class="screen stack">
@@ -1573,6 +1621,7 @@ function renderLevel(n) {
         </div>
       </div>
       <div class="tiles">${tiles}</div>
+      ${wordTiles ? `<h2 style="margin:8px 0 0">Words <span class="muted">${lv.vocab.length}</span></h2><p class="muted small" style="margin:0 0 -4px">Unlocked once every kanji in the word reaches Apprentice ${esc(p.settings.unlockStage)}.</p><div class="tiles is-words">${wordTiles}</div>` : ''}
     </section>`;
   app.keyHandler = (e) => {
     if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
@@ -1588,8 +1637,8 @@ function renderLevel(n) {
 const GRID_PREFS_KEY = 'kanjr.gridPrefs';
 
 function gridPrefs() {
-  try { return Object.assign({ kanjiOnly: true, byLevel: false, reveal: false }, JSON.parse(localStorage.getItem(GRID_PREFS_KEY) || '{}')); }
-  catch (_) { return { kanjiOnly: true, byLevel: false, reveal: false }; }
+  try { return Object.assign({ kanjiOnly: true, byLevel: false, reveal: false, tab: 'kanji' }, JSON.parse(localStorage.getItem(GRID_PREFS_KEY) || '{}')); }
+  catch (_) { return { kanjiOnly: true, byLevel: false, reveal: false, tab: 'kanji' }; }
 }
 
 function saveGridPrefs(prefs) {
@@ -1623,12 +1672,14 @@ function renderGrid() {
   const selecting = gridSelect.active;
   const searchQ = dexSearch.q;
   const hits = dexHits(searchQ);
+  const words = prefs.tab === 'words';
+  const noun = words ? 'words' : 'kanji';
 
   const counts = { locked: 0, apprentice: 0, guru: 0, master: 0, enlightened: 0, burned: 0 };
   let total = 0;
   const cells = [];
   for (const lv of data.levels) {
-    const ids = lv.items.filter((id) => !prefs.kanjiOnly || data.items[id].type === 'kanji');
+    const ids = words ? (lv.vocab || []) : lv.items.filter((id) => !prefs.kanjiOnly || data.items[id].type === 'kanji');
     if (!ids.length) continue;
     if (prefs.byLevel) cells.push(`<a class="kgrid-level" href="#/levels/${lv.level}" title="Level ${lv.level}">${lv.level}</a>`);
     for (const id of ids) {
@@ -1643,9 +1694,9 @@ function renderGrid() {
       const selected = selectable && gridSelect.ids.has(id);
       const hidden = stage === 0 && !prefs.reveal && !selecting;
       const entry2 = p.items[id];
-      cells.push(`<a class="kcell stage-${group} st-${stage}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}${hidden ? ' is-unseen' : ''}${entry2 && entry2.legendary ? ' is-legendary' : entry2 && entry2.shiny ? ' is-shiny' : ''}${entry2 && entry2.wild ? ' is-wild' : ''}${searchQ && hits.has(id) ? ' is-hit' : ''}"
+      cells.push(`<a class="kcell stage-${group} st-${stage}${due ? ' is-due' : ''}${it.type === 'radical' ? ' type-radical' : it.type === 'vocab' ? ' type-vocab' : ''}${selectable ? ' is-selectable' : ''}${selected ? ' is-selected' : ''}${selecting && !selectable ? ' is-dim' : ''}${hidden ? ' is-unseen' : ''}${entry2 && entry2.legendary ? ' is-legendary' : entry2 && entry2.shiny ? ' is-shiny' : ''}${entry2 && entry2.wild ? ' is-wild' : ''}${searchQ && hits.has(id) ? ' is-hit' : ''}"
         href="${itemHref(id)}" data-id="${esc(id)}" ${entry2 && (entry2.shiny || entry2.legendary) ? `style="--d:${(game.hash32(id) % 24) / 8}s"` : ''} ${selectable ? 'role="checkbox" aria-checked="' + selected + '"' : ''}
-        title="${hidden ? `Unseen · ${game.dexNo(dexNumberOf(id))} · Lv ${lv.level}` : `${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${entry2 && entry2.legendary ? ' · legendary' : entry2 && entry2.shiny ? ' · shiny' : ''}${entry2 && entry2.wild ? ` · wild-caught ${entry2.wild}` : ''}${due ? ' · due now' : ''} · Lv ${lv.level}`}">${hidden ? '' : esc(it.char)}</a>`);
+        title="${hidden ? `Unseen · ${dexLabel(id)} · Lv ${lv.level}` : `${esc(it.char)} · ${esc(it.name)} · ${esc(srs.stageName(stage))}${entry2 && entry2.legendary ? ' · legendary' : entry2 && entry2.shiny ? ' · shiny' : ''}${entry2 && entry2.wild ? ` · wild-caught ${entry2.wild}` : ''}${due ? ' · due now' : ''} · Lv ${lv.level}`}">${hidden ? '' : esc(it.char)}</a>`);
     }
   }
   const learned = total - counts.locked;
@@ -1657,12 +1708,16 @@ function renderGrid() {
     <section class="screen stack">
       <div class="screen-head">
         <h1>Kanjidex</h1>
-        <span class="muted small">${learned} of ${total} ${prefs.kanjiOnly ? 'kanji' : 'items'} caught · ${pct(total ? learned / total : 0)}${shinyCount() ? ` · ✦ ${shinyCount()} shiny` : ''} · <a href="#/levels">levels</a></span>
+        <span class="muted small">${learned} of ${total} ${words ? 'words' : prefs.kanjiOnly ? 'kanji' : 'items'} caught · ${pct(total ? learned / total : 0)}${!words && shinyCount() ? ` · ✦ ${shinyCount()} shiny` : ''} · <a href="#/levels">levels</a></span>
+      </div>
+      <div class="dex-tabs" role="tablist" aria-label="Dex sections">
+        <button class="dex-tab" role="tab" type="button" data-tab="kanji" aria-selected="${!words}">Kanji</button>
+        <button class="dex-tab" role="tab" type="button" data-tab="words" aria-selected="${words}">Words</button>
       </div>
       <div class="card kgrid-controls">
         <div class="legend">${legend}</div>
         <div class="kgrid-toggles">
-          <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="kanjiOnly" ${prefs.kanjiOnly ? 'checked' : ''}><span class="track"></span></span>Kanji only</label>
+          ${words ? '' : `<label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="kanjiOnly" ${prefs.kanjiOnly ? 'checked' : ''}><span class="track"></span></span>Kanji only</label>`}
           <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="byLevel" ${prefs.byLevel ? 'checked' : ''}><span class="track"></span></span>Level numbers</label>
           <label class="kgrid-toggle"><span class="switch"><input type="checkbox" data-pref="reveal" ${prefs.reveal ? 'checked' : ''}><span class="track"></span></span>Reveal unseen</label>
         </div>
@@ -1671,7 +1726,7 @@ function renderGrid() {
         <label class="sr-only" for="dex-q">Search the dex</label>
         <input type="text" id="dex-q" placeholder="Search in English or by kanji, e.g. shop" autocomplete="off" value="${esc(searchQ)}">
         ${searchQ ? `<button class="btn btn-sm btn-ghost" type="button" data-act="dex-clear">Clear</button>` : ''}
-        ${searchQ ? `<div class="dex-hits" style="flex-basis:100%">${hits.size ? Array.from(hits).sort((a, b) => data.items[a].level - data.items[b].level).slice(0, 40).map((id) => { const it = data.items[id]; const st = engine.stageOf(p, id); return `<a class="dex-hit${st === 0 ? ' is-unseen' : ''}" href="${itemHref(id)}"><span class="jp">${esc(it.char)}</span>${esc(it.name)}<span class="muted">· Lv ${it.level}${st ? ` · ${esc(srs.stageName(st))}` : ''}</span></a>`; }).join('') + (hits.size > 40 ? `<span class="muted small">and ${hits.size - 40} more</span>` : '') : '<span class="muted small">No kanji with that meaning. Try another word.</span>'}</div>` : ''}
+        ${searchQ ? `<div class="dex-hits" style="flex-basis:100%">${hits.size ? Array.from(hits).sort((a, b) => data.items[a].level - data.items[b].level).slice(0, 40).map((id) => { const it = data.items[id]; const st = engine.stageOf(p, id); return `<a class="dex-hit${st === 0 ? ' is-unseen' : ''}" href="${itemHref(id)}"><span class="jp">${esc(it.char)}</span>${esc(it.name)}<span class="muted">· Lv ${it.level}${st ? ` · ${esc(srs.stageName(st))}` : ''}</span></a>`; }).join('') + (hits.size > 40 ? `<span class="muted small">and ${hits.size - 40} more</span>` : '') : '<span class="muted small">Nothing with that meaning. Try another word.</span>'}</div>` : ''}
       </div>
       <div class="kgrid-bar" aria-hidden="true">
         ${['burned', 'enlightened', 'master', 'guru', 'apprentice'].map((g) => `<i class="stage-${g}" style="width:${total ? (counts[g] / total) * 100 : 0}%"></i>`).join('')}
@@ -1680,14 +1735,14 @@ function renderGrid() {
       <div class="card kgrid-select fade-in">
         <div class="kgrid-select-head">
           <div>
-            <h2>Mark kanji you already know as caught</h2>
-            <p class="muted small">Click boxes, drag across them, shift-click a range, click a level number to take the whole level, or type the kanji below. Right-click any box for a quick menu. Marked kanji go straight into your reviews at Apprentice 1, do not use today's lesson allowance, and do not count against the apprentice cap. Lessons carry on from the remaining kanji in order.</p>
+            <h2>Mark ${noun} you already know as caught</h2>
+            <p class="muted small">Click boxes, drag across them, shift-click a range, click a level number to take the whole level, or type the ${noun} below. Right-click any box for a quick menu. Marked ${noun} go straight into your reviews at Apprentice 1, do not use today's lesson allowance, and do not count against the apprentice cap. Lessons carry on from the remaining ${noun} in order.</p>
           </div>
           <button class="btn btn-ghost btn-sm" type="button" data-act="cancel-select">Cancel</button>
         </div>
         <div class="kgrid-select-row">
           <label class="sr-only" for="kgrid-paste">Type or paste kanji</label>
-          <input type="text" id="kgrid-paste" class="jp" placeholder="Type or paste kanji, e.g. 日本人" autocomplete="off" spellcheck="false">
+          <input type="text" id="kgrid-paste" class="jp" placeholder="${words ? 'Type words separated by spaces, e.g. 学校 先生' : 'Type or paste kanji, e.g. 日本人'}" autocomplete="off" spellcheck="false">
           <span class="muted small" data-role="paste-note"></span>
         </div>
       </div>` : `
@@ -1695,7 +1750,7 @@ function renderGrid() {
         <button class="btn btn-sm" type="button" data-act="start-select">Already know some? Mark them caught</button>
         <a class="btn btn-sm btn-primary" href="#/scan">Catch from a photo</a>
       </div>`}
-      <div class="kgrid${prefs.byLevel ? ' is-by-level' : ''}${selecting ? ' is-selecting' : ''}${searchQ && hits.size ? ' is-searching' : ''}">${cells.join('')}</div>
+      <div class="kgrid${words ? ' is-words' : ''}${prefs.byLevel ? ' is-by-level' : ''}${selecting ? ' is-selecting' : ''}${searchQ && hits.size ? ' is-searching' : ''}">${cells.join('')}</div>
       ${selecting ? `
       <div class="kgrid-actionbar" role="region" aria-label="Selection">
         <span data-role="sel-count">${gridSelect.ids.size} selected</span>
@@ -1710,6 +1765,14 @@ function renderGrid() {
     const next = gridPrefs();
     next[box.dataset.pref] = box.checked;
     saveGridPrefs(next);
+    renderGrid();
+  }));
+  $$('.dex-tab', main).forEach((btn) => btn.addEventListener('click', () => {
+    const next = gridPrefs();
+    if (next.tab === btn.dataset.tab) return;
+    next.tab = btn.dataset.tab;
+    saveGridPrefs(next);
+    gridSelect.ids.clear();
     renderGrid();
   }));
 
@@ -1758,7 +1821,7 @@ function renderGrid() {
     if (lvl) {
       e.preventDefault();
       const n = Number(lvl.textContent);
-      const ids = Object.keys(data.items).filter((id) => data.items[id].level === n && (!prefs.kanjiOnly || data.items[id].type === 'kanji'));
+      const ids = Object.keys(data.items).filter((id) => data.items[id].level === n && (words ? data.items[id].type === 'vocab' : (!prefs.kanjiOnly || data.items[id].type === 'kanji')));
       const allOn = ids.every((id) => gridSelect.ids.has(id) || engine.stageOf(p, id) > 0);
       for (const id of ids) setSelected(id, !allOn);
       syncBar();
@@ -1768,7 +1831,7 @@ function renderGrid() {
     if (!cell) return;
     e.preventDefault();
     if (paint.moved) { paint.moved = false; return; }   // a drag already handled it
-    if (!cell.classList.contains('is-selectable')) { toast('That kanji is already in circulation.'); return; }
+    if (!cell.classList.contains('is-selectable')) { toast(`That ${words ? 'word' : 'kanji'} is already in circulation.`); return; }
     const id = cell.dataset.id;
     if (e.shiftKey && lastClicked) {
       const all = cellsInOrder();
@@ -1805,10 +1868,12 @@ function renderGrid() {
   window.addEventListener('pointercancel', stopPaint);
 
   paste.addEventListener('input', () => {
-    const chars = Array.from(paste.value).filter((c) => /[\u3400-\u9fff]/.test(c));
+    const chars = words
+      ? paste.value.split(/[\s,、，。]+/).filter((w) => /[\u3400-\u9fff]/.test(w))
+      : Array.from(paste.value).filter((c) => /[\u3400-\u9fff]/.test(c));
     let added = 0, known = 0, missing = 0;
     for (const c of chars) {
-      const id = `k:${c}`;
+      const id = words ? `v:${c}` : `k:${c}`;
       if (!data.items[id]) { missing += 1; continue; }
       if (engine.stageOf(p, id) > 0) { known += 1; continue; }
       if (!gridSelect.ids.has(id) && setSelected(id, true)) added += 1;
@@ -1816,7 +1881,7 @@ function renderGrid() {
     const bits = [];
     if (added) bits.push(`${added} selected`);
     if (known) bits.push(`${known} already in circulation`);
-    if (missing) bits.push(`${missing} not in the jōyō set`);
+    if (missing) bits.push(`${missing} not in the ${words ? 'word list' : 'jōyō set'}`);
     pasteNote.textContent = bits.join(' · ');
     if (added) {
       const first = grid.querySelector('.kcell.is-selected');
@@ -1831,7 +1896,7 @@ function renderGrid() {
     const ids = Array.from(gridSelect.ids);
     if (!ids.length) return;
     const ok = await confirmDialog({
-      title: `Add ${plural(ids.length, 'kanji', 'kanji')} to circulation?`,
+      title: `Add ${describeIds(ids)} to circulation?`,
       body: `<div style="margin-bottom:10px">${chipList(ids.slice(0, 40))}${ids.length > 40 ? `<span class="muted small"> and ${ids.length - 40} more</span>` : ''}</div>
              <p class="muted small">They start at Apprentice 1 and are due for review straight away, so you can confirm them now. This does not use today's lesson allowance.</p>`,
       confirmLabel: 'Add to circulation',
@@ -1840,7 +1905,7 @@ function renderGrid() {
     setProgress(engine.startManually(app.progress, ids, now()), { immediate: true });
     backupIfNeeded(true);
     gridSelect.active = false; gridSelect.ids.clear();
-    toast(`${plural(ids.length, 'kanji', 'kanji')} caught — they are in your encounters now`, 'ok');
+    toast(`${describeIds(ids)} caught — they are in your encounters now`, 'ok');
     renderGrid();
   });
   app.keyHandler = (e) => { if (e.key === 'Escape') { gridSelect.active = false; gridSelect.ids.clear(); renderGrid(); } };
@@ -2427,6 +2492,7 @@ function renderStats() {
   const proj = engine.projection(data, p, t);
   const heat = engine.heatmap(p, t, 53);
   const kanjiStarted = Object.keys(p.items).filter((id) => p.items[id].stage > 0 && data.items[id] && data.items[id].type === 'kanji').length;
+  const wordTotal = Object.values(data.items).filter((i) => i.type === 'vocab').length;
   const kanjiTotal = Object.values(data.items).filter((i) => i.type === 'kanji').length;
 
   main.innerHTML = `
@@ -2468,6 +2534,7 @@ function renderStats() {
           <h2>Projected finish</h2>
           <dl class="kv">
             <dt>Kanji started</dt><dd>${kanjiStarted} of ${kanjiTotal} (${pct(kanjiTotal ? kanjiStarted / kanjiTotal : 0)})</dd>
+            <dt>Words started</dt><dd>${wordsCaught()} of ${wordTotal}</dd>
             <dt>Your pace</dt><dd>${proj.rate ? `${proj.rate.toFixed(1)} new items a day <span class="muted">(last ${plural(proj.daysObserved, 'day')})</span>` : '—'}</dd>
             <dt>All items at your pace</dt><dd>${proj.eta ? `${esc(fmtDate(proj.eta))} <span class="muted">(${Math.round((proj.eta - t) / 86400000)} days)</span>` : 'Start a few lessons to see a projection'}</dd>
             <dt>At ${proj.settingRate} a day</dt><dd>${proj.etaAtSetting ? `${esc(fmtDate(proj.etaAtSetting))} <span class="muted">(${Math.round((proj.etaAtSetting - t) / 86400000)} days)</span>` : '—'}</dd>

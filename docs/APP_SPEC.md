@@ -43,7 +43,7 @@ top-level await. Browser code may use modern syntax (ES2020).
 ```jsonc
 {
   "meta": { "built": "2026-09-08T18:00:00Z", "version": 1,
-            "counts": { "kanji": 2136, "radicals": 170, "levels": 72 } },
+            "counts": { "kanji": 2136, "radicals": 95, "vocab": 2815, "levels": 75 } },
   "items": {
     "k:日": {
       "id": "k:日", "type": "kanji", "char": "日",
@@ -55,7 +55,18 @@ top-level await. Browser code may use modern syntax (ES2020).
       "parts": ["r:汁", "k:毎"],          // component item ids (may be empty for atoms)
       "used_in": ["k:明", "k:時"],        // kanji this item appears in
       "mnemonic": "…",                    // may be "" if not written yet
-      "examples": [ { "word": "毎日", "gloss": "every day; daily" } ]
+      "examples": [ { "word": "毎日", "gloss": "every day; daily" } ],
+      "speak": "ひ",                       // hidden spoken form (never shown)
+      "words": ["v:毎日", "v:日本"]         // vocabulary built on this kanji
+    },
+    "v:弁当": {
+      "id": "v:弁当", "type": "vocab", "char": "弁当",
+      "name": "bento", "alt": ["Japanese box lunch"],   // JMdict glosses, cleaned
+      "level": 32, "pos": 41,             // level of its last-taught kanji; after the kanji
+      "kind": "noun",                     // noun | verb | adjective | adverb | expression
+      "freq": 1184,                       // rank among the chosen words (1 = most common)
+      "parts": ["k:弁", "k:当"],          // the kanji it is made of (unlock rule applies)
+      "used_in": [], "speak": "べんとう"
     },
     "r:汁": {
       "id": "r:汁", "type": "radical", "char": "氵",   // display glyph
@@ -66,13 +77,36 @@ top-level await. Browser code may use modern syntax (ES2020).
       "mnemonic": ""
     }
   },
-  "levels": [ { "level": 1, "items": ["r:…", "k:…", "…"] } ]   // in learning order
+  "levels": [ { "level": 1, "items": ["r:…", "k:…", "…"],    // in learning order
+                "vocab": ["v:…", "…"] } ]                    // the level's words
 }
 ```
 
 Radicals are components that are not themselves kanji in the set. When a
 kanji is a component of another kanji it is referenced directly (`k:寺`
 inside `k:時`), so there is never a duplicate radical/kanji pair.
+
+### Vocabulary (`pipeline/vocab.py`)
+
+Words come from JMdict: every entry with a common-word priority tag whose
+kanji spelling uses only jōyō kanji and kana (1–5 characters), skipping
+usually-kana, archaic, slang, abbreviated and proper-noun senses, suffixes,
+counters and the like, and any spelling flagged rare, irregular or
+search-only. Glosses are cleaned (bracketed parts dropped, fragments such as
+"(what) the heck" discarded); the first gloss is the name, the rest of the
+first sense (and later senses with the same word class) are alternates.
+Words may share a meaning with a kanji; only kanji/radical names are unique.
+
+A word belongs to the level of its last-taught kanji. Each level takes the
+number of kanji it teaches plus ten words: first the best word for every
+kanji taught there (coverage), then the highest-scoring remainder, never
+repeating a meaning within the level. The score favours the `ichi1`
+basic-vocabulary list over newspaper frequency, two-kanji compounds and
+inflecting kanji+okurigana words (見る, 大きい) over bare single kanji, and
+penalises newspaper-only entries; anything under 3.0 is dropped, so some
+rare kanji have no word. `freq` is the rank among chosen words and drives
+the same rarity tiers as kanji. Words never carry shiny or legendary
+encounters, quests or wild catches: those stay kanji things.
 
 ## SRS (srs.js)
 
@@ -234,22 +268,26 @@ dark is a warm brown (bg #2a241f) rather than near-black.
 
 Setting `speakKanji`. After every completed answer in encounters, drills and
 lesson quizzes, `speakItem` says the item's hidden spoken form. The pipeline
-stores `speak` per kanji: the first non-affix kun reading with okurigana
-joined (見.る → みる), else the first on reading (駅 → エキ). Readings are
-never shown in the UI.
+stores `speak` per kanji (the first non-affix kun reading with okurigana
+joined, 見.る → みる, else the first on reading, 駅 → エキ) and per word (its
+JMdict reading). Readings are never shown in the UI.
 
-Playback prefers a pre-recorded clip, `app/voices/<hex codepoint>.mp3`
-(one per kanji, mono 24 kHz 32 kbps, about 2 KB each, ~4 MB in all),
-generated offline by `pipeline/voices.py` with Open JTalk (Mei voice),
-peak-normalised and silence-trimmed with short fades. Clips are decoded once
-and played through the app's own AudioContext at full volume, so they mix
-over the music rather than ducking it (the phone's speech synthesiser on
-iOS ducks other audio and clips the first syllable). The clip for the item
-being asked is prefetched when the question renders, and the service worker
-serves clips cache-first so they work offline after the first play. If a clip
-is missing or cannot be decoded (e.g. the single-file build), the Web Speech
-API is used as a fallback with a local Japanese voice, volume 1 and a
-leading pause mark to protect the first syllable.
+Playback prefers a pre-recorded clip, `app/voices/<hex codepoints joined by
+'-'>.mp3` (65e5.mp3 for 日, w-5f01-5f53.mp3 for 弁当, words prefixed so a
+one-kanji word can read differently from its kanji; mono 24 kHz 40 kbps,
+~3 KB each), generated offline by `pipeline/voices.py` with the Kokoro
+neural voice (`jf_alpha`; Japanese phonemised by misaki with Open JTalk
+pitch accents), peak-normalised and silence-trimmed with a 60 ms lead-in.
+Clips are decoded once and played through the app's own AudioContext at
+full volume, so they mix over the music rather than ducking it (the phone's
+speech synthesiser on iOS ducks other audio and clips the first syllable).
+The clip for the item being asked is prefetched when the question renders,
+and the service worker serves clips cache-first so they work offline after
+the first play. If a clip is missing or cannot be decoded (e.g. the
+single-file build), the Web Speech API is used as a fallback with a local
+Japanese voice, volume 1 and a leading pause mark to protect the first
+syllable. `voices.py --sampler out.mp3` writes a comparison of the five
+Kokoro Japanese voices for choosing.
 
 Music: settings re-application no longer restarts the tune (only real
 enable/disable changes act), and a one-shot cue resumes the interrupted
@@ -292,8 +330,12 @@ is merged, not replaced.
 - **Lesson queue**: items with no progress (stage 0), taken in global order
   (`levels[].items` flattened), where every part in `parts` has
   `stage >= settings.unlockStage`. Items that are not yet unlocked are
-  skipped, not blocked on. Limits: `dailyLessons - lessons done today`, and
-  none at all while apprentice count (stages 1–4) ≥ `apprenticeCap`.
+  skipped, not blocked on. Words (`levels[].vocab`, same unlock rule on
+  their kanji) are interleaved one-for-one with the kanji/radical list,
+  kanji first, so a batch is a roughly even split whenever words are
+  available; the daily allowance and the apprentice cap are shared. Limits:
+  `dailyLessons - lessons done today`, and none at all while apprentice
+  count (stages 1–4) ≥ `apprenticeCap`.
 - **Lessons UI**: batches of `lessonBatch`. For each item show a full lesson
   card (see Screens). After the batch, quiz all batch items (typed answer,
   retry until correct; quiz wrong answers do not affect SRS). On finishing
@@ -381,6 +423,23 @@ number words ("7" = seven, "10,000" = ten thousand).
 Keyboard: Enter submits/continues; in reviews `Esc` = wrap up; `?` toggles
 the info panel; in lessons ←/→ move between cards. Everything reachable by
 tab; focus rings visible.
+
+## Words in the UI (2026-09-16)
+
+- **Dex**: a Kanji | Words segmented control above the controls. The Words
+  tab lists `levels[].vocab` as wide cells with the same stage colours,
+  reveal/level-number toggles, search, right-click menu and "mark caught"
+  selection (the paste box takes words separated by spaces). Words carry
+  their own numbering, "W. 0001", in learning order.
+- **Lessons/encounters**: a word card shows a `Word` badge, its class
+  (Noun, Verb…), and "Made of" chips for its kanji; a generated composition
+  line stands in for a mnemonic ("弁 valve + 当 appropriate → bento"). Multi-
+  character glyphs use a smaller face. Kanji lesson cards and item pages
+  list the words built on them ("Words to come" / "Words").
+- **Level page**: a Words section of tiles under the level's items. Level
+  progress and levelling up still count kanji only.
+- **Home/Stats**: the sighting count reads "5 kanji · 5 words"; words caught
+  are shown next to kanji caught and as "Words started" in Stats.
 
 ## Kanjidex theme and game layer
 

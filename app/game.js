@@ -39,6 +39,16 @@ export function dexNumbers(data) {
 
 export function dexNo(n) { return `No. ${String(n).padStart(4, '0')}`; }
 
+/** Words have their own numbering, in learning order, shown as "W. 0001". */
+export function wordNumbers(data) {
+  const out = {};
+  let n = 0;
+  for (const lv of data.levels) for (const id of lv.vocab || []) out[id] = ++n;
+  return out;
+}
+
+export function wordNo(n) { return `W. ${String(n).padStart(4, '0')}`; }
+
 export const SHINY_ODDS = 64;   // one encounter in 64 is shiny
 
 /** Small deterministic hash so a shiny encounter stays shiny on re-render. */

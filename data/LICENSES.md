@@ -9,8 +9,9 @@ Kanjr is built on freely licensed data. Raw files are downloaded into
 | KRADFILE | component decomposition of kanji | EDRDG licence (CC BY-SA 4.0 compatible, attribution required) | https://www.edrdg.org/krad/kradinf.html |
 | JMdict (English) | example words with English glosses | Creative Commons Attribution-ShareAlike 4.0 (EDRDG) | https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project |
 | scriptin/kanji-frequency | modern corpus frequency (Aozora, Wikipedia, Wikinews) | Creative Commons Attribution 4.0 | https://github.com/scriptin/kanji-frequency |
-| Open JTalk + NAIST Japanese Dictionary (via pyopenjtalk) | synthesising the optional spoken-kanji clips in `app/voices/` | Modified BSD | https://open-jtalk.sourceforge.net/ |
-| MMDAgent "Mei" HTS voice (mei_normal) | the voice used for those clips | Creative Commons Attribution 3.0 (Nagoya Institute of Technology) | https://github.com/r9y9/pyopenjtalk |
+| JMdict (English) | vocabulary words, readings and glosses (`type: vocab`) | Creative Commons Attribution-ShareAlike 4.0 (EDRDG) | https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project |
+| Kokoro-82M (hexgrad) | synthesising the optional spoken clips in `app/voices/` (voice `jf_alpha`) | Apache 2.0 (model weights and code) | https://huggingface.co/hexgrad/Kokoro-82M |
+| misaki + Open JTalk + UniDic | Japanese phonemisation and pitch accent for those clips | Apache 2.0 / Modified BSD / BSD | https://github.com/hexgrad/misaki |
 
 The generated `data/kanji.json` is a derived work of the above and is
 therefore distributed under CC BY-SA 4.0. Attribution: this product uses the

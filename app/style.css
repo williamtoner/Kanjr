@@ -36,6 +36,7 @@
 
   --radical: #17130f;
   --kanji: #d7262a;
+  --vocab: #2f5fa8;
   --radical-soft: #e3dacb;
   --kanji-soft: #f8d7d5;
 
@@ -337,6 +338,7 @@ kbd {
 }
 .chip.type-kanji .chip-glyph { background: var(--kanji); }
 .chip.type-radical .chip-glyph { background: var(--radical); }
+.chip.type-vocab .chip-glyph { background: var(--vocab); font-size: 0.8em; padding: 0 5px; width: auto; min-width: 1.6em; letter-spacing: 0.02em; }
 .chip.is-locked { opacity: 0.55; }
 .chip.is-locked .chip-glyph { background: var(--locked); color: var(--text-2); }
 .chip .chip-remove { border: 0; background: none; padding: 0 0 0 4px; color: var(--muted); line-height: 1; font-size: 1rem; }
@@ -350,6 +352,7 @@ kbd {
 }
 .badge.type-kanji { background: var(--kanji); }
 .badge.type-radical { background: var(--radical); }
+.badge.type-vocab { background: var(--vocab); }
 .badge.stage-locked { background: var(--locked); color: var(--text-2); }
 .badge.stage-apprentice { background: var(--apprentice); }
 .badge.stage-guru { background: var(--guru); }
@@ -424,6 +427,7 @@ kbd {
 }
 .glyph-card.type-kanji::before { background: var(--kanji); }
 .glyph-card.type-radical::before { background: var(--radical); }
+.glyph-card.type-vocab::before { background: var(--vocab); }
 .glyph {
   font-family: var(--font-jp); font-weight: 500; line-height: 1;
   font-size: min(28vw, 8rem);
@@ -431,6 +435,10 @@ kbd {
   user-select: text;
 }
 @media (min-width: 640px) { .glyph { font-size: 9rem; } }
+/* Words: several characters side by side, sized so the longest still fits. */
+.glyph.is-word { font-size: min(18vw, 5.5rem); letter-spacing: 0.02em; white-space: nowrap; }
+.glyph.is-word.is-long { font-size: min(13vw, 4rem); }
+@media (min-width: 640px) { .glyph.is-word { font-size: 6rem; } .glyph.is-word.is-long { font-size: 4.5rem; } }
 .glyph-card .glyph-type { margin-bottom: 8px; }
 .glyph-card .glyph-prompt { color: var(--muted); font-size: 0.9375rem; margin-top: 12px; }
 .glyph-card .glyph-prompt strong { color: var(--text); }
@@ -580,6 +588,9 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 .tile .tile-mark { position: absolute; top: 4px; left: 6px; width: 8px; height: 8px; border-radius: 50%; }
 .tile.type-radical .tile-mark { background: var(--radical); }
 .tile.type-kanji .tile-mark { background: var(--kanji); }
+.tile.type-vocab .tile-mark { background: var(--vocab); }
+.tiles.is-words { grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+.tile.type-vocab { aspect-ratio: auto; min-height: 64px; padding: 14px 10px 16px; font-size: 1.25rem; white-space: nowrap; }
 .tile.stage-locked .tile-mark { opacity: 0.7; }
 .tile-name { position: absolute; bottom: 3px; left: 4px; right: 4px; font-family: var(--font-ui); font-size: 0.5625rem; font-weight: 600; text-align: center; opacity: 0.9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -758,6 +769,15 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); outline
 .kcell.stage-enlightened { background: var(--enlightened); }
 .kcell.stage-burned { background: var(--burned); }
 .kcell.type-radical { border-radius: 50%; }
+/* The Words tab: cells stretch to the word, flowing in rows. */
+.kgrid.is-words { display: flex; flex-wrap: wrap; gap: 4px; }
+.kgrid.is-words .kgrid-level { flex: 0 0 auto; width: 30px; }
+.kcell.type-vocab { aspect-ratio: auto; height: 30px; padding: 0 7px; font-size: 0.8125rem; white-space: nowrap; }
+.kcell.type-vocab:hover, .kcell.type-vocab:focus-visible { transform: scale(1.15); }
+.dex-tabs { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+.dex-tab { border: 0; background: transparent; color: var(--muted); font: inherit; font-weight: 700; font-size: 0.8125rem; padding: 5px 14px; border-radius: 999px; cursor: pointer; }
+.dex-tab[aria-selected="true"] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.dex-tab:focus-visible { outline: 2px solid var(--kanji); outline-offset: 1px; }
 .kcell.is-due::after { content: ""; position: absolute; top: 2px; right: 2px; width: 5px; height: 5px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.25); }
 .kgrid-level {
   grid-column: 1 / -1; margin-top: 8px; padding: 0 2px; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.06em;
