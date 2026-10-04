@@ -190,10 +190,27 @@ class TestBuiltData(unittest.TestCase):
             n_kanji = sum(1 for i in lvl["items"] if items[i]["type"] == "kanji")
             self.assertGreaterEqual(len(lvl["vocab"]), n_kanji * 0.8, lvl["level"])
 
-    def test_early_levels_have_mnemonics(self):
-        for lvl in self.data["levels"][:3]:
+    def test_every_kanji_and_radical_has_a_mnemonic(self):
+        items = self.data["items"]
+        for lvl in self.data["levels"]:
             for i in lvl["items"]:
-                self.assertTrue(self.data["items"][i]["mnemonic"], f"{i} has no mnemonic")
+                self.assertTrue(items[i]["mnemonic"], f"{i} has no mnemonic")
+
+    def test_mnemonics_use_the_parts_and_the_keyword(self):
+        """A mnemonic shows every part's glyph and names the keyword; no kana (readings) leak in."""
+        import re
+        items = self.data["items"]
+        kana = re.compile("[\u3041-\u3096]")
+        for it in items.values():
+            if it["type"] != "kanji" or it["level"] <= 10:
+                continue   # levels 1-10 were hand-written before these rules
+            mn = it["mnemonic"]
+            name = re.sub(r"\s*\(\d+\)$", "", it["name"]).lower()
+            self.assertIn(name, mn.lower(), it["id"])
+            for p in it["parts"]:
+                self.assertIn(items[p]["char"], mn, f"{it['id']} does not show part {p}")
+            self.assertIsNone(kana.search(mn), it["id"])
+            self.assertTrue(it["hint"], it["id"])
 
 
 class VocabHelpersTest(unittest.TestCase):

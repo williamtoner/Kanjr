@@ -86,6 +86,17 @@ Radicals are components that are not themselves kanji in the set. When a
 kanji is a component of another kanji it is referenced directly (`k:寺`
 inside `k:時`), so there is never a duplicate radical/kanji pair.
 
+### Mnemonics (`data/content/mnemonics/level-NN.json`)
+
+One file per level, `{ "k:現": { "mnemonic": "…", "hint": "…" } }`, merged by
+id at build time. Every kanji has one. House rules: each part appears by its
+exact name followed by its glyph in brackets ("king (王)"); one concrete
+picture links the parts to the meaning; the last sentence is the keyword,
+capitalised, with up to three alternates in brackets; 15–45 words; meanings
+only (no readings, no kana); `hint` is the picture in 3–8 words. Kanji with
+no parts are described as a shape. The pipeline tests enforce presence, part
+glyphs, keyword and the absence of kana for levels 11 and up.
+
 ### Vocabulary (`pipeline/vocab.py`)
 
 Words come from JMdict: every entry with a common-word priority tag whose

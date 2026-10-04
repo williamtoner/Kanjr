@@ -318,11 +318,25 @@ polish. Real use surfaces the right bugs.
   Kokoro neural voice (the Open JTalk voice was judged robotic); clips now
   cover words too.
 
-### Open threads (as of 2026-09-16)
+- **2026-10-04** Mnemonics for every kanji. Levels 11–75 (1,891 kanji) now
+  have a mnemonic and a hint in `data/content/mnemonics/level-NN.json`, in
+  the same voice as levels 1–10: every part named with its glyph, one
+  concrete picture, the keyword as the last sentence, meanings only. The
+  pipeline tests now fail if any kanji or radical lacks a mnemonic, or if a
+  level 11+ mnemonic omits a part glyph, the keyword, or contains kana.
+  箇 had no English keyword (its keyword was the kanji itself); it is now
+  "item counter".
 
-1. **Mnemonics stop at level 10** (340 of 2,231 items). Levels 11–20 are the
-   next content batch; keywords and decompositions beyond level 10 are
-   automatic and unreviewed.
+### Open threads (as of 2026-10-04)
+
+1. **Decompositions that do not match the visible kanji.** Writing the
+   mnemonics surfaced roughly 200 kanji whose KRADFILE-derived parts are odd:
+   岬 is listed as 日 + 出 + 田 (no mountain), 朱 lists 株 as a part, 喉 and
+   嘆 lack their mouth, 縫 lacks thread, and 月 is always "month" even where
+   it is the flesh radical (胸 腕 脳 肩 肺 腰 膝 …). The mnemonics use the
+   parts as given, so they are consistent with the app, but these deserve
+   `data/overrides/parts.csv` entries and then a rewritten mnemonic each.
+   Worst cases: 岬 朱 喉 嘆 縫 溝 唆 瓶 貼 袖 訂 塡 隅 偶 遇 愚 半 優.
 2. **Learning order**: a "simplicity-leaning" re-weighting was measured and
    recommended (nothing above 10 strokes in levels 1–4) but never applied.
    The user has not said yes or no.
