@@ -12,6 +12,7 @@ Kanjr is built on freely licensed data. Raw files are downloaded into
 | JMdict (English) | vocabulary words, readings and glosses (`type: vocab`) | Creative Commons Attribution-ShareAlike 4.0 (EDRDG) | https://www.edrdg.org/wiki/index.php/JMdict-EDICT_Dictionary_Project |
 | Kokoro-82M (hexgrad) | synthesising the optional spoken clips in `app/voices/` (voice `jf_alpha`) | Apache 2.0 (model weights and code) | https://huggingface.co/hexgrad/Kokoro-82M |
 | misaki + Open JTalk + UniDic | Japanese phonemisation and pitch accent for those clips | Apache 2.0 / Modified BSD / BSD | https://github.com/hexgrad/misaki |
+| Noto Sans JP (Google Fonts) | the app's kanji typeface; also rendered offline by `pipeline/lookalikes.py` to measure which kanji look alike | SIL Open Font License 1.1 | https://fonts.google.com/noto/specimen/Noto+Sans+JP |
 
 The generated `data/kanji.json` is a derived work of the above and is
 therefore distributed under CC BY-SA 4.0. Attribution: this product uses the

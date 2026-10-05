@@ -190,6 +190,22 @@ class TestBuiltData(unittest.TestCase):
             n_kanji = sum(1 for i in lvl["items"] if items[i]["type"] == "kanji")
             self.assertGreaterEqual(len(lvl["vocab"]), n_kanji * 0.8, lvl["level"])
 
+    def test_lookalikes_cover_the_classic_confusions(self):
+        items = self.data["items"]
+        look = lambda c: [items[o]["char"] for o in items[f"k:{c}"].get("lookalikes", [])]
+        self.assertEqual(look("未")[0], "末")
+        self.assertEqual(look("土")[0], "士")
+        self.assertIn("入", look("人"))
+        self.assertIn("持", look("待"))
+        self.assertIn("輪", look("輸"))
+        with_any = [i for i in items.values() if i.get("lookalikes")]
+        self.assertGreater(len(with_any), 1200)
+        for i in with_any:
+            self.assertEqual(i["type"], "kanji")
+            self.assertLessEqual(len(i["lookalikes"]), 4)
+            self.assertNotIn(i["id"], i["lookalikes"])
+            self.assertEqual(len(set(i["lookalikes"])), len(i["lookalikes"]))
+
     def test_every_kanji_and_radical_has_a_mnemonic(self):
         items = self.data["items"]
         for lvl in self.data["levels"]:

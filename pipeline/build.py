@@ -79,6 +79,15 @@ def load_mnemonics() -> dict[str, dict]:
     return out
 
 
+def load_lookalikes() -> dict[str, list[str]]:
+    """kanji -> the kanji it is easily mistaken for (pipeline/lookalikes.py)."""
+    path = CONTENT / "lookalikes.json"
+    if not path.exists():
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
 def spoken_form(rec: parse.KanjiRecord) -> str:
     """What text-to-speech should say for this kanji, in kana.
 
@@ -214,6 +223,11 @@ def build(check_only: bool = False) -> dict:
             items[i]["pos"] = pos
         level_items[lvl] = ordered
 
+    # ---- lookalikes: kanji easily mistaken for one another ----------------
+    for k, others in load_lookalikes().items():
+        if f"k:{k}" in items:
+            items[f"k:{k}"]["lookalikes"] = [f"k:{o}" for o in others if o in joyo and o != k]
+
     # ---- vocabulary: words made only of kanji taught so far ---------------
     print("vocabulary ...")
     kanji_level = {k: levels[f"k:{k}"] for k in joyo}
@@ -286,6 +300,9 @@ def sanity_checks(data: dict, rank: dict[str, int]) -> list[str]:
                 problems.append(f"{i['id']} has unknown part {p}")
             elif (items[p]["level"], items[p]["pos"]) >= (i["level"], i["pos"]):
                 problems.append(f"{i['id']} (L{i['level']}) comes before its part {p} (L{items[p]['level']})")
+        for o in i.get("lookalikes", []):
+            if o == i["id"] or o not in items or items[o]["type"] != "kanji":
+                problems.append(f"{i['id']} has a bad lookalike {o}")
         if i["type"] == "vocab":
             if not i["parts"] or any(items[p]["type"] != "kanji" for p in i["parts"]):
                 problems.append(f"{i['id']} must be made of kanji")

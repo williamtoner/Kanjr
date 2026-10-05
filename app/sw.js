@@ -14,7 +14,7 @@
  * invalidate old caches.
  */
 
-const CACHE_VERSION = 'kanjr-v13';
+const CACHE_VERSION = 'kanjr-v14';
 const SHELL = [
   './',
   './index.html',
@@ -25,6 +25,7 @@ const SHELL = [
   './sfx.js',
   './scan.js',
   './game.js',
+  './duel.js',
   './music.js',
   './visual.js',
   './srs.js',

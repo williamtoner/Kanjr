@@ -327,6 +327,15 @@ polish. Real use surfaces the right bugs.
   箇 had no English keyword (its keyword was the kanji itself); it is now
   "item counter".
 
+- **2026-10-05** Lookalike duels. `pipeline/lookalikes.py` measures shape
+  similarity between all jōyō kanji (browser-rendered bitmaps, baseline-
+  adjusted correlation, plus a curated list of classics) and stores up to
+  four lookalikes per kanji. The app records the learner's own mix-ups
+  (answering with another kanji's meaning, or a wrong pick in a duel) and
+  offers duels of 2–3 caught kanji, mix-ups first, asked in both directions,
+  with a "tell them apart" panel that paints the differing ink red. Home
+  card, item-page "Don't confuse with", stats line, sync support.
+
 ### Open threads (as of 2026-10-04)
 
 1. **Decompositions that do not match the visible kanji.** Writing the

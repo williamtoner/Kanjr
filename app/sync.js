@@ -120,6 +120,19 @@ export function mergeProgress(a, b) {
     if (!notes[id] || String(b.notes[id]).length > String(notes[id]).length) notes[id] = b.notes[id];
   }
 
+  // Mix-ups: the higher count wins; the win streak follows the later record.
+  const confusions = {};
+  for (const src of [a.confusions || {}, b.confusions || {}]) {
+    for (const key in src) {
+      const c = src[key], prev = confusions[key];
+      if (!prev) { confusions[key] = Object.assign({}, c); continue; }
+      const later = (c.last || '') > (prev.last || '') ? c : prev;
+      confusions[key] = { n: Math.max(num(c.n), num(prev.n)), wins: num(later.wins), last: later.last || '' };
+    }
+  }
+  const da = a.duels || {}, db = b.duels || {};
+  const duels = { played: Math.max(num(da.played), num(db.played)), won: Math.max(num(da.won), num(db.won)), last: (da.last || '') > (db.last || '') ? da.last : (db.last || '') };
+
   return {
     version: 1,
     createdAt: [a.createdAt, b.createdAt].filter(Boolean).sort()[0] || newer.createdAt,
@@ -127,6 +140,8 @@ export function mergeProgress(a, b) {
     settings: Object.assign({}, older.settings || {}, newer.settings || {}),
     items, synonyms, notes, reviews: cappedReviews, days,
     quests: Object.assign({}, a.quests || {}, b.quests || {}),
+    confusions,
+    ...(duels.played ? { duels } : {}),
   };
 }
 
@@ -135,7 +150,7 @@ export function fingerprint(progress) {
   const items = progress.items || {};
   let n = 0, sum = 0;
   for (const id in items) { n++; sum += num(items[id].stage) * 7 + num(items[id].correct) * 3 + num(items[id].incorrect); }
-  return `${n}:${sum}:${(progress.reviews || []).length}:${Object.keys(progress.synonyms || {}).length}:${Object.keys(progress.notes || {}).length}:${progress.updatedAt || ''}`;
+  return `${n}:${sum}:${(progress.reviews || []).length}:${Object.keys(progress.synonyms || {}).length}:${Object.keys(progress.notes || {}).length}:${Object.keys(progress.confusions || {}).length}:${num(progress.duels && progress.duels.played)}:${progress.updatedAt || ''}`;
 }
 
 /** What goes into the gist: the progress with a capped review log. */

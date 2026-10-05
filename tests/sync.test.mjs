@@ -72,4 +72,15 @@ export const tests = {
     assert.strictEqual(m.items['k:日'].wild, '2026-09-10');
     assert.deepStrictEqual(m.quests, { '2026-09-12': 'k:日', '2026-09-13': 'k:月' });
   },
+  'merge unions mix-ups: highest count, win streak from the later record, duel totals take the max': () => {
+    const a = base({ confusions: { 'k:末|k:未': { n: 3, wins: 0, last: '2026-10-01T00:00:00.000Z' }, 'k:土|k:士': { n: 1, wins: 2, last: '2026-10-02T00:00:00.000Z' } }, duels: { played: 4, won: 3, last: '2026-10-02T00:00:00.000Z' } });
+    const b = base({ confusions: { 'k:末|k:未': { n: 2, wins: 2, last: '2026-10-04T00:00:00.000Z' } }, duels: { played: 6, won: 2, last: '2026-10-04T00:00:00.000Z' } });
+    const m = mergeProgress(a, b);
+    assert.deepStrictEqual(m.confusions['k:末|k:未'], { n: 3, wins: 2, last: '2026-10-04T00:00:00.000Z' });
+    assert.deepStrictEqual(m.confusions['k:土|k:士'], { n: 1, wins: 2, last: '2026-10-02T00:00:00.000Z' });
+    assert.deepStrictEqual(m.duels, { played: 6, won: 3, last: '2026-10-04T00:00:00.000Z' });
+    assert.deepStrictEqual(mergeProgress(base(), base()).confusions, {});
+    assert.strictEqual(mergeProgress(base(), base()).duels, undefined);
+    assert.notStrictEqual(fingerprint(a), fingerprint(base()));
+  },
 };

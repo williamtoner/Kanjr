@@ -76,6 +76,7 @@ export function defaultProgress(now = new Date()) {
     reviews: [],
     days: {},
     quests: {},
+    confusions: {},
   };
 }
 
@@ -109,6 +110,7 @@ export function validateProgress(raw) {
     reviews: [],
     days: {},
     quests: {},
+    confusions: {},
   };
 
   const items = raw.items || {};
@@ -152,6 +154,20 @@ export function validateProgress(raw) {
   const quests = isObject(raw.quests) ? raw.quests : {};
   for (const key in quests) {
     if (/^\d{4}-\d{2}-\d{2}$/.test(key) && typeof quests[key] === 'string') out.quests[key] = quests[key];
+  }
+  // Lookalike duels: which kanji the learner has mixed up, and duel totals.
+  const confusions = isObject(raw.confusions) ? raw.confusions : {};
+  for (const key in confusions) {
+    const c = confusions[key];
+    if (!isObject(c) || !/^k:.+\|k:.+$/.test(key)) continue;
+    out.confusions[key] = {
+      n: Math.max(0, Math.trunc(Number(c.n) || 0)),
+      wins: Math.max(0, Math.trunc(Number(c.wins) || 0)),
+      last: typeof c.last === 'string' ? c.last : '',
+    };
+  }
+  if (isObject(raw.duels)) {
+    out.duels = { played: Math.max(0, Math.trunc(Number(raw.duels.played) || 0)), won: Math.max(0, Math.trunc(Number(raw.duels.won) || 0)), last: typeof raw.duels.last === 'string' ? raw.duels.last : '' };
   }
   const days = raw.days || {};
   for (const key in days) {

@@ -24,6 +24,7 @@ import { music } from './music.js';
 import * as scan from './scan.js';
 import * as visual from './visual.js';
 import * as game from './game.js';
+import * as duel from './duel.js';
 
 // ===========================================================================
 // 1. State and utilities
@@ -328,7 +329,7 @@ function applySfxSettings() {
 
 /** Which tune belongs to which screen. */
 function sceneFor(head) {
-  return { reviews: 'encounter', drill: 'encounter', lessons: 'sighting', grid: 'dex', scan: 'dex', item: 'dex', levels: 'dex' }[head] || 'overworld';
+  return { reviews: 'encounter', drill: 'encounter', duel: 'encounter', lessons: 'sighting', grid: 'dex', scan: 'dex', item: 'dex', levels: 'dex' }[head] || 'overworld';
 }
 
 /* ---------- Speech: optionally say the kanji after each answer ---------- */
@@ -880,6 +881,7 @@ function mountQuiz(root, opts) {
           ${mnemonicBlock(item, note)}
           ${item.parts && item.parts.length ? `<div class="section-label">${item.type === 'vocab' ? 'Made of' : 'Parts'}</div>${chipList(item.parts)}` : ''}
           ${item.type === 'radical' && item.used_in && item.used_in.length ? `<div class="section-label">Used in</div>${chipList(item.used_in.slice(0, 8))}` : ''}
+          ${confuseRow(item)}
           ${view.info && item.examples && item.examples.length ? `<div class="section-label">Examples</div>${examplesList(item)}` : ''}
         ` : ''}
         <div class="feedback-actions">
@@ -900,6 +902,8 @@ function mountQuiz(root, opts) {
     if (verdict === 'wrong' && !view.retried) {
       const collision = findCollision(raw, item, app.data.items);
       if (collision) {
+        // Answering with another kanji's meaning is a mix-up: remember the pair for duels.
+        if (item.type === 'kanji' && collision.type === 'kanji') setProgress(duel.recordConfusion(app.progress, item.id, collision.id, now()));
         view.retried = true;
         view.collision = collision;
         view.lastInput = '';
@@ -1092,6 +1096,8 @@ function renderHome() {
       </div>
 
       ${questCardHtml(questToday())}
+
+      ${duelHomeCard()}
 
       <div class="grid-2">
         <div class="card">
@@ -1479,6 +1485,7 @@ function renderItem(id) {
         <div class="card"><h2>${item.type === 'vocab' ? 'Made of' : 'Parts'}</h2>${chipList(item.parts || [])}</div>
         ${item.type === 'vocab' ? '' : `<div class="card"><h2>Used in <span class="muted">${(item.used_in || []).length}</span></h2>${chipList((item.used_in || []).slice(0, 40))}</div>`}
       </div>
+      ${confuseCard(item)}
       ${item.type === 'kanji' && item.words && item.words.length ? `<div class="card"><h2>Words <span class="muted">${item.words.length}</span></h2>${chipList(item.words.slice(0, 40))}</div>` : ''}
 
       ${item.examples && item.examples.length ? `<div class="card"><h2>Examples</h2>${examplesList(item)}</div>` : ''}
@@ -2406,6 +2413,278 @@ function renderLeechDrill() {
   app.cleanup = () => view.destroy();
 }
 
+/* ---------- Lookalike duels: telling similar kanji apart ---------- */
+
+/** Chips for what a kanji is mixed up with; `×n` marks the learner's own mix-ups. */
+function confuseChips(item) {
+  return duel.partnersOf(app.data, app.progress, item.id).map((pt) =>
+    chip(pt.id, { locked: engine.stageOf(app.progress, pt.id) === 0, extra: pt.n ? ` <span class="chip-count" title="You have mixed these up ${pt.n} time${pt.n === 1 ? '' : 's'}${pt.settled ? ', settled since' : ''}">×${pt.n}</span>` : '' })).join('');
+}
+
+/** The "Don't confuse with" row shown under a missed kanji. */
+function confuseRow(item) {
+  if (!item || item.type !== 'kanji') return '';
+  const chips = confuseChips(item);
+  return chips ? `<div class="section-label">Don't confuse with</div><div class="chips">${chips}</div>` : '';
+}
+
+function confuseCard(item) {
+  if (!item || item.type !== 'kanji') return '';
+  const chips = confuseChips(item);
+  if (!chips) return '';
+  const canDuel = !!duel.focusGroup(app.data, app.progress, item.id);
+  return `<div class="card"><h2>Don't confuse with <span class="muted">lookalikes and your own mix-ups</span></h2>
+    <div class="chips">${chips}</div>
+    ${canDuel ? `<div class="btn-row" style="margin-top:12px"><a class="btn btn-sm btn-primary" href="#/duel/${encodeURIComponent(item.id)}">Duel these</a></div>`
+      : '<p class="small muted" style="margin:10px 0 0">Catch this kanji and one of its lookalikes to duel them.</p>'}</div>`;
+}
+
+function duelHomeCard() {
+  const ds = duel.duelSummary(app.data, app.progress);
+  if (!ds.available) return '';
+  const pairs = ds.picked.slice(0, 4).map((g) =>
+    `<span class="duel-pair${g.source === 'confused' ? ' is-confused' : ''}">${g.ids.map((id) => `<span class="jp">${esc(itemOf(id).char)}</span>`).join('<i>vs</i>')}</span>`).join('');
+  return `<div class="card duel-home">
+    <div>
+      <h2>Lookalike duel <span class="muted">${ds.confused ? `${plural(ds.confused, 'mix-up')} to settle` : `${plural(ds.available, 'duel')} ready`}</span></h2>
+      <div class="duel-pairs">${pairs}</div>
+    </div>
+    <a class="btn btn-primary" href="#/duel">Duel</a>
+  </div>`;
+}
+
+/** Rasterise one glyph to a mask of its ink, in the page's own kanji face. */
+function glyphMask(char, size, font) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.font = `500 ${Math.round(size * 0.82)}px ${font}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(char, size / 2, size * 0.53);
+  const d = ctx.getImageData(0, 0, size, size).data;
+  const alpha = new Uint8Array(size * size);
+  for (let i = 0; i < alpha.length; i++) alpha[i] = d[i * 4 + 3];
+  return alpha;
+}
+
+/**
+ * Replace a glyph with a drawing of itself in which the ink that has no
+ * counterpart in `against` is red: the stroke or part that tells the two
+ * apart. Leaves the plain text in place if a canvas is not available.
+ */
+async function paintDifference(el, char, against) {
+  try {
+    const css = getComputedStyle(el);
+    const size = 128;
+    // A canvas does not wait for web-font subsets: load both glyphs first, or
+    // the two would be drawn in different faces and everything would differ.
+    if (document.fonts && document.fonts.load) await document.fonts.load(`500 64px ${css.fontFamily}`, char + against).catch(() => {});
+    if (!el.isConnected) return;
+    const a = glyphMask(char, size, css.fontFamily), b = glyphMask(against, size, css.fontFamily);
+    const solid = (m) => m.map((v) => (v > 96 ? 1 : 0));
+    // Forgive small shifts first; for near-twins (土 / 士) nothing survives
+    // that, so tighten the tolerance until a real difference shows.
+    let diff = null;
+    for (const r of [7, 4, 2]) {
+      diff = duel.diffMask(solid(a), solid(b), size, size, r);
+      if (diff.reduce((n, v) => n + v, 0) >= 40) break;
+    }
+    const ink = css.color.match(/[\d.]+/g).slice(0, 3).map(Number);
+    const red = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#d7262a';
+    const probe = document.createElement('canvas').getContext('2d');
+    probe.fillStyle = red; probe.fillRect(0, 0, 1, 1);
+    const hot = probe.getImageData(0, 0, 1, 1).data;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const img = ctx.createImageData(size, size);
+    // Include the soft edge pixels around flagged ink, so a whole stroke lights up.
+    const anyInk = Uint8Array.from(a, (v) => (v > 0 ? 1 : 0));
+    const farFromDiff = duel.diffMask(anyInk, diff, size, size, 3);
+    for (let i = 0; i < a.length; i++) {
+      const c = anyInk[i] && !farFromDiff[i] ? hot : ink;
+      img.data[i * 4] = c[0]; img.data[i * 4 + 1] = c[1]; img.data[i * 4 + 2] = c[2]; img.data[i * 4 + 3] = a[i];
+    }
+    ctx.putImageData(img, 0, 0);
+    if (diff.reduce((n, v) => n + v, 0) < 12) return;   // nothing distinct enough to mark
+    el.textContent = '';
+    el.appendChild(canvas);
+  } catch (_) { /* keep the text glyph */ }
+}
+
+function partsLine(item) {
+  const parts = (item.parts || []).map((pid) => itemOf(pid)).filter(Boolean);
+  return parts.map((k) => `<span class="jp">${esc(k.char)}</span> ${esc(k.name)}`).join(' + ');
+}
+
+/**
+ * A duel session: each duel sets 2–4 lookalikes against each other and asks
+ * about every one of them, alternating "which kanji means X?" with "what
+ * does this kanji mean?". Practice only; the SRS is not changed, but wrong
+ * picks are remembered as mix-ups so they come back in later duels.
+ */
+function renderDuel(focusId) {
+  const data = app.data;
+  let groups;
+  if (focusId) {
+    const g = duel.focusGroup(data, app.progress, focusId);
+    groups = g ? [g] : [];
+  } else {
+    groups = duel.pickDuels(duel.duelGroups(data, app.progress));
+  }
+  if (!groups.length) {
+    const focus = focusId && itemOf(focusId);
+    main.innerHTML = `<section class="screen">${emptyState('似', focus ? 'Nothing to duel yet' : 'No duels yet',
+      focus ? `Catch <span class="jp">${esc(focus.char)}</span> and at least one of its lookalikes, then come back.`
+        : 'Duels set kanji you have caught against their lookalikes. Catch a few more, or mix two up in an encounter, and they will turn up here.',
+      '<a class="btn btn-primary" href="#/">Home</a>')}</section>`;
+    return;
+  }
+
+  const session = duel.createDuelSession(groups);
+  const total = session.duels.length;
+  const view = { di: 0, qi: 0, phase: 'ask', chosen: null, lost: false, results: [], streak: 0, timer: null };
+  const settledBefore = new Set(duel.confusedPairs(app.progress).filter((c) => c.settled).map((c) => duel.pairKey(c.a, c.b)));
+
+  const current = () => session.duels[view.di];
+  const question = () => current().questions[view.qi];
+
+  function render() {
+    const d = current(), q = question();
+    const target = itemOf(q.target);
+    const answered = view.phase === 'feedback';
+    const right = answered && view.chosen === q.target;
+    const stateOf = (id) => !answered ? '' : id === q.target ? ' is-right' : id === view.chosen ? ' is-wrong' : ' is-dim';
+    const dots = session.duels.map((_, i) => `<i class="${i < view.results.length ? (view.results[i].won ? 'is-won' : 'is-lost') : i === view.di ? 'is-current' : ''}"></i>`).join('');
+    const sourceLabel = d.source === 'confused' ? 'You mixed these up' : d.source === 'focus' ? 'Head to head' : 'Lookalikes';
+
+    const body = q.pick === 'kanji' ? `
+        <div class="duel-prompt">Which one means <strong>${esc(target.name)}</strong>?</div>
+        <div class="duel-tiles n-${q.options.length}">
+          ${q.options.map((id, i) => `<button class="duel-tile${stateOf(id)}" type="button" data-pick="${esc(id)}" ${answered ? 'disabled' : ''} aria-label="Option ${i + 1}">
+            <span class="duel-key" aria-hidden="true">${i + 1}</span><span class="duel-tile-glyph jp">${esc(itemOf(id).char)}</span>
+            <span class="duel-tile-name">${answered ? esc(itemOf(id).name) : '&nbsp;'}</span></button>`).join(q.options.length === 2 ? '<span class="duel-vs" aria-hidden="true">vs</span>' : '')}
+        </div>` : `
+        <div class="duel-prompt">What does this one mean?</div>
+        <div class="duel-glyph jp">${esc(target.char)}</div>
+        <div class="duel-choices">
+          ${q.options.map((id, i) => `<button class="duel-choice${stateOf(id)}" type="button" data-pick="${esc(id)}" ${answered ? 'disabled' : ''}>
+            <span class="duel-key" aria-hidden="true">${i + 1}</span>${answered ? `<span class="jp duel-choice-glyph">${esc(itemOf(id).char)}</span>` : ''}${esc(itemOf(id).name)}</button>`).join('')}
+        </div>`;
+
+    const compare = answered && !right ? `
+      <div class="card duel-compare fade-in">
+        <h2>Tell them apart <span class="muted">red marks what is different</span></h2>
+        <ul class="duel-rows">
+          ${d.ids.map((id) => { const it = itemOf(id); return `<li class="duel-row${id === q.target ? ' is-target' : ''}">
+            <a class="duel-row-glyph jp" href="${itemHref(id)}" data-diff="${esc(it.char)}" data-against="${esc(itemOf(id === q.target ? view.chosen : q.target).char)}" aria-label="${esc(it.char)}">${esc(it.char)}</a>
+            <div><div class="duel-row-name">${esc(it.name)}</div>
+              ${partsLine(it) ? `<div class="small muted">${partsLine(it)}</div>` : ''}
+              ${it.hint ? `<div class="small">${esc(it.hint)}</div>` : ''}</div></li>`; }).join('')}
+        </ul>
+      </div>` : '';
+
+    main.innerHTML = `
+      <section class="screen duel">
+        <div class="screen-head"><h1>Lookalike duel</h1><span class="muted small">Duel ${view.di + 1} of ${total} · practice only, the SRS is not changed</span></div>
+        <div class="duel-dots" aria-hidden="true">${dots}</div>
+        <div class="card duel-card${answered ? (right ? ' is-correct' : ' is-wrong shake') : ''}" data-role="card">
+          <div class="duel-kicker">${esc(sourceLabel)}${view.streak >= 2 ? ` <span class="streak${view.streak >= 5 ? ' is-hot' : ''}">×${view.streak}</span>` : ''}</div>
+          ${body}
+          <div class="duel-status ${answered ? (right ? 'is-ok' : 'is-bad') : ''}" aria-live="polite">${!answered ? `Tap one, or press <kbd>1</kbd>–<kbd>${q.options.length}</kbd>` : right ? 'Right!' : `That was <span class="jp">${esc(itemOf(view.chosen).char)}</span> <strong>${esc(itemOf(view.chosen).name)}</strong>.`}</div>
+        </div>
+        ${compare}
+        ${answered ? `<div class="btn-row" style="justify-content:center"><button class="btn btn-primary" type="button" data-act="next">Continue <kbd>Enter</kbd></button></div>` : ''}
+      </section>`;
+
+    $$('[data-pick]', main).forEach((btn) => btn.addEventListener('click', () => pick(btn.dataset.pick)));
+    const nextBtn = $('[data-act="next"]', main);
+    if (nextBtn) nextBtn.addEventListener('click', next);
+    if (right) stampHit($('[data-role="card"]', main), 'Right');
+    $$('[data-diff]', main).forEach((el) => paintDifference(el, el.dataset.diff, el.dataset.against));
+  }
+
+  function pick(id) {
+    if (view.phase !== 'ask') return;
+    const q = question();
+    view.chosen = id;
+    view.phase = 'feedback';
+    if (id === q.target) {
+      sfx.correct(view.streak);
+      view.streak += 1;
+    } else {
+      sfx.wrong();
+      view.streak = 0;
+      view.lost = true;
+      setProgress(duel.recordConfusion(app.progress, q.target, id, now()));
+    }
+    render();
+    speakItem(itemOf(q.target));
+    if (id === q.target) view.timer = setTimeout(next, 1100);
+  }
+
+  function next() {
+    if (view.phase !== 'feedback') return;
+    clearTimeout(view.timer);
+    view.phase = 'ask';
+    view.chosen = null;
+    view.qi += 1;
+    if (view.qi >= current().questions.length) {
+      const won = !view.lost;
+      view.results.push({ ids: current().ids, won });
+      setProgress(duel.recordDuel(app.progress, current().ids, won, now()), { immediate: true });
+      if (won) sfx.stageUp();
+      view.lost = false;
+      view.qi = 0;
+      view.di += 1;
+    }
+    if (view.di >= total) { summary(); return; }
+    render();
+  }
+
+  function summary() {
+    app.keyHandler = null;
+    const won = view.results.filter((r) => r.won).length;
+    const lost = view.results.filter((r) => !r.won);
+    const newlySettled = duel.confusedPairs(app.progress).filter((c) => c.settled && !settledBefore.has(duel.pairKey(c.a, c.b)));
+    sfx.complete();
+    music.play('celebration');
+    if (won === total) confetti();
+    backupIfNeeded(true);
+    const versus = (ids) => ids.map((id) => chip(id)).join('<span class="duel-vs-small">vs</span>');
+    main.innerHTML = `
+      <section class="screen duel">
+        <div class="card session-summary fade-in">
+          <div class="big-number">${won}<span class="muted" style="font-size:.5em"> / ${total}</span></div>
+          <h2>${total === 1 ? (won ? 'Duel won' : 'Duel lost') : `${plural(won, 'duel')} won`}</h2>
+          <p class="muted">${lost.length ? 'The ones you lost are remembered and will come back first next time.' : 'A clean sweep. Nothing got past you.'}</p>
+          ${newlySettled.length ? `<div class="section-label" style="text-align:left">Settled — ${duel.SETTLED_WINS} wins in a row</div><div class="duel-summary-rows">${newlySettled.map((c) => `<div class="chips">${versus([c.a, c.b])}</div>`).join('')}</div>` : ''}
+          ${lost.length ? `<div class="section-label" style="text-align:left">Lost this time</div><div class="duel-summary-rows">${lost.map((r) => `<div class="chips">${versus(r.ids)}</div>`).join('')}</div>` : ''}
+          <div class="btn-row" style="justify-content:center;margin-top:16px">
+            <button class="btn btn-primary" type="button" data-act="again">Duel again</button>
+            <a class="btn" href="${focusId ? itemHref(focusId) : '#/'}">${focusId ? 'Back to the kanji' : 'Home'}</a>
+          </div>
+        </div>
+      </section>`;
+    $('[data-act="again"]', main).addEventListener('click', () => { music.play('encounter'); renderDuel(focusId); });
+    $('[data-act="again"]', main).focus();
+  }
+
+  app.keyHandler = (e) => {
+    if (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
+    if (view.phase === 'ask' && /^[1-4]$/.test(e.key)) {
+      const id = question().options[Number(e.key) - 1];
+      if (id) { e.preventDefault(); pick(id); }
+    } else if (view.phase === 'feedback' && (e.key === 'Enter' || e.key === ' ')) {
+      e.preventDefault();
+      next();
+    }
+  };
+  app.cleanup = () => clearTimeout(view.timer);
+  render();
+}
+
 /* ---------- Stats helpers ---------- */
 
 function heatmapHtml(h) {
@@ -2535,6 +2814,7 @@ function renderStats() {
           <dl class="kv">
             <dt>Kanji started</dt><dd>${kanjiStarted} of ${kanjiTotal} (${pct(kanjiTotal ? kanjiStarted / kanjiTotal : 0)})</dd>
             <dt>Words started</dt><dd>${wordsCaught()} of ${wordTotal}</dd>
+            <dt>Lookalike duels</dt><dd>${p.duels && p.duels.played ? `${p.duels.won} won of ${p.duels.played}` : '—'}${duel.confusedPairs(p).filter((c) => !c.settled).length ? ` · <a href="#/duel">${plural(duel.confusedPairs(p).filter((c) => !c.settled).length, 'mix-up')} to settle</a>` : ''}</dd>
             <dt>Your pace</dt><dd>${proj.rate ? `${proj.rate.toFixed(1)} new items a day <span class="muted">(last ${plural(proj.daysObserved, 'day')})</span>` : '—'}</dd>
             <dt>All items at your pace</dt><dd>${proj.eta ? `${esc(fmtDate(proj.eta))} <span class="muted">(${Math.round((proj.eta - t) / 86400000)} days)</span>` : 'Start a few lessons to see a projection'}</dd>
             <dt>At ${proj.settingRate} a day</dt><dd>${proj.etaAtSetting ? `${esc(fmtDate(proj.etaAtSetting))} <span class="muted">(${Math.round((proj.etaAtSetting - t) / 86400000)} days)</span>` : '—'}</dd>
@@ -2919,7 +3199,7 @@ function route() {
   const parts = parseRoute();
   const head = parts[0] || 'home';
   music.play(sceneFor(head));
-  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'grid', item: 'grid', grid: 'grid', scan: 'scan', quest: 'home', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
+  const routeName = { home: 'home', lessons: 'home', reviews: 'home', item: 'levels', levels: 'grid', item: 'grid', grid: 'grid', scan: 'scan', quest: 'home', duel: 'home', drill: 'stats', stats: 'stats', settings: 'settings' }[head] || '';
   $$('#nav a').forEach((a) => {
     if (a.dataset.route === routeName) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
   });
@@ -2941,6 +3221,7 @@ function route() {
         break;
       case 'grid': renderGrid(); break;
       case 'drill': renderLeechDrill(); break;
+      case 'duel': renderDuel(parts[1] || ''); break;
       case 'scan': renderScan(); break;
       case 'quest': renderQuest(); break;
       case 'stats': renderStats(); break;
@@ -2952,7 +3233,7 @@ function route() {
     main.innerHTML = `<section class="screen">${emptyState('誤', 'Something went wrong', `<span class="small muted">${esc(err && err.message)}</span>`, '<a class="btn btn-primary" href="#/">Home</a>')}</section>`;
   }
   window.scrollTo({ top: 0 });
-  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Kanjidex · Kanjr', drill: 'Leech drill · Kanjr', scan: 'Catch · Kanjr', quest: 'KanjiQuest · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
+  document.title = { home: 'Kanjr', lessons: 'Lessons · Kanjr', reviews: 'Reviews · Kanjr', item: 'Item · Kanjr', levels: 'Levels · Kanjr', grid: 'Kanjidex · Kanjr', drill: 'Leech drill · Kanjr', duel: 'Lookalike duel · Kanjr', scan: 'Catch · Kanjr', quest: 'KanjiQuest · Kanjr', stats: 'Stats · Kanjr', settings: 'Settings · Kanjr' }[head] || 'Kanjr';
 }
 
 function showBanner(html, { kind = '', dismiss = null } = {}) {
